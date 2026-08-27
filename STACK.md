@@ -1,7 +1,7 @@
 # Stack — ALS DevStudio
 
 ## Estado actual
-- HTML5 estático en `ALS-DevStudio.html`.
+- HTML5 estático en `index.html`.
 - CSS embebido y JavaScript vanilla embebido.
 - Assets de marca en `assets/brand/`.
 - Sin base de datos, API ni secretos.

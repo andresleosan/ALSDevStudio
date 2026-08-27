@@ -40,3 +40,19 @@
 ## QA de esta iteración
 - 19 capturas de Chromium integradas en el carrusel inicial y la grilla.
 - 19 tarjetas completas clicables; capturas de GitHub usadas solo cuando no existe demo pública verificada.
+
+- [x] Validar y limpiar la sección de proyectos: retirar Cronos, ALS DevStudio y las demos sin sitio publicado; usar capturas web verificadas y enlaces directos a demos.
+
+## QA de esta iteración
+- `node --check` sobre el JavaScript embebido: PASS.
+- 15 tarjetas y 15 slides visibles; 0 overlays `project-code`/`project-type`; 0 destinos GitHub en tarjetas.
+- 15 assets locales verificados; 6 capturas web regeneradas desde demos p�blicas.
+- 15 destinos web comprobados con HTTP 200; SurtiFacil y Coctelsops-F- se excluyeron porque sus demos declaradas respondieron HTTP 404.
+- Auditor�a est�tica: sin URLs `javascript:`, sin secretos nuevos y enlaces externos con `rel="noopener"`.
+
+- [x] Consolidar la entrada única de la landing en `index.html` y retirar el HTML duplicado del repositorio.
+
+## QA de esta iteración
+- Hash SHA256 de ambos HTML idéntico antes de la eliminación.
+- `STACK.md` actualizado; no quedan referencias al archivo eliminado.
+- `node --check`, auditoría estática y comprobación de enlaces ejecutadas con PASS.
