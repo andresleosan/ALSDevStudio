@@ -34,3 +34,9 @@
 - JavaScript embebido: sintaxis PASS.
 - 6 tarjetas con imagen y enlace directo a cada proyecto.
 - Cero textos Demo/Código dentro de las tarjetas; 9 enlaces externos seguros.
+
+- [x] Incorporar los 19 proyectos públicos restantes, excluyendo exactamente HTML-CSS, layoutresponsive, prueba2, ejercicio-react, performai, Analista y Fullstack-Challenge---E-commerce.
+
+## QA de esta iteración
+- 19 capturas de Chromium integradas en el carrusel inicial y la grilla.
+- 19 tarjetas completas clicables; capturas de GitHub usadas solo cuando no existe demo pública verificada.
