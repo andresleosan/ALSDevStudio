@@ -9,7 +9,7 @@ El documento tenía título, logo, copy, footer y enlaces de contacto de Santel.
 Solo mostraba un conjunto corto de proyectos manuales y no incluía los repositorios recientes del perfil público de GitHub.
 
 ### Media — assets frágiles
-Las miniaturas existentes incluían imágenes base64 muy grandes dentro del HTML. La nueva versión usará assets de marca locales y visuales CSS ligeros para mantener el documento mantenible.
+Las miniaturas existentes incluían imágenes base64 muy grandes dentro del HTML. La nueva versión usa assets de marca locales y capturas comprimidas de las demos para mantener el documento visual y mantenible.
 
 ### Baja — interacción insuficiente
 Solo había hover básico. No existían filtros, reveal al scroll, cursor visual ni estados de navegación activos.
