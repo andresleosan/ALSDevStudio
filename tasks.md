@@ -56,3 +56,10 @@
 - Hash SHA256 de ambos HTML idéntico antes de la eliminación.
 - `STACK.md` actualizado; no quedan referencias al archivo eliminado.
 - `node --check`, auditoría estática y comprobación de enlaces ejecutadas con PASS.
+
+- [x] Actualizar captura web de Hachi Grecia Spa y conservar su enlace directo a la demo.
+
+## QA de esta iteración
+- Web `https://hachi-greciaspa.vercel.app/`: HTTP 200.
+- Captura reemplazada: `assets/projects/hachi-greciaspa.png`, 2560×1600.
+- `node --check`, auditoría estática y `git diff --check`: PASS.
