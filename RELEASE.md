@@ -1,5 +1,12 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Mini brief de contacto
+
+- El bloque final ahora incluye una selección interactiva de tipo de proyecto.
+- El resultado y el mensaje de WhatsApp se actualizan según la opción elegida.
+- El layout aprovecha el espacio disponible con un panel oscuro de acción.
+
+
 ## 2026-08-27 · Carrusel directo
 
 - Carrusel enderezado y controles manuales anterior/siguiente con puntos seleccionables.
