@@ -20,3 +20,10 @@
 - JavaScript embebido: sintaxis PASS.
 - 6 tarjetas y 6 capturas verificadas; proporción 16:10 y altura mínima 420px.
 - 15 enlaces externos seguros, cero URLs javascript: y correo temporal ausente.
+
+- [x] Rediseñar contacto como mini brief interactivo con mensajes dinámicos de WhatsApp.
+
+## QA de esta iteración
+- JavaScript embebido: sintaxis PASS.
+- Mini brief con 3 opciones, mensaje dinámico y enlace al +57 314 643 2135.
+- Correo ausente; 15 enlaces externos conservan rel="noopener"; cero URLs javascript:.
