@@ -1,5 +1,13 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Portfolio completo
+
+- El carrusel del inicio y la grilla ahora muestran 19 proyectos públicos.
+- Se excluyeron exactamente los 7 repositorios solicitados.
+- Se tomaron capturas con Chromium: demos públicas cuando estuvieron disponibles y páginas de GitHub como respaldo verificable.
+- Los puntos del carrusel se pueden desplazar horizontalmente para elegir entre todos los proyectos.
+
+
 ## 2026-08-27 · Tarjetas de proyectos directas
 
 - La grilla usa dos columnas equilibradas y visuales 16:10 de mayor tamaño.
