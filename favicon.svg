@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">ALS DevStudio</title>
+  <desc id="desc">Ícono de ALS DevStudio</desc>
+  <circle cx="32" cy="32" r="30" fill="#071a2f"/>
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#4d9bff" stroke-width="2"/>
+  <path d="M13 47 25.5 16h7L45 47h-7l-2.5-7.2H22.5L20 47h-7Zm11.5-13.2h8L28.5 22l-4 11.8Z" fill="#f5f8fb"/>
+  <path d="m39 25 7 7-7 7-3-3 4-4-4-4 3-3Z" fill="#65d49d"/>
+</svg>
