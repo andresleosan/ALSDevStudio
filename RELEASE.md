@@ -1,5 +1,12 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Tarjetas de proyectos directas
+
+- La grilla usa dos columnas equilibradas y visuales 16:10 de mayor tamaño.
+- Cada tarjeta completa abre directamente el proyecto correspondiente.
+- Retirados los textos internos Demo y Código para reducir ruido visual.
+
+
 ## 2026-08-27 · Mini brief de contacto
 
 - El bloque final ahora incluye una selección interactiva de tipo de proyecto.

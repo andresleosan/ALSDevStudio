@@ -27,3 +27,10 @@
 - JavaScript embebido: sintaxis PASS.
 - Mini brief con 3 opciones, mensaje dinámico y enlace al +57 314 643 2135.
 - Correo ausente; 15 enlaces externos conservan rel="noopener"; cero URLs javascript:.
+
+- [x] Rediseñar proyectos con dos columnas equilibradas, capturas grandes y tarjetas completas clicables.
+
+## QA de esta iteración
+- JavaScript embebido: sintaxis PASS.
+- 6 tarjetas con imagen y enlace directo a cada proyecto.
+- Cero textos Demo/Código dentro de las tarjetas; 9 enlaces externos seguros.
