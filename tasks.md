@@ -248,3 +248,18 @@
 - Chrome headless: la lista permanece dentro de .global-intro en escritorio, tableta y móvil, sin desbordamiento horizontal.
 - Distribución verificada en 2 columnas a 1280 px, 4 columnas a 900 px y 2 columnas a 390 px.
 - Selección sincronizada entre botón, país, marcador y etiqueta; rotación automática comprobada después de 4,4 segundos.
+
+- [x] Actualizar la captura de La Parada e intercambiar su posición con Silicone Solutions en carrusel y galería.
+
+## QA de esta iteración
+- PNG adjunto aplicado byte a byte en `assets/projects/laparada.png`: 1626×952 px, SHA256 `888F0FDBA9F55BE9D589F37208E9F30C25CDF671647B4BD92C59706622C5C6C7`.
+- Primeros seis del carrusel y la galería: Multiogar, Tecnifullgas, BPT-Jersey, La Parada, Silicone Solutions y The Coco Club.
+- Chrome headless a 1238×912: BPT-Jersey y La Parada comparten la fila superior; Silicone Solutions ocupa la fila siguiente; las tres imágenes cargaron correctamente.
+- `node --check scripts/main.js`, `git diff --check`, referencias locales y auditoría estática de enlaces/secretos: PASS.
+
+- [x] Reemplazar la captura de La Parada por la versión final entregada.
+
+## QA de esta iteración
+- PNG final aplicado byte a byte en `assets/projects/laparada.png`: 1583×949 px, SHA256 `9821A8F4C7073F05DD7DAD6DEB0B755E4FFA17B56FF0B105214334CC60F59FCA`.
+- Chrome headless a 1238×912: imagen cargada completamente con dimensiones naturales 1583×949; La Parada permanece en la posición 4 y Silicone Solutions en la 5.
+- `node --check scripts/main.js`, `git diff --check`, referencias locales y auditoría estática de enlaces: PASS.
