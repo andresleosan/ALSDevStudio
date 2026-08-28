@@ -181,3 +181,24 @@
 ## QA de esta iteración
 - Corregidos los textos de Mercado Inteligente, AUDITORIA.md y tasks.md.
 - Escaneo UTF-8 sobre archivos de texto: 0 coincidencias de mojibake; node --check PASS y git diff --check PASS.
+
+- [x] Corregir encuadre de PintuMaster para mostrar el dashboard completo.
+
+## QA de esta iteración
+- La tarjeta respeta la proporción panorámica real de la captura y evita cortar el dashboard lateralmente.
+- El ajuste es específico de PintuMaster; las demás tarjetas mantienen su proporción visual.
+
+- [x] Elevar el lenguaje visual e interactivo de la landing completa.
+
+## QA de esta iteración
+- Refinada la jerarquía tipográfica y el contraste de selección/hover sin cambiar la identidad documentada.
+- Añadida barra de progreso de lectura, navegación activa subrayada, botones magnéticos y halo direccional para tarjetas.
+- Añadidas microinteracciones en capacidades, proceso y hero; las capturas no reciben zoom ni filtros invasivos.
+- Conservado el fallback de prefers-reduced-motion; seguridad, sintaxis y referencias validadas con resultado limpio.
+
+- [x] Crear mapa global interactivo para representar el alcance internacional de ALS.
+
+## QA de esta iteración
+- Añadida la sección 01 / alcance global con Estados Unidos, México, Colombia, Venezuela, Brasil, España y Jersey.
+- Los puntos del mapa y los botones laterales comparten selección, estado accesible y mensaje contextual.
+- Añadidas rutas animadas, pulsos de ubicación, rotación automática pausada al interactuar y soporte de teclado.

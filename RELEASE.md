@@ -132,3 +132,19 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 ## 2026-08-27 · Acentos corregidos
 
 - Reparados textos con codificación dañada para que los acentos se rendericen correctamente en la interfaz y la documentación.
+
+## 2026-08-27 · Encuadre completo de PintuMaster
+
+- Ajustada la proporción visual de la tarjeta para mostrar la captura panorámica del dashboard sin recortes laterales.
+
+## 2026-08-27 · Firma interactiva ALS
+
+- Elevada la jerarquía tipográfica y el sistema de estados de navegación, botones, capacidades y proceso.
+- Añadidos progreso de lectura, botones magnéticos y halos direccionales en tarjetas para una interacción más expresiva.
+- Añadidas animaciones de gradiente, escaneo de paneles y microseñales de hover respetando prefers-reduced-motion.
+
+## 2026-08-27 · Mapa global interactivo
+
+- Añadida una sección de alcance global con mapa SVG estilizado y siete puntos de conexión.
+- Añadidas rutas luminosas desde Colombia, selección sincronizada, mensajes contextuales y rotación automática.
+- Actualizada la navegación y numeración de secciones para integrar la nueva narrativa.
