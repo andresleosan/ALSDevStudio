@@ -96,3 +96,17 @@
 - Assets reemplazados: mercadointeligente.png, pintumaster.png y coctelsops.png.
 - Carrusel y tarjetas reutilizan las rutas existentes; no se modificaron enlaces externos.
 - Se actualizaron nombres y textos alternativos para Mercado Inteligente y Coctels OPS.
+
+- [x] Priorizar el orden visual de proyectos solicitado en carrusel y galería.
+
+## QA de esta iteración
+- Primeros seis en carrusel y galería: Multiogar, tecnifullgas, BPT-Jersey, SiliconeSolutions, La Parada y The Coco Club.
+- El resto conserva su orden relativo después de ese bloque prioritario.
+- Enlaces, categorías, imágenes y filtros se mantienen sin cambios funcionales.
+
+- [x] Retirar efectos decorativos de las capturas del portafolio.
+
+## QA de esta iteración
+- Eliminados los aros decorativos superpuestos sobre las capturas.
+- Eliminados el zoom y el filtro de imagen al pasar el cursor; las interfaces permanecen fieles a sus capturas.
+- La navegación, los enlaces y los filtros de proyectos permanecen intactos.
