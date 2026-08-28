@@ -222,3 +222,10 @@
 - Cada país cuenta ahora con una frontera vectorial real, un resaltado visible y un nombre completo para el punto seleccionado.
 - La base cartográfica usa fronteras nacionales locales y excluye la Antártida del encuadre visual.
 - Recompuesta la sección para eliminar el vacío inferior, añadir una señal contextual y reforzar la animación de red activa.
+
+- [x] Unificar foco activo, coordenadas y señal global en una consola compacta del mapa.
+
+## QA de esta iteración
+- Coordenadas sincronizadas con los siete países y territorios activos.
+- Consola responsive en dos columnas y una columna en móvil.
+- Línea de nodos decorativa compatible con movimiento reducido.
