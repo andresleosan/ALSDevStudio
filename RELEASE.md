@@ -153,3 +153,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 
 - Rehecha la composición del mapa para mejorar la lectura geográfica, la distribución del espacio y la sensación de red internacional.
 - Mantienen su funcionamiento los puntos interactivos, las rutas animadas y la selección contextual.
+
+## 2026-08-27 · Mapa geográfico real
+
+- Sustituida la silueta geométrica por un mapa mundial fiel a la referencia visual entregada.
+- Conservadas la capa interactiva de rutas, los marcadores, la selección y las animaciones.
