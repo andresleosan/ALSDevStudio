@@ -242,3 +242,9 @@
 - PintuMaster usa la misma proporción 16:10 y altura base que las demás tarjetas de proyecto.
 - La captura conserva su encuadre completo mediante object-fit: contain y mantiene proporción fluida en móvil.
 - Chrome headless: ambas tarjetas miden 579 × 477,625 px a 1280 px y 358 × 339,5 px a 390 px, sin desbordamiento horizontal.
+- [x] Reubicar los países conectados dentro del espacio disponible de la columna izquierda del mapa.
+
+## QA de esta iteración
+- Chrome headless: la lista permanece dentro de .global-intro en escritorio, tableta y móvil, sin desbordamiento horizontal.
+- Distribución verificada en 2 columnas a 1280 px, 4 columnas a 900 px y 2 columnas a 390 px.
+- Selección sincronizada entre botón, país, marcador y etiqueta; rotación automática comprobada después de 4,4 segundos.
