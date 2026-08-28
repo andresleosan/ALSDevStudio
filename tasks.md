@@ -89,3 +89,10 @@
 - Navegador local: cursor visible con puntero fino, centrado y cargando favicon.svg; fondo reactivo continúa activo.
 - prefers-reduced-motion y fallback táctil conservados.
 - node --check: PASS; consola del navegador local: 0 errores.
+
+- [x] Actualizar las vistas de Mercado Inteligente, PintuMaster y Coctels OPS con las capturas entregadas.
+
+## QA de esta iteración
+- Assets reemplazados: mercadointeligente.png, pintumaster.png y coctelsops.png.
+- Carrusel y tarjetas reutilizan las rutas existentes; no se modificaron enlaces externos.
+- Se actualizaron nombres y textos alternativos para Mercado Inteligente y Coctels OPS.
