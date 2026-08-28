@@ -1,5 +1,10 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Cursor ALS más pequeño
+
+- Reducido el cursor de marca a 36 px para una presencia visual más discreta.
+- El isotipo interno quedó en 21 px y conserva el aro orbital, halo y alineación al puntero.
+
 ## 2026-08-27 · Fondo generativo y cursor ALS
 
 - Añadida una constelación de nodos y líneas orbitales con halo reactivo al puntero.

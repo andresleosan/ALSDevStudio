@@ -81,3 +81,11 @@
 - prefers-reduced-motion: la rama estática evita la animación y desactiva el cursor personalizado.
 - Consola del navegador local: 0 errores.
 - Seguridad del código nuevo: sin eval, red, almacenamiento, cookies ni secretos.
+
+- [x] Reducir el puntero personalizado con el isotipo ALS manteniendo su posición centrada.
+
+## QA de esta iteración
+- Puntero ALS reducido de 46×46 px a 36×36 px; isotipo de 28×28 px a 21×21 px.
+- Navegador local: cursor visible con puntero fino, centrado y cargando favicon.svg; fondo reactivo continúa activo.
+- prefers-reduced-motion y fallback táctil conservados.
+- node --check: PASS; consola del navegador local: 0 errores.
