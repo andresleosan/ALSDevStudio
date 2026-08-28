@@ -1,5 +1,15 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Capturas sin overlays
+
+- Retirados los aros decorativos, zoom y filtros que se aplicaban sobre las capturas de los proyectos.
+- Las vistas ahora se muestran limpias, manteniendo únicamente la interacción estructural de las tarjetas.
+
+## 2026-08-27 · Orden prioritario de proyectos
+
+- El carrusel y la galería ahora comienzan con Multiogar, Tecnifullgas, BPT, Silicone, La Parada y The Coco Club.
+- El resto de proyectos queda después, manteniendo su orden relativo.
+
 ## 2026-08-27 · Nuevas vistas de proyectos
 
 - Reemplazadas las capturas visuales de Mercado Inteligente, PintuMaster y Coctels OPS.
