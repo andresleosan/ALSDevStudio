@@ -172,3 +172,9 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Corregida la ambigüedad entre Colombia y Venezuela con marcadores separados y selección contextual.
 
 - Fuente cartográfica: fronteras Natural Earth 1:110m, distribuidas como datos públicos.
+
+## 2026-08-28 · Composición de alcance global
+
+- Equilibrada la altura de la columna de introducción y el panel cartográfico.
+- Convertido el espacio visual sobrante en un bloque contextual de red activa.
+- Añadida una línea de escaneo sutil con compatibilidad para movimiento reducido.

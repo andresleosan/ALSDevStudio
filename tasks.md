@@ -221,3 +221,4 @@
 - Añadida leyenda de conexiones verificadas y soporte responsive para el nuevo layout.
 - Cada país cuenta ahora con una frontera vectorial real, un resaltado visible y un nombre completo para el punto seleccionado.
 - La base cartográfica usa fronteras nacionales locales y excluye la Antártida del encuadre visual.
+- Recompuesta la sección para eliminar el vacío inferior, añadir una señal contextual y reforzar la animación de red activa.
