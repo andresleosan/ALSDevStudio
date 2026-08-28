@@ -130,3 +130,10 @@
 - Imagen social generada en assets/brand/og-image.png con tamaño 1200×630 px.
 - Añadidos metadatos og:*, twitter:* y canonical con la URL pública de ALS DevStudio.
 - La imagen utiliza la identidad visual de la portada ALS y está optimizada como PNG.
+
+- [x] Rediseñar el mini brief de contacto con rutas de Landing page, tienda virtual y solución web.
+
+## QA de esta iteración
+- Las opciones 01, 02 y 03 ahora representan Landing page, Tienda virtual y App o solución web.
+- Cada ruta tiene copy propio y actualiza el mensaje de WhatsApp mediante data-message.
+- Se añadió aria-pressed para comunicar la selección a tecnologías asistivas.
