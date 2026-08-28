@@ -229,3 +229,10 @@
 - Coordenadas sincronizadas con los siete países y territorios activos.
 - Consola responsive en dos columnas y una columna en móvil.
 - Línea de nodos decorativa compatible con movimiento reducido.
+
+- [x] Restaurar la rotación automática de países y compactar el espacio bajo el mapa.
+
+## QA de esta iteración
+- Eliminada la pausa por hover de toda la sección; la rotación continúa mientras el mapa está visible.
+- La interacción manual reinicia el ciclo automático y el foco de teclado conserva la pausa accesible.
+- Las ubicaciones pasan a una franja inferior compartida para equilibrar ambas columnas.
