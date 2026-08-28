@@ -178,3 +178,9 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Equilibrada la altura de la columna de introducción y el panel cartográfico.
 - Convertido el espacio visual sobrante en un bloque contextual de red activa.
 - Añadida una línea de escaneo sutil con compatibilidad para movimiento reducido.
+
+## 2026-08-28 · Consola inferior del mapa
+
+- Integrados foco activo y coordenadas en una sola tarjeta contextual.
+- Añadida sincronización dinámica de coordenadas por ubicación.
+- Reorganizada la señal global como panel complementario con una ruta visual de siete nodos.
