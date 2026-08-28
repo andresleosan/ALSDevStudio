@@ -110,3 +110,9 @@
 - Eliminados los aros decorativos superpuestos sobre las capturas.
 - Eliminados el zoom y el filtro de imagen al pasar el cursor; las interfaces permanecen fieles a sus capturas.
 - La navegación, los enlaces y los filtros de proyectos permanecen intactos.
+
+- [x] Ajustar el segundo bloque prioritario después de The Coco Club.
+
+## QA de esta iteración
+- Después de The Coco Club aparecen: Mundo Celular, Hachi Grecia Spa, PintuMaster y Coctels OPS.
+- Los proyectos restantes conservan su orden relativo después del bloque prioritario.

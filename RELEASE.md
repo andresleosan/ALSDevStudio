@@ -1,5 +1,10 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Orden posterior a The Coco Club
+
+- Reordenados Mundo Celular, Hachi Grecia Spa, PintuMaster y Coctels OPS para que sigan inmediatamente a The Coco Club.
+- El ajuste se refleja en el carrusel y en la galería.
+
 ## 2026-08-27 · Capturas sin overlays
 
 - Retirados los aros decorativos, zoom y filtros que se aplicaban sobre las capturas de los proyectos.
