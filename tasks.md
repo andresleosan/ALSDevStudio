@@ -214,3 +214,8 @@
 ## QA de esta iteración
 - Añadido assets/brand/world-map.png con continentes reconocibles y fondo transparente.
 - Sustituida la geometría SVG manual por el asset geográfico, conservando rutas, marcadores y selección interactiva.
+
+- [x] Recalibrar el mapa con coordenadas geográficas y una composición más clara para las conexiones globales.
+- Rutas y marcadores alineados con la nueva base geográfica.
+- Panel del mapa ajustado para reducir espacio vacío y mejorar jerarquía visual.
+- Añadida leyenda de conexiones verificadas y soporte responsive para el nuevo layout.

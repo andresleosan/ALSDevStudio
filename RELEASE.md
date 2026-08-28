@@ -158,3 +158,9 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 
 - Sustituida la silueta geométrica por un mapa mundial fiel a la referencia visual entregada.
 - Conservadas la capa interactiva de rutas, los marcadores, la selección y las animaciones.
+
+## 2026-08-28 · Refinamiento del mapa global
+
+- Recalibradas las rutas y ubicaciones sobre la geografía real del mapa.
+- Ajustada la escala, el contraste y la composición del panel para que el mapa tenga más presencia visual.
+- Añadida una leyenda contextual y refinamiento responsive.
