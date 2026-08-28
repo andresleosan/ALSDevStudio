@@ -2,7 +2,7 @@
 
 ## Estado actual
 - HTML5 estático en `index.html`.
-- CSS embebido y JavaScript vanilla embebido.
+- CSS externo en `styles/main.css` y JavaScript vanilla externo en `scripts/main.js`.
 - Assets de marca en `assets/brand/`.
 - Sin base de datos, API ni secretos.
 

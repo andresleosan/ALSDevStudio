@@ -116,3 +116,17 @@
 ## QA de esta iteración
 - Después de The Coco Club aparecen: Mundo Celular, Hachi Grecia Spa, PintuMaster y Coctels OPS.
 - Los proyectos restantes conservan su orden relativo después del bloque prioritario.
+
+- [x] Separar CSS y JavaScript del HTML y ordenar la estructura de recursos.
+
+## QA de esta iteración
+- `index.html` conserva únicamente la estructura y enlaza `styles/main.css` y `scripts/main.js`.
+- CSS y JavaScript extraídos sin cambios funcionales; assets existentes permanecen en `assets/brand` y `assets/projects`.
+- Estructura final: `index.html`, `styles/main.css`, `scripts/main.js` y `assets/`.
+
+- [x] Añadir imagen social Open Graph y metadatos de preview para compartir ALS DevStudio.
+
+## QA de esta iteración
+- Imagen social generada en assets/brand/og-image.png con tamaño 1200×630 px.
+- Añadidos metadatos og:*, twitter:* y canonical con la URL pública de ALS DevStudio.
+- La imagen utiliza la identidad visual de la portada ALS y está optimizada como PNG.

@@ -1,5 +1,15 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Preview social de ALS DevStudio
+
+- Añadida assets/brand/og-image.png en formato 1200×630 para previews de enlaces.
+- Añadidos metadatos Open Graph y Twitter Card en index.html.
+
+## 2026-08-27 · Estructura de frontend separada
+
+- Extraídos los estilos a `styles/main.css` y el comportamiento a `scripts/main.js`.
+- `index.html` queda enfocado en la estructura semántica y conserva las rutas de assets existentes.
+
 ## 2026-08-27 · Orden posterior a The Coco Club
 
 - Reordenados Mundo Celular, Hachi Grecia Spa, PintuMaster y Coctels OPS para que sigan inmediatamente a The Coco Club.
