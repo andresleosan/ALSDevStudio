@@ -1,5 +1,10 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Mini brief orientado a soluciones
+
+- Rediseñada la sección de contacto para guiar hacia una Landing page, una Tienda virtual o una App/solución web.
+- Actualizados los textos de cada ruta y los mensajes de WhatsApp correspondientes.
+
 ## 2026-08-27 · Preview social de ALS DevStudio
 
 - Añadida assets/brand/og-image.png en formato 1200×630 para previews de enlaces.
