@@ -137,3 +137,11 @@
 - Las opciones 01, 02 y 03 ahora representan Landing page, Tienda virtual y App o solución web.
 - Cada ruta tiene copy propio y actualiza el mensaje de WhatsApp mediante data-message.
 - Se añadió aria-pressed para comunicar la selección a tecnologías asistivas.
+
+- [x] Refinar la sección de contacto y el mini brief para mejorar jerarquía, espaciado y conversión.
+
+## QA de esta iteración
+- El contacto ahora comunica una promesa más concreta y muestra tres pasos de inicio para reducir fricción.
+- El mini brief usa títulos más escaneables, CTA más directo y una proporción de columnas con mejor balance visual.
+- Añadido foco visible al selector y role region al panel para conservar una interacción accesible.
+- QA real: node --check scripts/main.js PASS; git diff --check PASS; 36 referencias locales verificadas sin faltantes; sin eval, almacenamiento local, red nueva ni secretos en los archivos tocados.
