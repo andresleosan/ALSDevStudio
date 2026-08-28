@@ -1,5 +1,11 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Fondo generativo y cursor ALS
+
+- Añadida una constelación de nodos y líneas orbitales con halo reactivo al puntero.
+- Añadido un puntero de escritorio con el isotipo ALS, oculto en táctil y con movimiento reducido.
+- Se mantiene el fallback accesible y el rendimiento acotado con requestAnimationFrame y máximo 44 nodos.
+
 ## 2026-08-27 · Captura Hachi actualizada
 
 - Reemplazada la captura vacía en estado Cargando por una captura fiel del hero de Hachi & Grecia Spa.

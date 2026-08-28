@@ -71,3 +71,13 @@
 - Carrusel local verificado: la captura se carga, el slide cambia a Hachi y la etiqueta Hachi Grecia Spa / pet care aparece correctamente.
 - Tarjeta de proyecto verificada en el DOM con enlace directo a https://hachi-greciaspa.vercel.app/.
 - Consola del navegador local: 0 errores.
+
+- [x] Añadir fondo generativo reactivo y puntero personalizado con el logo ALS.
+
+## QA de esta iteración
+- node --check sobre el JavaScript embebido: PASS.
+- Navegador local: canvas de fondo activo a 1680×949, puntero ALS visible en puntero fino y logo cargado desde favicon.svg.
+- Interacción verificada: el puntero actualiza su posición, el fondo responde con halo y la landing conserva su navegación.
+- prefers-reduced-motion: la rama estática evita la animación y desactiva el cursor personalizado.
+- Consola del navegador local: 0 errores.
+- Seguridad del código nuevo: sin eval, red, almacenamiento, cookies ni secretos.
