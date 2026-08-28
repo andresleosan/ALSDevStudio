@@ -195,3 +195,9 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 
 - Igualada la altura visual de PintuMaster con Coctels OPS y el resto de la cuadrícula.
 - Conservado el encuadre completo de la captura con comportamiento responsive.
+
+## 2026-08-28 · Países integrados en la columna del mapa
+
+- Reubicados los siete selectores de países dentro del espacio libre de la introducción global.
+- Compactada la cuadrícula sin perder selección, rotación automática ni accesibilidad de las descripciones.
+- Añadida una distribución específica para escritorio, tableta y móvil.
