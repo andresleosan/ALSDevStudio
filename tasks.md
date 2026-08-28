@@ -46,9 +46,9 @@
 ## QA de esta iteración
 - `node --check` sobre el JavaScript embebido: PASS.
 - 15 tarjetas y 15 slides visibles; 0 overlays `project-code`/`project-type`; 0 destinos GitHub en tarjetas.
-- 15 assets locales verificados; 6 capturas web regeneradas desde demos p�blicas.
+- 15 assets locales verificados; 6 capturas web regeneradas desde demos públicas.
 - 15 destinos web comprobados con HTTP 200; SurtiFacil y Coctelsops-F- se excluyeron porque sus demos declaradas respondieron HTTP 404.
-- Auditor�a est�tica: sin URLs `javascript:`, sin secretos nuevos y enlaces externos con `rel="noopener"`.
+- Auditoría estática: sin URLs `javascript:`, sin secretos nuevos y enlaces externos con `rel="noopener"`.
 
 - [x] Consolidar la entrada única de la landing en `index.html` y retirar el HTML duplicado del repositorio.
 
@@ -151,3 +151,33 @@
 ## QA de esta iteración
 - Retirado el atributo data-reveal del contenedor global de proyectos para evitar que toda la grilla permanezca invisible mientras espera al IntersectionObserver.
 - Las imágenes mantienen loading lazy y decoding async para cargar progresivamente sin bloquear la aparición de las tarjetas.
+
+- [x] Ocultar barra incrustada en la captura de Mundo Celular.
+
+## QA de esta iteración
+- El encuadre de Mundo Celular ahora prioriza la esquina superior izquierda y deja fuera la barra del navegador incluida en el screenshot.
+- No se modificaron el enlace, el asset original ni el comportamiento global de las tarjetas.
+
+- [x] Actualizar captura de PintuMaster con el dashboard entregado.
+
+## QA de esta iteración
+- Reemplazado assets/projects/pintumaster.png conservando la ruta usada por la tarjeta.
+- La captura muestra el dashboard de PintuMaster y mantiene el enlace público del proyecto.
+
+- [x] Actualizar captura de Coctels OPS con la vista de domicilio y Los más TOP.
+
+## QA de esta iteración
+- Reemplazado assets/projects/coctelsops.png conservando la ruta consumida por la tarjeta.
+- La nueva captura muestra la navegación, el bloque de domicilio y la sección de productos destacados.
+
+- [x] Actualizar captura de Mercado Inteligente con la vista de presupuesto y compras.
+
+## QA de esta iteración
+- Reemplazado assets/projects/mercadointeligente.png conservando la ruta consumida por la tarjeta.
+- La nueva captura muestra Presupuesto diario y Registrar compra, con el enlace del proyecto intacto.
+
+- [x] Corregir acentos dañados por codificación incorrecta.
+
+## QA de esta iteración
+- Corregidos los textos de Mercado Inteligente, AUDITORIA.md y tasks.md.
+- Escaneo UTF-8 sobre archivos de texto: 0 coincidencias de mojibake; node --check PASS y git diff --check PASS.

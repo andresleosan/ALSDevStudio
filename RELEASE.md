@@ -109,3 +109,26 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 
 - La grilla de proyectos ya no depende de una animación de entrada global para hacerse visible.
 - Las tarjetas aparecen de inmediato y sus capturas continúan con carga diferida.
+
+## 2026-08-27 · Barra de navegador fuera del encuadre
+
+- Ajustado el object-position de la captura de Mundo Celular para que no se muestre la barra vertical incrustada en el screenshot.
+
+## 2026-08-27 · Dashboard de PintuMaster
+
+- Reemplazada la captura de login por la vista dashboard entregada para PintuMaster.
+- Conservadas la tarjeta, la ruta del asset y el enlace público del proyecto.
+
+## 2026-08-27 · Domicilios y Los más TOP
+
+- Reemplazada la captura de Coctels OPS por la vista entregada con domicilio y productos destacados.
+- Conservadas la tarjeta, la ruta del asset y el enlace público del proyecto.
+
+## 2026-08-27 · Presupuesto y compras
+
+- Reemplazada la captura de Mercado Inteligente por la vista de presupuesto diario y registro de compra.
+- Conservadas la tarjeta, la ruta del asset y el enlace público del proyecto.
+
+## 2026-08-27 · Acentos corregidos
+
+- Reparados textos con codificación dañada para que los acentos se rendericen correctamente en la interfaz y la documentación.
