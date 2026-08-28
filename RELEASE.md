@@ -164,3 +164,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Recalibradas las rutas y ubicaciones sobre la geografía real del mapa.
 - Ajustada la escala, el contraste y la composición del panel para que el mapa tenga más presencia visual.
 - Añadida una leyenda contextual y refinamiento responsive.
+
+## 2026-08-28 · Países destacados en el mapa
+
+- Añadidas zonas de foco visual para los siete países y territorios conectados.
+- Corregida la ambigüedad entre Colombia y Venezuela con marcadores separados y selección contextual.

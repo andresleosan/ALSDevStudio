@@ -219,3 +219,4 @@
 - Rutas y marcadores alineados con la nueva base geográfica.
 - Panel del mapa ajustado para reducir espacio vacío y mejorar jerarquía visual.
 - Añadida leyenda de conexiones verificadas y soporte responsive para el nuevo layout.
+- Cada país cuenta ahora con una zona de foco visible y un nombre completo para el punto seleccionado.
