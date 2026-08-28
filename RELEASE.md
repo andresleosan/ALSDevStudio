@@ -1,5 +1,11 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Captura Hachi actualizada
+
+- Reemplazada la captura vacía en estado Cargando por una captura fiel del hero de Hachi & Grecia Spa.
+- Se conserva el nombre, la etiqueta del carrusel, la tarjeta clicable y el enlace directo a la demo.
+- Verificada en la landing local con el logo central y la navegación visibles.
+
 ## 2026-08-27 · Portfolio completo
 
 - El carrusel del inicio y la grilla ahora muestran 19 proyectos públicos.

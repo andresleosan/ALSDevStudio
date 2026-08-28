@@ -63,3 +63,11 @@
 - Web `https://hachi-greciaspa.vercel.app/`: HTTP 200.
 - Captura reemplazada: `assets/projects/hachi-greciaspa.png`, 2560×1600.
 - `node --check`, auditoría estática y `git diff --check`: PASS.
+
+- [x] Mejorar la captura de Hachi Grecia Spa para mostrar el hero real con logo central y navegación visible.
+
+## QA de esta iteración
+- Asset PNG actualizado en assets/projects/hachi-greciaspa.png, 1657×949.
+- Carrusel local verificado: la captura se carga, el slide cambia a Hachi y la etiqueta Hachi Grecia Spa / pet care aparece correctamente.
+- Tarjeta de proyecto verificada en el DOM con enlace directo a https://hachi-greciaspa.vercel.app/.
+- Consola del navegador local: 0 errores.
