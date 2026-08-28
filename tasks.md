@@ -208,3 +208,9 @@
 ## QA de esta iteración
 - Sustituida la geometría rígida por una composición horizontal con continentes curvos y distribución más equilibrada.
 - Conservados los 7 marcadores, las 6 rutas, la selección interactiva y el soporte de teclado.
+
+- [x] Usar mapa geográfico real como base visual del alcance global.
+
+## QA de esta iteración
+- Añadido assets/brand/world-map.png con continentes reconocibles y fondo transparente.
+- Sustituida la geometría SVG manual por el asset geográfico, conservando rutas, marcadores y selección interactiva.
