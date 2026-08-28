@@ -167,5 +167,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 
 ## 2026-08-28 · Países destacados en el mapa
 
-- Añadidas zonas de foco visual para los siete países y territorios conectados.
+- Añadidas fronteras nacionales vectoriales basadas en Natural Earth 1:110m y resaltado visual para los siete países y territorios conectados.
+- Retirada la silueta raster anterior y excluida la Antártida para mantener un encuadre mundial limpio.
 - Corregida la ambigüedad entre Colombia y Venezuela con marcadores separados y selección contextual.
+
+- Fuente cartográfica: fronteras Natural Earth 1:110m, distribuidas como datos públicos.
