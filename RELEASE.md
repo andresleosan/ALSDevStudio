@@ -1,5 +1,10 @@
 # Release — ALS DevStudio
 
+## 2026-08-27 · Nuevas vistas de proyectos
+
+- Reemplazadas las capturas visuales de Mercado Inteligente, PintuMaster y Coctels OPS.
+- Ajustados los nombres de proyecto y labels accesibles para reflejar las marcas mostradas.
+
 ## 2026-08-27 · Cursor ALS más pequeño
 
 - Reducido el cursor de marca a 36 px para una presencia visual más discreta.
