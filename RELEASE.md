@@ -148,3 +148,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Añadida una sección de alcance global con mapa SVG estilizado y siete puntos de conexión.
 - Añadidas rutas luminosas desde Colombia, selección sincronizada, mensajes contextuales y rotación automática.
 - Actualizada la navegación y numeración de secciones para integrar la nueva narrativa.
+
+## 2026-08-27 · Atlas global refinado
+
+- Rehecha la composición del mapa para mejorar la lectura geográfica, la distribución del espacio y la sensación de red internacional.
+- Mantienen su funcionamiento los puntos interactivos, las rutas animadas y la selección contextual.

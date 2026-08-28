@@ -202,3 +202,9 @@
 - Añadida la sección 01 / alcance global con Estados Unidos, México, Colombia, Venezuela, Brasil, España y Jersey.
 - Los puntos del mapa y los botones laterales comparten selección, estado accesible y mensaje contextual.
 - Añadidas rutas animadas, pulsos de ubicación, rotación automática pausada al interactuar y soporte de teclado.
+
+- [x] Rediseñar composición del mapa global para mejorar reconocimiento y balance visual.
+
+## QA de esta iteración
+- Sustituida la geometría rígida por una composición horizontal con continentes curvos y distribución más equilibrada.
+- Conservados los 7 marcadores, las 6 rutas, la selección interactiva y el soporte de teclado.
