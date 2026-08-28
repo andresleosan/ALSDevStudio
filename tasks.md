@@ -236,3 +236,9 @@
 - Eliminada la pausa por hover de toda la sección; la rotación continúa mientras el mapa está visible.
 - La interacción manual reinicia el ciclo automático y el foco de teclado conserva la pausa accesible.
 - Las ubicaciones pasan a una franja inferior compartida para equilibrar ambas columnas.
+- [x] Igualar la tarjeta de PintuMaster con la altura visual de Coctels OPS.
+
+## QA de esta iteración
+- PintuMaster usa la misma proporción 16:10 y altura base que las demás tarjetas de proyecto.
+- La captura conserva su encuadre completo mediante object-fit: contain y mantiene proporción fluida en móvil.
+- Chrome headless: ambas tarjetas miden 579 × 477,625 px a 1280 px y 358 × 339,5 px a 390 px, sin desbordamiento horizontal.
