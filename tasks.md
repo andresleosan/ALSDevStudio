@@ -145,3 +145,9 @@
 - El mini brief usa títulos más escaneables, CTA más directo y una proporción de columnas con mejor balance visual.
 - Añadido foco visible al selector y role region al panel para conservar una interacción accesible.
 - QA real: node --check scripts/main.js PASS; git diff --check PASS; 36 referencias locales verificadas sin faltantes; sin eval, almacenamiento local, red nueva ni secretos en los archivos tocados.
+
+- [x] Mostrar proyectos sin retraso al entrar en la sección.
+
+## QA de esta iteración
+- Retirado el atributo data-reveal del contenedor global de proyectos para evitar que toda la grilla permanezca invisible mientras espera al IntersectionObserver.
+- Las imágenes mantienen loading lazy y decoding async para cargar progresivamente sin bloquear la aparición de las tarjetas.

@@ -104,3 +104,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Añadidos tres micro pasos que explican cómo empieza la conversación.
 - Compactadas las opciones del mini brief y refinados sus textos para escanear mejor.
 - Ajustados el espaciado, la proporción de columnas, el CTA y el foco visible del selector.
+
+## 2026-08-27 · Proyectos visibles sin espera
+
+- La grilla de proyectos ya no depende de una animación de entrada global para hacerse visible.
+- Las tarjetas aparecen de inmediato y sus capturas continúan con carga diferida.
