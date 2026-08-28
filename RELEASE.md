@@ -97,3 +97,10 @@ Si una publicación falla, revertir al commit anterior estable y volver a hacer 
 git revert 24fbf07
 
 Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue en Vercel.
+
+## 2026-08-27 · Contacto más claro y accionable
+
+- Reescrita la propuesta de valor para pasar de una idea suelta a un producto que avanza.
+- Añadidos tres micro pasos que explican cómo empieza la conversación.
+- Compactadas las opciones del mini brief y refinados sus textos para escanear mejor.
+- Ajustados el espaciado, la proporción de columnas, el CTA y el foco visible del selector.
