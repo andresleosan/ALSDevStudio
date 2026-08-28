@@ -190,3 +190,8 @@ Después, verificar https://alsdevstudio.vercel.app/ y el estado del despliegue 
 - Restaurada la rotación automática al retirar la pausa global por hover.
 - La selección manual reinicia el ciclo de 4,2 segundos.
 - Reubicadas las tarjetas de países bajo ambas columnas y compactado el panel cartográfico.
+
+## 2026-08-28 · Tarjetas de proyectos alineadas
+
+- Igualada la altura visual de PintuMaster con Coctels OPS y el resto de la cuadrícula.
+- Conservado el encuadre completo de la captura con comportamiento responsive.
