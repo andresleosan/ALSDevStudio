@@ -15,7 +15,7 @@ Las miniaturas existentes incluían imágenes base64 muy grandes dentro del HTML
 Solo había hover básico. No existían filtros, reveal al scroll, cursor visual ni estados de navegación activos.
 
 ### Baja — contenido mal codificado
-El archivo presentaba mojibake en varios textos acentuados (`diseÃ±ados`, etc.). La renovación lo corrige con UTF-8 real.
+El archivo presentaba mojibake en varios textos acentuados (`diseñados`, etc.). La renovación lo corrige con UTF-8 real.
 
 ## Seguridad final
 - No hay endpoints propios, autenticación, almacenamiento de datos ni dependencias de ejecución.
