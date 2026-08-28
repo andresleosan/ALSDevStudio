@@ -219,4 +219,5 @@
 - Rutas y marcadores alineados con la nueva base geográfica.
 - Panel del mapa ajustado para reducir espacio vacío y mejorar jerarquía visual.
 - Añadida leyenda de conexiones verificadas y soporte responsive para el nuevo layout.
-- Cada país cuenta ahora con una zona de foco visible y un nombre completo para el punto seleccionado.
+- Cada país cuenta ahora con una frontera vectorial real, un resaltado visible y un nombre completo para el punto seleccionado.
+- La base cartográfica usa fronteras nacionales locales y excluye la Antártida del encuadre visual.
