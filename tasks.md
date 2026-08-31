@@ -315,10 +315,17 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Mapa: SVG visual no interactivo y lista de ubicaciones operable por teclado, sin controles anidados; estado inicial Estados Unidos consistente.
 - Validación ejecutada: `node --check scripts/main.js`, `git diff --check`, axe WCAG 2 A/AA + WCAG 2.2 AA (0 violaciones), smoke Chromium de teclado/ARIA, barrido 320–430 px, movimiento reducido y navegación sin JavaScript.
 
-- [ ] **OPT-05 — Desactivar animación y autoplay innecesarios en dispositivos móviles.**
+- [x] **OPT-05 — Desactivar animación y autoplay innecesarios en dispositivos móviles.**
   - **Dependencias:** OPT-01 y OPT-04.
   - **Alcance:** hacer estático el canvas con puntero coarse, movimiento reducido o ahorro de datos; eliminar autoplay móvil y suspender trabajo fuera del viewport o con la pestaña oculta.
   - **Aceptación:** carrusel y mapa no avanzan automáticamente en móvil; canvas dibujado una sola vez; timers y `requestAnimationFrame` suspendidos cuando no corresponden; cambios de preferencia de movimiento aplicados sin recargar; firma orbital de escritorio conservada.
+
+### Evidencia de OPT-05 — 2026-08-30
+
+- Política de bajo consumo para viewport móvil, puntero grueso, `prefers-reduced-motion`, `prefers-reduced-data` y `navigator.connection.saveData`.
+- Medición Chromium: móvil 390 px = 0 `requestAnimationFrame`, 0 intervalos activos, canvas oculto y control de pausa oculto; escritorio = 145 `requestAnimationFrame` en 700 ms y 1 intervalo del mapa al entrar en viewport.
+- Cambio de preferencia sin recarga: el canvas pasó de 47 a 48 frames al activar movimiento reducido y luego reanudó hasta 77 al volver a `no-preference`; autoplay también se detiene.
+- Validación: `node --check scripts/main.js`, `git diff --check` y axe WCAG 2/2.2 AA (0 violaciones): PASS. Revisión de seguridad sin secretos ni dependencias nuevas.
 
 - [ ] **OPT-06 — Mejorar casos de estudio, contacto, SEO técnico y cabeceras.**
   - **Dependencias:** OPT-01 y OPT-03; cualquier canal nuevo requiere confirmación del operador.

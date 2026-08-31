@@ -156,6 +156,7 @@
       .project-card { grid-column:auto; }
     }
     @media (max-width:680px) {
+      .space-canvas { display:none!important; }
       .wrap { width:min(100% - 32px,1180px); }
       .nav-shell { padding-top:8px; }
       nav .wrap { padding-left:9px; }
