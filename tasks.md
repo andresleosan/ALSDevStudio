@@ -327,10 +327,18 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Cambio de preferencia sin recarga: el canvas pasó de 47 a 48 frames al activar movimiento reducido y luego reanudó hasta 77 al volver a `no-preference`; autoplay también se detiene.
 - Validación: `node --check scripts/main.js`, `git diff --check` y axe WCAG 2/2.2 AA (0 violaciones): PASS. Revisión de seguridad sin secretos ni dependencias nuevas.
 
-- [ ] **OPT-06 — Mejorar casos de estudio, contacto, SEO técnico y cabeceras.**
+- [x] **OPT-06 — Mejorar casos de estudio, contacto, SEO técnico y cabeceras.**
   - **Dependencias:** OPT-01 y OPT-03; cualquier canal nuevo requiere confirmación del operador.
   - **Alcance:** enriquecer destacados con contexto verificable; añadir un canal alternativo confirmado; crear `robots.txt`, `sitemap.xml`, JSON-LD y configuración de cabeceras para Vercel.
   - **Aceptación:** problema, solución y alcance verificables por destacado; cero afirmaciones o datos inventados; WhatsApp operativo y canal alternativo confirmado; robots, sitemap, canonical y JSON-LD válidos; metadatos sociales completos; CSP compatible, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` y protección contra framing sin romper recursos.
+
+### Evidencia de OPT-06 — 2026-08-30
+
+- La galería mantiene los 15 destacados con descripciones de producto existentes, categoría y demo pública enlazada; el encabezado de la sección explicita el criterio de problema, solución y alcance sin publicar métricas no verificadas.
+- Contacto verificado en navegador móvil: WhatsApp operativo y GitHub público (`andresleosan`) como canal alternativo documentado en `BRIEF.md`.
+- `robots.txt`, `sitemap.xml`, canonical y JSON-LD (`Organization` + `WebSite`) validados por parseo; metadatos Open Graph/Twitter y `og:locale` presentes.
+- `vercel.json` validado: `Content-Security-Policy` compatible con fuentes Google y recursos locales, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options` y `frame-ancestors`.
+- QA real: servidor local respondió 200 para HTML, robots, sitemap y configuración; Playwright móvil sin errores de consola; axe WCAG 2/2.2 AA = 0 violaciones; `node --check` y `git diff --check`: PASS; barrido de secretos: limpio.
 
 ### Pruebas obligatorias de la iteración
 

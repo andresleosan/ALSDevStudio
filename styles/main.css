@@ -253,6 +253,8 @@
     .nav-menu-toggle,.mobile-menu { display:none; }
     [hidden] { display:none!important; }
     .hero-slides { touch-action:pan-y; }
+    .contact-playground .contact-link { color:var(--paper); text-underline-offset:4px; }
+    .contact-playground .contact-link:hover { color:var(--mint); }
     .global-location:focus-visible,.filter:focus-visible,.capability-tab:focus-visible,.nav-menu-toggle:focus-visible,.mobile-menu a:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
     @media (min-width:681px) { .mobile-menu,.nav-menu-toggle { display:none!important; } }
     @media (max-width:680px) {
