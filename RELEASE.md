@@ -1,5 +1,17 @@
 # Release — ALS DevStudio
 
+## 2026-08-30 · OPT-06 SEO, contacto y despliegue público
+
+- Publicado el commit `5f4d009` en `main`; Vercel lo desplegó automáticamente en `https://alsdevstudio.vercel.app/`.
+- Añadidos JSON-LD (`Organization` + `WebSite`), robots, sitemap y metadatos sociales reforzados.
+- Añadido GitHub como canal alternativo confirmado junto a WhatsApp.
+- Añadidas cabeceras Vercel de CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` y protección contra framing.
+- Verificación pública: HTTP 200, recursos SEO válidos, 0 errores de consola, 0 solicitudes fallidas y sin overflow entre 320 y 1440 px.
+
+### Rollback de esta release
+
+Si la release presenta una regresión, ejecutar `git revert 5f4d009` y hacer push a `main`; la integración de Vercel volverá a desplegar el estado anterior. Validar después la URL pública, `robots.txt`, `sitemap.xml`, cabeceras y las vistas móviles antes de reabrir tráfico.
+
 ## 2026-08-27 · Mini brief orientado a soluciones
 
 - Rediseñada la sección de contacto para guiar hacia una Landing page, una Tienda virtual o una App/solución web.
