@@ -287,10 +287,21 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Regresión técnica: `node --check scripts/main.js`, `git diff --check` sobre archivos propios, 47 referencias locales y consola/red del navegador: PASS, sin errores ni recursos fallidos. El único warning global es un espacio final del `SKILL.md` vendorizado de accesibilidad, preservado para mantener su hash de instalación.
 - Revisión de seguridad: sin secretos, sinks de ejecución, entradas externas ni endpoints nuevos; el CTA reutiliza URLs internas existentes y conserva `rel="noopener noreferrer"`.
 
-- [ ] **OPT-03 — Implementar imágenes responsivas y carga progresiva.**
+- [x] **OPT-03 — Implementar imágenes responsivas y carga progresiva.**
   - **Dependencia:** OPT-01; puede avanzar en paralelo con OPT-02 cuando la estructura sea estable.
   - **Alcance:** generar variantes AVIF/WebP de 480, 768 y 1200 px con fallback, dimensiones intrínsecas, `picture`, `srcset` y `sizes`; cargar solo la imagen activa y la siguiente.
   - **Aceptación:** primera imagen prioritaria; máximo dos imágenes del hero solicitadas inicialmente a 390 px; transferencia inicial de imágenes del hero no superior a 1,5 MiB con caché desactivada; cero imágenes rotas; encuadre útil sin recortar información esencial; galería inferior con lazy loading real.
+
+### Evidencia de OPT-03 — 2026-08-30
+
+- Pipeline: 45 AVIF y 45 WebP para 15 proyectos en 480, 768 y 1200 px; 90/90 derivados decodificados, con firmas, anchuras y proporciones válidas. Peso total generado: 1.816.752 bytes.
+- HTML/SEO: 15 `picture` en hero y 15 en galería, 30 imágenes con `alt` y dimensiones intrínsecas, 110 referencias locales únicas y cero faltantes. Siete fuentes JPEG mal nombradas como PNG se corrigieron a `.jpg` sin recomprimir.
+- Red fría a 390×844: de 15 solicitudes/9.229.146 bytes en el baseline a 2 AVIF/28.163 bytes en DPR 1; en DPR 3, 2 AVIF/100.897 bytes. Activa en `eager/high`, siguiente en `eager/low` y las otras 13 conservan placeholder sin URL de red.
+- Carga progresiva: avanzar hidrata solo una imagen adicional; navegación `End` conserva contador y CTA correctos; antes de scroll no hay solicitudes exclusivas de la galería y, tras recorrerla, 15/15 imágenes tienen dimensiones naturales válidas.
+- Resiliencia: bloqueo controlado de AVIF degrada a WebP; bloqueo de AVIF+WebP degrada a la fuente original tanto JPG como PNG. La misma recuperación fue verificada en galería, sin bucles ni imágenes rotas.
+- Responsive/CDP: PASS en 320×568, 360×800, 390×844, 430×932, 768×1024 y 1440×900, además de 390×844 DPR 3; cero overflow horizontal, `object-fit: contain`, dos solicitudes iniciales y selección correcta de 480/768/1200. LCP de laboratorio entre 580 y 1.048 ms y CLS máximo 0,00003; no son métricas de campo.
+- Regresión: `node --check` en ambos scripts, `git diff --check`, 45 firmas AVIF, 45 firmas WebP y `axe-core 4.13.0` WCAG 2 A/AA/2.2 AA en el hero: PASS, con cero violaciones.
+- Seguridad: cero secretos o archivos sensibles rastreados, sinks de ejecución, entradas externas, endpoints o dependencias nuevas; el fallback solo acepta formatos permitidos y rutas declaradas en el HTML.
 
 - [ ] **OPT-04 — Corregir accesibilidad del carrusel, mapa, navegación y estados interactivos.**
   - **Dependencias:** OPT-01 y OPT-02.
