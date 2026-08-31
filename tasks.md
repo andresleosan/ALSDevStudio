@@ -263,3 +263,64 @@
 - PNG final aplicado byte a byte en `assets/projects/laparada.png`: 1583×949 px, SHA256 `9821A8F4C7073F05DD7DAD6DEB0B755E4FFA17B56FF0B105214334CC60F59FCA`.
 - Chrome headless a 1238×912: imagen cargada completamente con dimensiones naturales 1583×949; La Parada permanece en la posición 4 y Silicone Solutions en la 5.
 - `node --check scripts/main.js`, `git diff --check`, referencias locales y auditoría estática de enlaces: PASS.
+
+## Iteración pendiente — Optimización móvil, rendimiento, accesibilidad y descubrimiento
+
+Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-06. Ninguna tarea pasa a revisión o aprobación sin evidencia real de seguridad y QA.
+
+- [x] **OPT-01 — Reestructurar el carrusel para móvil.**
+  - **Alcance:** mover título, contador y controles fuera de la captura; añadir contador actual/total, controles anterior/pausa/siguiente de mínimo 44×44 px, swipe y CTA enlazado al proyecto activo.
+  - **Aceptación:** cero solapamiento en 320, 360, 390 y 430 px; contador sincronizado con flechas, swipe, teclado y escritorio; pausa persistente y accesible; swipe sin bloquear el scroll vertical; CTA con URL verificada y protección `rel="noopener"`; escritorio sin regresiones.
+
+- [x] **OPT-02 — Corregir altura, espaciado y wrapping del hero entre 320 y 430 px.**
+  - **Dependencia:** OPT-01.
+  - **Alcance:** recalibrar tipografía, gaps, metadata, CTA y altura de `.hero-visual` para adelantar el carrusel y hacer deliberados los cambios de línea.
+  - **Aceptación:** borde superior del carrusel dentro del primer viewport móvil; espacio copy-carrusel máximo de 64 px; distribución estable en el barrido 320–430 px; cero recortes u overflow; Design DNA y jerarquía del H1 conservados.
+
+### Evidencia de OPT-01 y OPT-02 — 2026-08-30
+
+- Chrome headless/CDP: PASS en 320×568, 360×800, 390×844, 430×932, 768×1024 y 1440×900; cero overflow horizontal y cero solapamiento entre metadata, contador, controles y CTA.
+- Barrido continuo 320–430 px cada 5 px: 23 anchos sin fallos; el carrusel comienza dentro del primer viewport móvil, el gap copy-carrusel es de 20 px y todos los controles miden al menos 44×44 px.
+- Interacción: PASS para anterior/siguiente, `Home`, `End`, flechas de teclado, pausa/reanudación persistente, loop, swipe horizontal y conservación del scroll vertical; contador, nombre, región viva y CTA permanecen sincronizados.
+- Movimiento reducido: autoplay detenido y control de pausa oculto; pausa ambiental verificada con foco, hover, visibilidad e intersección. La eliminación total del autoplay móvil continúa en OPT-05.
+- Árbol accesible: una sola diapositiva del hero expuesta, 14 inertes y una única región viva; `axe-core` WCAG 2 A/AA y WCAG 2.2 AA en `.hero`: cero violaciones automáticas.
+- Regresión técnica: `node --check scripts/main.js`, `git diff --check` sobre archivos propios, 47 referencias locales y consola/red del navegador: PASS, sin errores ni recursos fallidos. El único warning global es un espacio final del `SKILL.md` vendorizado de accesibilidad, preservado para mantener su hash de instalación.
+- Revisión de seguridad: sin secretos, sinks de ejecución, entradas externas ni endpoints nuevos; el CTA reutiliza URLs internas existentes y conserva `rel="noopener noreferrer"`.
+
+- [ ] **OPT-03 — Implementar imágenes responsivas y carga progresiva.**
+  - **Dependencia:** OPT-01; puede avanzar en paralelo con OPT-02 cuando la estructura sea estable.
+  - **Alcance:** generar variantes AVIF/WebP de 480, 768 y 1200 px con fallback, dimensiones intrínsecas, `picture`, `srcset` y `sizes`; cargar solo la imagen activa y la siguiente.
+  - **Aceptación:** primera imagen prioritaria; máximo dos imágenes del hero solicitadas inicialmente a 390 px; transferencia inicial de imágenes del hero no superior a 1,5 MiB con caché desactivada; cero imágenes rotas; encuadre útil sin recortar información esencial; galería inferior con lazy loading real.
+
+- [ ] **OPT-04 — Corregir accesibilidad del carrusel, mapa, navegación y estados interactivos.**
+  - **Dependencias:** OPT-01 y OPT-02.
+  - **Alcance:** sanear árbol accesible, regiones vivas, contraste, navegación móvil, filtros, ubicaciones y progressive enhancement.
+  - **Aceptación:** solo la slide activa expuesta; una sola región viva anuncia acciones del usuario; estados ARIA correctos; menú móvil operable con teclado y Escape, sin trampas de foco; recorrido completo por teclado; contraste normal mínimo 4,5:1; contenido utilizable sin JavaScript; estado inicial del mapa consistente.
+
+- [ ] **OPT-05 — Desactivar animación y autoplay innecesarios en dispositivos móviles.**
+  - **Dependencias:** OPT-01 y OPT-04.
+  - **Alcance:** hacer estático el canvas con puntero coarse, movimiento reducido o ahorro de datos; eliminar autoplay móvil y suspender trabajo fuera del viewport o con la pestaña oculta.
+  - **Aceptación:** carrusel y mapa no avanzan automáticamente en móvil; canvas dibujado una sola vez; timers y `requestAnimationFrame` suspendidos cuando no corresponden; cambios de preferencia de movimiento aplicados sin recargar; firma orbital de escritorio conservada.
+
+- [ ] **OPT-06 — Mejorar casos de estudio, contacto, SEO técnico y cabeceras.**
+  - **Dependencias:** OPT-01 y OPT-03; cualquier canal nuevo requiere confirmación del operador.
+  - **Alcance:** enriquecer destacados con contexto verificable; añadir un canal alternativo confirmado; crear `robots.txt`, `sitemap.xml`, JSON-LD y configuración de cabeceras para Vercel.
+  - **Aceptación:** problema, solución y alcance verificables por destacado; cero afirmaciones o datos inventados; WhatsApp operativo y canal alternativo confirmado; robots, sitemap, canonical y JSON-LD válidos; metadatos sociales completos; CSP compatible, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` y protección contra framing sin romper recursos.
+
+### Pruebas obligatorias de la iteración
+
+- `node --check scripts/main.js` y `git diff --check`: PASS.
+- QA en navegador a 320×568, 360×800, 390×844, 430×932, 768×1024 y 1440×900; barrido continuo de 320 a 430 px.
+- Probar flechas, swipe, teclado, pausa, loop del carrusel, zoom al 200 %, movimiento reducido, touch/coarse, pestaña oculta y ejecución sin JavaScript.
+- Inspeccionar árbol de accesibilidad, nombres, roles, estados, orden de foco y regiones vivas; ejecutar auditoría WCAG automatizada y revisión manual.
+- Registrar una traza de red con caché desactivada: solicitudes, bytes, rutas, errores y LCP de laboratorio, sin presentarlo como Core Web Vitals de campo.
+- Validar JSON-LD, sitemap, robots, canonical, metadatos, enlaces, secretos, afirmaciones y cabeceras en un preview autorizado.
+
+### Restricciones y criterio de cierre
+
+- Usar durante la implementación las skills `frontend-design`, `accessibility` y `seo`, además del ciclo `self-critique-loop` de Cronos.
+- Mantener los 15 proyectos en la galería; el hero puede reducirse a una selección curada de 3 a 5.
+- No publicar resultados, métricas, ubicaciones, testimonios ni canales de contacto sin evidencia o confirmación del operador, conforme a `BRIEF.md`.
+- Documentar en `STACK.md` cualquier cambio al Design DNA o a la estrategia de animación antes de implementarlo.
+- La iteración requiere evidencia real, cero hallazgos críticos de seguridad, cero regresiones, errores de consola, solicitudes fallidas, rutas rotas u overflow horizontal.
+- No desplegar a producción sin aprobación explícita del operador.

@@ -24,6 +24,13 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - **Tono:** técnico, directo, humano.
 - **Evitar:** el coral heredado de Santel, bloques de agencia genéricos y numeración decorativa sin significado.
 
+### Hero y carrusel responsive — OPT-01 / OPT-02
+- **Composición:** la captura permanece limpia dentro de una superficie 16:10; nombre, contador, controles y CTA viven en un footer editorial oscuro que forma parte del flujo del `figure`.
+- **Interacción:** controles HTML nativos, visibles y de al menos 44×44 px; contador sincronizado, pausa persistente durante la sesión, navegación anterior/siguiente, teclado y swipe con alternativa de un solo puntero.
+- **Accesibilidad:** sin patrón ARIA de tabs; una sola diapositiva activa en el árbol accesible y una región de estado exclusiva para cambios iniciados por el usuario.
+- **Responsive:** entre 320 y 430 px, acciones y metadata usan composiciones explícitas en lugar de depender de `flex-wrap`; la órbita se conserva como firma decorativa detrás del card.
+- **Movimiento:** autoplay más lento y suspendido al perder visibilidad, hover o foco; `prefers-reduced-motion` impide su inicio. La estrategia estática del canvas móvil continúa pendiente de OPT-05.
+
 ## Verificación
 - Sintaxis y referencias locales con PowerShell.
 - Prueba visual manual en navegador local si el navegador conectado está disponible.
