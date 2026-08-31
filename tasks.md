@@ -303,10 +303,17 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Regresión: `node --check` en ambos scripts, `git diff --check`, 45 firmas AVIF, 45 firmas WebP y `axe-core 4.13.0` WCAG 2 A/AA/2.2 AA en el hero: PASS, con cero violaciones.
 - Seguridad: cero secretos o archivos sensibles rastreados, sinks de ejecución, entradas externas, endpoints o dependencias nuevas; el fallback solo acepta formatos permitidos y rutas declaradas en el HTML.
 
-- [ ] **OPT-04 — Corregir accesibilidad del carrusel, mapa, navegación y estados interactivos.**
+- [x] **OPT-04 — Corregir accesibilidad del carrusel, mapa, navegación y estados interactivos.**
   - **Dependencias:** OPT-01 y OPT-02.
   - **Alcance:** sanear árbol accesible, regiones vivas, contraste, navegación móvil, filtros, ubicaciones y progressive enhancement.
   - **Aceptación:** solo la slide activa expuesta; una sola región viva anuncia acciones del usuario; estados ARIA correctos; menú móvil operable con teclado y Escape, sin trampas de foco; recorrido completo por teclado; contraste normal mínimo 4,5:1; contenido utilizable sin JavaScript; estado inicial del mapa consistente.
+
+### Evidencia de OPT-04 — 2026-08-30
+
+- Menú móvil: `aria-expanded`, foco inicial en el primer enlace, cierre con `Escape` y retorno al botón; los enlaces siguen visibles sin JavaScript.
+- Carrusel: una slide expuesta, 14 inertes y una sola región viva; filtros y capacidades sincronizan `aria-pressed`, `aria-selected`, `aria-controls` y `aria-labelledby`.
+- Mapa: SVG visual no interactivo y lista de ubicaciones operable por teclado, sin controles anidados; estado inicial Estados Unidos consistente.
+- Validación ejecutada: `node --check scripts/main.js`, `git diff --check`, axe WCAG 2 A/AA + WCAG 2.2 AA (0 violaciones), smoke Chromium de teclado/ARIA, barrido 320–430 px, movimiento reducido y navegación sin JavaScript.
 
 - [ ] **OPT-05 — Desactivar animación y autoplay innecesarios en dispositivos móviles.**
   - **Dependencias:** OPT-01 y OPT-04.
