@@ -9,14 +9,13 @@
    06 Hero (órbita 3D, chips en profundidad, carrusel)
    07 Marquee
    08 Alcance global (mapa)
-   09 Capacidades
-   10 Proyectos (vista en vivo)
-   11 Proceso
-   12 Contacto y footer
-   13 Movimiento (reveal, tilt 3D, keyframes)
-   14 Responsive (≤900, ≤680)
-   15 Gama baja y transparencia reducida
-   16 Reduced motion
+   09 Proyectos (vista en vivo)
+   10 Proceso
+   11 Contacto y footer
+   12 Movimiento (reveal, tilt 3D, keyframes)
+   13 Responsive (≤900, ≤680)
+   14 Gama baja y transparencia reducida
+   15 Reduced motion
    ========================================================================== */
 
 /* 01 Tokens y base ------------------------------------------------------- */
@@ -244,29 +243,8 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .map-marker:focus-visible .marker-core { stroke:var(--paper); stroke-width:3; }
 .global-status { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-/* 09 Capacidades --------------------------------------------------------- */
-.capabilities-layout { display:grid; grid-template-columns:.65fr 1.35fr; gap:54px; align-items:start; }
-.capability-list { display:grid; gap:8px; }
-.capability-tab { position:relative; overflow:hidden; color:var(--muted); text-align:left; border:1px solid transparent; background:transparent; border-radius:14px; padding:14px 16px; cursor:pointer; transition:background .25s,color .25s,border-color .25s; }
-.capability-tab:hover, .capability-tab.is-selected { color:var(--paper); background:rgba(77,155,255,.09); border-color:var(--line); }
-.capability-tab span { color:var(--mint); font:500 11px 'IBM Plex Mono',monospace; margin-right:12px; }
-.capability-tab::after { content:'↗'; position:absolute; right:15px; color:var(--mint); opacity:0; transform:translate(-6px,6px); transition:opacity .3s ease,transform .3s var(--ease-expo); }
-.capability-tab:hover::after, .capability-tab.is-selected::after { opacity:1; transform:translate(0,0); }
-.capability-panel { min-height:350px; padding:38px; border:1px solid var(--line); border-radius:var(--radius); background:linear-gradient(145deg,rgba(18,51,83,.8),rgba(7,26,47,.8)); box-shadow:0 18px 54px rgba(0,0,0,.12); position:relative; overflow:hidden; }
-.capability-panel::before { content:''; position:absolute; width:250px; height:250px; right:-80px; bottom:-100px; border:1px solid rgba(101,212,157,.24); border-radius:50%; box-shadow:0 0 0 30px rgba(101,212,157,.03),0 0 0 66px rgba(77,155,255,.03); transform:rotateX(55deg) rotate(20deg); }
-.capability-panel::after { content:''; position:absolute; inset:-35%; background:linear-gradient(110deg,transparent 42%,rgba(101,212,157,.08) 50%,transparent 58%); transform:translateX(-45%) rotate(-8deg); animation:panel-scan 9s ease-in-out infinite; pointer-events:none; }
-.capability-kicker { color:var(--mint); font:500 11px 'IBM Plex Mono',monospace; }
-.capability-panel h3 { max-width:450px; margin-top:18px; font:600 clamp(26px,4vw,46px)/1.02 'Space Grotesk',sans-serif; letter-spacing:-.05em; }
-.capability-panel p { max-width:460px; margin-top:20px; color:var(--muted); font-size:15px; }
-.capability-tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:32px; }
-.tag { padding:7px 10px; border:1px solid var(--line); border-radius:999px; color:var(--paper); font:400 10px 'IBM Plex Mono',monospace; transition:transform .4s var(--ease-expo),border-color .3s ease,background .3s ease; }
-.tag:hover { transform:translateY(-3px); border-color:rgba(101,212,157,.55); background:rgba(101,212,157,.08); }
-.capability-panel.is-switching .capability-kicker, .capability-panel.is-switching h3, .capability-panel.is-switching p, .capability-panel.is-switching .capability-tags { animation:panel-flip .7s var(--ease-expo) both; }
-.capability-panel.is-switching h3 { animation-delay:.05s; }
-.capability-panel.is-switching p { animation-delay:.1s; }
-.capability-panel.is-switching .capability-tags { animation-delay:.16s; }
 
-/* 10 Proyectos ----------------------------------------------------------- */
+/* 09 Proyectos ----------------------------------------------------------- */
 .project-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
 .filter { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:9px 14px; cursor:pointer; font:500 10px 'IBM Plex Mono',monospace; text-transform:uppercase; transition:.25s ease; }
 .filter:hover, .filter.is-active { color:var(--ink); background:var(--mint); border-color:var(--mint); }
@@ -291,6 +269,10 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 /* Sin fundido: en cuanto el sitio real termina de cargar, sustituye a la captura de golpe.
    Un cruce progresivo hace que se lea como «la pagina cambio», que es justo lo contrario. */
 .project-visual.is-live-ready .project-live { opacity:1; }
+/* La diapositiva activa del hero usa el mismo marco: el card ya lleva el distintivo
+   «LIVE / ALS PORTFOLIO», así que aquí no hace falta repetirlo. */
+.hero-slides .project-live { z-index:2; }
+.hero-slides.is-live-ready .project-live { opacity:1; }
 .project-live-frame { position:absolute; top:0; left:0; width:1440px; height:900px; border:0; background:#0d2746; transform-origin:0 0; transform:scale(var(--live-scale,.4)); pointer-events:none; }
 /* Inclinar en 3D un ancestro del iframe obliga a re-rasterizar el documento anidado en cada
    frame: medido con CPU 4x, el recálculo de estilo se duplica (2,40 s frente a 1,13 s).
@@ -319,7 +301,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .project-card:hover .project-body h3 { transform:translateX(4px); }
 .project-body p { min-height:43px; margin-top:7px; color:var(--muted); font-size:13px; }
 
-/* 11 Proceso ------------------------------------------------------------- */
+/* 10 Proceso ------------------------------------------------------------- */
 .process-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); perspective:1200px; }
 .process-item { position:relative; overflow:hidden; min-height:235px; padding:28px; background:var(--ink); transition:transform .35s var(--ease-expo),background .35s ease; }
 .process-item > * { position:relative; z-index:1; }
@@ -332,7 +314,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .process-item h3 { margin-top:52px; font:600 23px 'Space Grotesk',sans-serif; letter-spacing:-.04em; }
 .process-item p { margin-top:10px; color:var(--muted); font-size:14px; }
 
-/* 12 Contacto y footer --------------------------------------------------- */
+/* 11 Contacto y footer --------------------------------------------------- */
 .contact-section { padding-bottom:104px; }
 .contact-card { display:grid; grid-template-columns:minmax(0,1.22fr) minmax(330px,.78fr); gap:clamp(36px,5vw,64px); align-items:stretch; padding:clamp(30px,6vw,76px); border-radius:var(--radius); background:var(--paper); color:var(--ink); overflow:hidden; position:relative; }
 .contact-card::after { content:''; position:absolute; width:460px; height:460px; right:-100px; bottom:-280px; border:1px solid rgba(19,100,196,.24); border-radius:50%; box-shadow:0 0 0 36px rgba(19,100,196,.05),0 0 0 86px rgba(19,100,196,.035); transform:rotateX(58deg); }
@@ -357,6 +339,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .playground-option { min-height:138px; padding:15px; border:1px solid rgba(245,248,251,.16); border-radius:16px; color:var(--muted); background:rgba(245,248,251,.04); text-align:left; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; transition:transform .25s ease,background .25s ease,border-color .25s ease,color .25s ease,box-shadow .25s ease; }
 .playground-option:hover { --lift:-4px; transform:translateY(-4px); color:var(--paper); border-color:rgba(101,212,157,.5); box-shadow:0 12px 26px rgba(4,18,36,.2); }
 .playground-option:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+.global-location:focus-visible, .filter:focus-visible, .nav-menu-toggle:focus-visible, .mobile-menu a:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
 .playground-option.is-selected { color:var(--ink); background:var(--mint); border-color:var(--mint); box-shadow:0 14px 30px rgba(101,212,157,.2); }
 .playground-option span { display:block; color:var(--mint); font:500 10px 'IBM Plex Mono',monospace; letter-spacing:.08em; opacity:.9; }
 .playground-option strong { display:block; margin-top:18px; font:600 16px/1.05 'Space Grotesk',sans-serif; letter-spacing:-.025em; }
@@ -372,13 +355,14 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .contact-playground .contact-link:hover { color:var(--mint); }
 footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px; color:var(--muted); font:400 11px 'IBM Plex Mono',monospace; }
 
-/* 13 Movimiento ---------------------------------------------------------- */
+/* 12 Movimiento ---------------------------------------------------------- */
 [data-reveal] { opacity:0; transform:perspective(1200px) translateY(30px) rotateX(7deg); transform-origin:50% 100%; transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.2,1); }
 [data-reveal].is-visible { opacity:1; transform:none; }
 /* Inclinación 3D genérica: el JS fija --rx/--ry (puntero) o --rx (scroll); cada bloque define su --lift al hover. */
 .tilt-3d, .tilt-3d:hover { transform:perspective(1100px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--lift,0px)); }
 .tilt-3d { transition-property:transform,border-color,background,background-color,color,box-shadow,opacity; transition-duration:.55s,.35s,.35s,.35s,.25s,.35s,.25s; transition-timing-function:var(--ease-expo),ease,ease,ease,ease,ease,ease; }
 .tilt-3d:active { --lift:-3px; }
+.contact-playground.tilt-3d, .global-map-wrap.tilt-3d, .process-item.tilt-3d { transform-style:flat; }
 
 /* Profundidad táctil: el scroll ya aporta continuidad, así que la transición larga de
    escritorio solo añade retardo. La pulsación tiene que responder aún más rápido. */
@@ -395,25 +379,22 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
     .project-card, .process-item, .playground-option { contain:layout paint; }
   }
 }
-.capability-panel.tilt-3d, .contact-playground.tilt-3d, .global-map-wrap.tilt-3d, .process-item.tilt-3d { transform-style:flat; }
-.global-location:focus-visible, .filter:focus-visible, .capability-tab:focus-visible, .nav-menu-toggle:focus-visible, .mobile-menu a:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
 @keyframes spin { to { transform:rotate(360deg); } }
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-9px); } }
 @keyframes marquee { to { transform:translateX(-50%); } }
 @keyframes gradient-shift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
 @keyframes panel-scan { 0%,35% { transform:translateX(-45%) rotate(-8deg); opacity:0; } 50% { opacity:1; } 70%,100% { transform:translateX(45%) rotate(-8deg); opacity:0; } }
-@keyframes panel-flip { from { opacity:0; transform:perspective(900px) rotateX(-18deg) translateY(16px); } to { opacity:1; transform:none; } }
 @keyframes route-flow { to { stroke-dashoffset:-52; } }
 @keyframes map-scanline { 0% { background-position:0 -220px; opacity:0; } 12% { opacity:.7; } 72% { opacity:.5; } 100% { background-position:0 100%; opacity:0; } }
 @keyframes marker-pulse { 0% { transform:scale(.6); transform-origin:center; opacity:.8; } 70%,100% { transform:scale(1.8); transform-origin:center; opacity:0; } }
 @keyframes signal-pulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
 
-/* 14 Responsive ---------------------------------------------------------- */
+/* 13 Responsive ---------------------------------------------------------- */
 @media (max-width:1100px) {
   .global-location-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media (max-width:900px) {
-  .hero-grid, .capabilities-layout, .contact-card { grid-template-columns:1fr; }
+  .hero-grid, .contact-card { grid-template-columns:1fr; }
   .hero-grid { row-gap:48px; }
   .hero { min-height:auto; padding-top:148px; }
   .hero-visual { min-height:480px; margin-top:0; perspective:1100px; }
@@ -501,7 +482,6 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .global-map-footer span { display:block; }
   .global-status { display:block; }
   .global-status strong { display:block; margin-top:8px; text-align:left; line-height:1.4; }
-  .capability-panel { padding:26px; min-height:320px; }
   .filter { min-height:44px; }
   .live-toggle { min-height:44px; }
   .projects-grid { grid-template-columns:1fr; }
@@ -522,7 +502,7 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   footer { padding-bottom:30px; }
 }
 
-/* 15 Gama baja y transparencia reducida ---------------------------------- */
+/* 14 Gama baja y transparencia reducida ---------------------------------- */
 /* Los desenfoques de fondo se recalculan en cada frame de scroll: en una GPU modesta
    cuestan más que toda la escena 3D junta. La clase `is-low-tier` la pone `initDepth()`
    con las pistas del navegador o con el vigilante de frames. */
@@ -540,7 +520,7 @@ body.is-low-tier .orbit-ring { animation:none; }
 body.is-low-tier .capability-panel::after { animation:none; }
 body.is-low-tier .hero h1 em { animation:none; }
 
-/* 16 Reduced motion ------------------------------------------------------ */
+/* 15 Reduced motion ------------------------------------------------------ */
 @media (prefers-reduced-motion:reduce) {
   *, *::before, *::after { animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
   [data-reveal] { opacity:1; transform:none; }

@@ -8,7 +8,6 @@ import { lowPowerMotion, onMediaChange, reducedMotionQuery, mobileQuery, coarseP
 import { initSpace } from './modules/space.js';
 import { initCursor } from './modules/cursor.js';
 import { initHeroCarousel } from './modules/hero-carousel.js';
-import { initCapabilities } from './modules/capabilities.js';
 import { initProjects } from './modules/projects.js';
 import { initGlobalMap } from './modules/global-map.js';
 import { initNav } from './modules/nav.js';
@@ -37,7 +36,6 @@ const space = safely('fondo espacial', initSpace);
 safely('cursor', initCursor);
 safely('reveal', initReveal);
 const hero = safely('carrusel', initHeroCarousel);
-safely('capacidades', initCapabilities);
 safely('proyectos', initProjects);
 const globalMap = safely('mapa global', initGlobalMap);
 safely('navegación', initNav);

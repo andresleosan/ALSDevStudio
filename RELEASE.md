@@ -1,5 +1,34 @@
 # Release — ALS DevStudio
 
+## 2026-09-06 · Hero en vivo, fuera Capacidades y recaptura semanal
+
+### El carrusel del hero también en vivo
+
+- La diapositiva activa monta un `<iframe>` con el sitio real, igual que las tarjetas. El distintivo «LIVE / ALS PORTFOLIO» que ya llevaba el card pasa a ser literal.
+- Un solo marco a la vez, el de la diapositiva visible. Al cambiar de proyecto se retira de inmediato —durante el cruce solo se ve la captura— y el nuevo entra ya montado sobre el proyecto correcto.
+- Se espera 900 ms antes de montar, así navegar deprisa entre proyectos no carga ninguno. Solo se monta con el hero en pantalla, la pestaña visible y el interruptor de vista en vivo activado.
+- Contrapartida asumida: con la rotación automática cada 6 s, un sitio lento puede no llegar a mostrarse antes del siguiente cambio y su carga queda abortada. Pausando el carrusel o dejando el puntero encima, la diapositiva se queda quieta y siempre da tiempo.
+
+### Sección «Capacidades» retirada
+
+- Retirada la sección completa: encabezado, las cuatro pestañas y el panel. Con ella se van `scripts/modules/capabilities.js`, sus 23 reglas de CSS, el keyframe `panel-flip` y las reglas de `.tag`, que solo usaba ese panel.
+- Retirado su enlace en la navegación y en el menú móvil, y renumeradas las secciones siguientes: proyectos pasa de 03 a 02, proceso de 04 a 03 y contacto de 05 a 04.
+- Conservadas las reglas que compartía con otros bloques y que habrían caído con ella: `transform-style:flat` de contacto, mapa y proceso, el foco visible de filtros, ubicaciones y menú móvil, y el colapso a una columna de `.hero-grid` y `.contact-card` a ≤900 px.
+
+### Recaptura automática semanal
+
+- `.github/workflows/capturas.yml` rehace las capturas cada lunes, y también a mano desde la pestaña Actions, con la opción de regenerar solo algunas claves.
+- `.github/capturas/capturar.mjs` lee las tarjetas de `index.html`, fotografía cada sitio a 1440×900 con Playwright y produce la base `.jpg` más las variantes AVIF/WebP con sharp. Si un sitio falla, conserva su captura anterior en vez de romper la ejecución; solo falla el job si fallan todos.
+- El `package.json` de la herramienta vive en `.github/capturas/`, **no en la raíz**, para que Vercel siga viendo un sitio estático sin build.
+- Probado de extremo a extremo en local: regenera, escribe los archivos y deja el árbol con cambios que el paso de commit detecta.
+
+### Verificación
+
+- `tsc` estricto sin errores tras retirar el módulo de capacidades.
+- Estructura resultante: secciones `inicio, alcance, proyectos, proceso, contacto`; navegación y menú móvil sin el enlace muerto; eyebrows renumerados; 0 elementos con clase de capacidades.
+- Hero: monta el marco de La Parada, lo retira al pasar a la siguiente y monta el de tecnifullgas; inclinación 3D del hero intacta con movimiento real de puntero.
+- Las 15 capturas cargan sin 404 y todas dan 16:10; 4 marcos vivos en la rejilla; axe sin violaciones en escritorio y móvil; sin desborde horizontal entre 320 y 1920 px.
+
 ## 2026-09-06 · Capturas al día, encuadre unificado y retirada de GitHub
 
 ### Capturas regeneradas

@@ -1,0 +1,57 @@
+name: Capturas de proyectos
+
+# Las capturas envejecen en cuanto se retoca un proyecto: la tarjeta muestra el estado
+# antiguo hasta que carga el marco en vivo, y con la vista en vivo apagada o sin
+# JavaScript no se actualiza nunca. Este job las rehace cada semana.
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # lunes 07:00 UTC (02:00 en Colombia)
+  workflow_dispatch:
+    inputs:
+      solo:
+        description: 'Claves concretas separadas por coma (vacio = todas)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: capturas
+  cancel-in-progress: false
+
+jobs:
+  regenerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: .github/capturas/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: .github/capturas
+        run: npm ci
+
+      - name: Instalar Chromium
+        working-directory: .github/capturas
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerar capturas
+        run: node .github/capturas/capturar.mjs ${{ inputs.solo && format('--solo {0}', inputs.solo) || '' }}
+
+      - name: Commitear si algo cambio
+        run: |
+          if [ -z "$(git status --porcelain assets/projects)" ]; then
+            echo "Ningun proyecto cambio de aspecto: no hay nada que commitear."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/projects
+          git commit -m "chore: regenerar capturas de proyectos"
+          git push
