@@ -28,6 +28,8 @@ const CONCURRENT = { fino: 4, grueso: 2 };
 const MOUNT_STAGGER = 200;
 /** Si el sitio no carga en este tiempo, se retira el marco y se queda la captura. */
 const LOAD_TIMEOUT = 12000;
+/** Espera antes de montar el marco del hero: navegar deprisa entre proyectos no carga ninguno. */
+const HERO_DELAY = 900;
 /** Se empieza a cargar un poco antes de que la tarjeta entre en pantalla. */
 const PRELOAD_MARGIN = '20% 0px';
 /** Clave de la preferencia de la persona. */
@@ -191,6 +193,96 @@ export function initLivePreview() {
   }, { threshold: 0, rootMargin: PRELOAD_MARGIN });
   cards.forEach(item => observer.observe(item.card));
 
+  // --- Hero: la diapositiva activa del carrusel también en vivo ---
+  // Se monta un solo marco, el de la diapositiva visible, y se retira en cuanto el carrusel
+  // pasa a la siguiente. La espera evita cargar nada mientras se navega deprisa entre proyectos.
+  const heroSlides = query('#hero-slides', HTMLElement);
+  const heroCarousel = query('[data-hero-carousel]', HTMLElement);
+  let syncHero = () => {};
+
+  if (heroSlides && heroCarousel) {
+    const porClave = new Map(cards.map(item => [item.card.dataset.projectKey ?? '', item]));
+    /** @type {{ slide: HTMLElement, shell: HTMLElement, timer: number } | null} */
+    let heroLive = null;
+    let heroVisible = false;
+    /** @type {number | undefined} */
+    let heroEspera;
+
+    const activa = () => query('.hero-slide.is-active', HTMLElement, heroSlides);
+    const escalarHero = () =>
+      heroSlides.style.setProperty('--live-scale', String(heroSlides.clientWidth / FRAME_WIDTH));
+
+    const heroUnmount = () => {
+      if (!heroLive) return;
+      window.clearTimeout(heroLive.timer);
+      heroLive.shell.remove();
+      heroSlides.classList.remove('is-live-ready');
+      heroLive = null;
+    };
+
+    const heroMount = (/** @type {HTMLElement} */ slide) => {
+      const item = porClave.get(slide.dataset.projectKey ?? '');
+      if (!item || item.visual.dataset.liveFailed === 'true') return;
+
+      const shell = document.createElement('div');
+      shell.className = 'project-live';
+      shell.setAttribute('aria-hidden', 'true');
+      shell.inert = true;
+
+      const frame = document.createElement('iframe');
+      frame.className = 'project-live-frame';
+      frame.src = item.url;
+      frame.title = `Vista en vivo de ${item.name}`;
+      frame.loading = 'lazy';
+      frame.tabIndex = -1;
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+      frame.setAttribute('allow', '');
+      frame.setAttribute('referrerpolicy', 'no-referrer');
+      frame.setAttribute('scrolling', 'no');
+
+      const timer = window.setTimeout(() => {
+        item.visual.dataset.liveFailed = 'true';
+        heroUnmount();
+      }, LOAD_TIMEOUT);
+
+      frame.addEventListener('load', () => {
+        window.clearTimeout(timer);
+        if (heroLive?.slide === slide) heroSlides.classList.add('is-live-ready');
+      });
+
+      shell.append(frame);
+      escalarHero();
+      heroSlides.append(shell);
+      heroLive = { slide, shell, timer };
+    };
+
+    syncHero = () => {
+      window.clearTimeout(heroEspera);
+      const slide = activa();
+      // Al cambiar de diapositiva el marco anterior se va de inmediato: durante el cruce
+      // solo se ve la captura, y el nuevo entra ya montado sobre el proyecto correcto.
+      if (heroLive && heroLive.slide !== slide) heroUnmount();
+      if (!enabled || !heroVisible || document.hidden || !slide) {
+        heroUnmount();
+        return;
+      }
+      if (heroLive) return;
+      heroEspera = window.setTimeout(() => {
+        if (enabled && heroVisible && !document.hidden && activa() === slide) heroMount(slide);
+      }, HERO_DELAY);
+    };
+
+    new MutationObserver(syncHero).observe(heroSlides, {
+      subtree: true, attributes: true, attributeFilter: ['class'],
+    });
+    new IntersectionObserver(entries => {
+      heroVisible = entries.some(entry => entry.isIntersecting);
+      syncHero();
+    }, { threshold: 0.4 }).observe(heroCarousel);
+    new ResizeObserver(escalarHero).observe(heroSlides);
+    document.addEventListener('visibilitychange', syncHero);
+  }
+
   // El puntero y el teclado solo cambian la prioridad: la tarjeta señalada nunca se queda fuera.
   cards.forEach(item => {
     const marcar = () => { hovered = item; sync.run(); };
@@ -231,9 +323,11 @@ export function initLivePreview() {
     writePreference(enabled);
     syncToggle();
     sync.run();
+    syncHero();
   });
   syncToggle();
   sync.run();
+  syncHero();
 }
 
 /** Lee la preferencia guardada; por defecto la vista en vivo está activa. */
