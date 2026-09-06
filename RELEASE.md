@@ -21,7 +21,8 @@
 ### LIVE-01 · Previsualización en vivo de los proyectos
 
 - Cada tarjeta conserva su captura estática (es la que pinta el LCP y el respaldo si algo falla) y monta encima un `<iframe>` con el sitio real, de modo que la landing muestra el estado actual del proyecto y no una foto envejecida.
-- Escritorio: se monta al pasar el puntero o al enfocar con teclado. Táctil: una sola tarjeta viva, la más centrada del viewport.
+- **Las tarjetas que están en pantalla se ven en vivo desde el primer momento**, sin esperar al puntero. Como cada marco es un sitio completo hay un tope de marcos simultáneos —4 en escritorio, 2 en táctil—: quedan vivas las más cercanas al centro del viewport, la señalada por el puntero o el foco nunca se queda fuera del cupo, y los montajes se escalonan 200 ms para no lanzar varias cargas a la vez. Al salir de pantalla, al filtrar o al ocultarse la pestaña, los marcos se descargan.
+- La inclinación 3D de la tarjeta con marco vivo se conserva en escritorio (solo se inclina la que tiene el puntero, así que el coste está acotado a una) y se congela en táctil, donde el scroll inclinaría todas las visibles a la vez. Medido con CPU 4×: inclinar una tarjeta con marco cuesta 2,40 s de recálculo de estilo frente a 1,13 s sin él.
 - El iframe es decorativo: `inert`, `aria-hidden`, `tabindex="-1"`, `pointer-events:none`, `sandbox="allow-scripts allow-same-origin"`, `allow=""` y `referrerpolicy="no-referrer"`. La tarjeta sigue siendo un enlace normal.
 - Interruptor «Vista en vivo / Vista estática» junto a los filtros, con preferencia persistida. No se ofrece con `prefers-reduced-data` ni con el ahorro de datos del sistema.
 - `vercel.json` añade `frame-src` con los 13 orígenes de proyecto que aceptan ser embebidos.

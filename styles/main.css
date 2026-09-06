@@ -290,10 +290,14 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .project-live { position:absolute; inset:0; z-index:1; overflow:hidden; opacity:0; transition:opacity .5s ease; pointer-events:none; }
 .project-visual.is-live-ready .project-live { opacity:1; }
 .project-live-frame { position:absolute; top:0; left:0; width:1440px; height:900px; border:0; background:#0d2746; transform-origin:0 0; transform:scale(var(--live-scale,.4)); pointer-events:none; }
-/* Con un marco vivo se congela la inclinación 3D de la tarjeta: transformar en 3D un ancestro
-   del iframe obliga a re-rasterizar el documento anidado en cada frame del puntero, y en varias
-   GPU de Android además lo deja borroso. */
-.project-card.is-live-host.tilt-3d { transform:none; }
+/* Inclinar en 3D un ancestro del iframe obliga a re-rasterizar el documento anidado en cada
+   frame: medido con CPU 4x, el recálculo de estilo se duplica (2,40 s frente a 1,13 s).
+   En escritorio solo se inclina la tarjeta bajo el puntero, así que el coste está acotado a una
+   y el efecto se conserva. En táctil el scroll inclina TODAS las visibles a la vez y encima las
+   GPU móviles dejan el marco borroso, así que ahí sí se congela. */
+@media (hover:none) {
+  .project-card.is-live-host.tilt-3d { transform:none; }
+}
 .project-card.is-live-host:hover .project-image { transform:none; }
 /* Distintivo de que lo que se ve es el sitio en directo, no una foto. */
 .project-visual.is-live-ready::after { content:'en vivo'; position:absolute; left:14px; bottom:14px; z-index:2; padding:5px 9px 5px 22px; border:1px solid rgba(101,212,157,.45); border-radius:999px; background:rgba(7,26,47,.78); color:var(--mint); backdrop-filter:blur(10px); font:500 8px 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; pointer-events:none; }

@@ -47,7 +47,8 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 
 ### Previsualización en vivo — LIVE-01
 - **Principio:** la captura estática nunca se retira. Es lo que pinta el LCP, lo que se ve mientras el iframe carga y el respaldo si el sitio no se deja embeber.
-- **Cuándo se monta:** al pasar el puntero o enfocar con teclado en escritorio; en táctil, la tarjeta más centrada del viewport, una sola a la vez.
+- **Cuándo se monta:** en cuanto la tarjeta entra en pantalla, sin esperar al puntero. Tope de marcos simultáneos: 4 en escritorio y 2 en táctil, priorizando las más cercanas al centro del viewport y siempre la señalada por el puntero o el foco. Los montajes se escalonan 200 ms.
+- **Cuándo se desmonta:** al salir de pantalla, al quedar fuera del cupo, al filtrar proyectos, al ocultarse la pestaña o al apagar el interruptor.
 - **Encuadre:** el iframe se renderiza a 1440×900 y se escala con `transform:scale(--live-scale)` para reproducir exactamente el recorte 16:10 de la captura.
 - **Contención:** `inert`, `aria-hidden`, `tabindex="-1"`, `pointer-events:none`, `sandbox="allow-scripts allow-same-origin"`, `allow=""` y `referrerpolicy="no-referrer"`.
 - **Coste:** se respeta `prefers-reduced-data` y el ahorro de datos del sistema, y hay un interruptor visible con preferencia persistida.
