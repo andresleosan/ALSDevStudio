@@ -1,5 +1,26 @@
 # Release — ALS DevStudio
 
+## 2026-09-06 · Capturas al día, encuadre unificado y retirada de GitHub
+
+### Capturas regeneradas
+
+- Las 15 capturas de proyecto estaban desactualizadas: al recargar se veía el estado antiguo del sitio hasta que entraba el marco en vivo. Regeneradas todas contra el sitio real.
+- **Encuadre unificado a 1440×900**, exactamente el mismo viewport que simula el `<iframe>` de la vista en vivo. Antes las proporciones iban de 1,477 a 2,368 sobre un contenedor 16:10, así que la captura salía con barras y el relevo hacia el marco vivo se notaba. Ahora la imagen llena la tarjeta y el cambio es imperceptible.
+- Base unificada a `.jpg` (mozjpeg, calidad 82, sin submuestreo de croma) más variantes AVIF y WebP a 480, 768 y 1200. **`assets/projects` baja de 10 784 KB a 2 764 KB (74 % menos).**
+- Esto arregla a la vez la rejilla de proyectos y el carrusel del hero, porque comparten los mismos archivos, y también lo que se ve con la vista en vivo apagada, sin JavaScript o con «reducir movimiento».
+
+### Retirada de los enlaces a GitHub
+
+- Retirado el botón «Ver GitHub» del hero, el pie de la sección de proyectos —existía solo para enlazar al perfil—, el canal de contacto «Ver GitHub y repositorios públicos» y la propiedad `sameAs` del JSON-LD de `Organization`.
+- Retiradas también las reglas de `.projects-footer`, que quedaban muertas.
+
+### Verificación
+
+- Las 15 capturas cargan sin ningún 404 y todas dan proporción 16:10; con la vista en vivo apagada las tarjetas ya muestran el contenido actual.
+- JSON-LD sigue siendo JSON válido tras quitar `sameAs`.
+- 4 marcos vivos montados y listos en escritorio; 3D del hero y de las tarjetas intacto; hit-testing de tarjetas, carrusel y CTA correcto.
+- Sin errores de consola ni peticiones fallidas; axe sin violaciones en escritorio y móvil; sin desborde horizontal entre 320 y 1920 px.
+
 ## 2026-09-06 · DEPTH-01 capa 3D y LIVE-01 previews en vivo
 
 ### Capa de profundidad 3D (portada desde ALS DevStudioMed)
