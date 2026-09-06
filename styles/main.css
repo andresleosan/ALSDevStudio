@@ -287,7 +287,9 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .project-card:hover .project-image { transform:scale(1.045); }
 /* Vista en vivo: el sitio real embebido sobre la captura. La captura nunca se quita:
    es el marcador de posición mientras el iframe carga y el respaldo si el sitio no se deja embeber. */
-.project-live { position:absolute; inset:0; z-index:1; overflow:hidden; opacity:0; transition:opacity .5s ease; pointer-events:none; }
+.project-live { position:absolute; inset:0; z-index:1; overflow:hidden; opacity:0; pointer-events:none; }
+/* Sin fundido: en cuanto el sitio real termina de cargar, sustituye a la captura de golpe.
+   Un cruce progresivo hace que se lea como «la pagina cambio», que es justo lo contrario. */
 .project-visual.is-live-ready .project-live { opacity:1; }
 .project-live-frame { position:absolute; top:0; left:0; width:1440px; height:900px; border:0; background:#0d2746; transform-origin:0 0; transform:scale(var(--live-scale,.4)); pointer-events:none; }
 /* Inclinar en 3D un ancestro del iframe obliga a re-rasterizar el documento anidado en cada
