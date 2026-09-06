@@ -2,8 +2,9 @@
 
 ## Estado actual
 - HTML5 estático en `index.html`.
-- CSS externo en `styles/main.css` y JavaScript vanilla externo en `scripts/main.js`.
-- Assets de marca en `assets/brand/`.
+- CSS externo en `styles/main.css`, organizado por secciones numeradas.
+- JavaScript vanilla en módulos ES: `scripts/main.js` es el punto de entrada y cada sección vive en `scripts/modules/`. Con `@ts-check` y JSDoc; `jsconfig.json` permite `tsc` en modo estricto sin build.
+- Assets de marca en `assets/brand/`, incluido `world-map.svg` que se inyecta con `fetch`.
 - Sin base de datos, API ni secretos.
 
 ## Nivel
@@ -20,7 +21,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - **Paleta:** azul tinta `#071a2f` para profundidad y confianza; blanco niebla `#f5f8fb` para lectura; azul ALS `#1364c4` para tecnología y enlaces; verde solución `#62c798` para acciones y estados positivos; gris pizarra `#536477` para metadata.
 - **Tipografía:** `Space Grotesk` para titulares geométricos y `DM Sans` para lectura continua; `IBM Plex Mono` para etiquetas de sistema y datos técnicos.
 - **Layout:** una narrativa editorial con una órbita visual que conecta marca, servicios y proyectos; las tarjetas funcionan como módulos de producto, no como una grilla decorativa.
-- **Firma:** el “ALS orbit” — una línea orbital que sigue el puntero en escritorio y una constelación estática en móvil, conectando la idea con la solución.
+- **Firma:** el “ALS orbit” — un anillo orbital inclinado en 3D que sigue el puntero en escritorio y se inclina con el scroll y el giroscopio en móvil, conectando la idea con la solución.
 - **Tono:** técnico, directo, humano.
 - **Evitar:** el coral heredado de Santel, bloques de agencia genéricos y numeración decorativa sin significado.
 
@@ -37,6 +38,20 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - **Selección:** hero y galería usan `picture`, `srcset`, `sizes` y dimensiones intrínsecas; AVIF tiene prioridad, WebP es la segunda opción y la fuente original (PNG/JPEG) queda como fallback. Un listener temprano degrada por etapas AVIF → WebP → original ante fallos HTTP o de decodificación.
 - **Carga inicial:** el primer slide es descubrible por el parser, `eager` y `fetchpriority="high"`; JavaScript hidrata únicamente el slide activo y su sucesor. Los otros 13 mantienen un placeholder local hasta ser activos o sucesores.
 - **Galería:** las tarjetas conservan `loading="lazy"`, `decoding="async"` y prioridad baja con sus fuentes responsive declaradas desde HTML; no dependen del carrusel para cargarse.
+
+### Capa de profundidad 3D — DEPTH-01
+- **Principio:** la profundidad la aporta el CSS (`perspective`, `transform-style:preserve-3d`, variables `--tilt-*`, `--rx`, `--ry`, `--px`, `--py`); el JavaScript solo escribe números. Sin librerías, porque la CSP es `script-src 'self'`.
+- **Escritorio:** inclinación y brillo especular siguiendo el puntero, parallax de los chips de profundidad, órbita magnética y botones magnéticos.
+- **Móvil y tablet:** inclinación dirigida por el scroll (cada bloque gira según su distancia al centro del viewport) y por el giroscopio. Android concede el permiso solo; iOS lo exige tras un gesto, por eso existe el botón «3D» del hero.
+- **Límites:** todo se apaga con `prefers-reduced-motion`. Los bloques con `overflow:hidden` usan `transform-style:flat` para no romper el recorte, y la órbita lleva `pointer-events:none` para no capturar clics.
+
+### Previsualización en vivo — LIVE-01
+- **Principio:** la captura estática nunca se retira. Es lo que pinta el LCP, lo que se ve mientras el iframe carga y el respaldo si el sitio no se deja embeber.
+- **Cuándo se monta:** al pasar el puntero o enfocar con teclado en escritorio; en táctil, la tarjeta más centrada del viewport, una sola a la vez.
+- **Encuadre:** el iframe se renderiza a 1440×900 y se escala con `transform:scale(--live-scale)` para reproducir exactamente el recorte 16:10 de la captura.
+- **Contención:** `inert`, `aria-hidden`, `tabindex="-1"`, `pointer-events:none`, `sandbox="allow-scripts allow-same-origin"`, `allow=""` y `referrerpolicy="no-referrer"`.
+- **Coste:** se respeta `prefers-reduced-data` y el ahorro de datos del sistema, y hay un interruptor visible con preferencia persistida.
+- **Requisito por proyecto:** el sitio embebido no puede responder `X-Frame-Options` ni `frame-ancestors` restrictivo, y su origen debe estar en el `frame-src` de `vercel.json`. Los que no cumplen se marcan con `data-live="off"`.
 
 ## Verificación
 - Sintaxis y referencias locales con PowerShell.

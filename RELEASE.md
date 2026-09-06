@@ -1,5 +1,63 @@
 # Release — ALS DevStudio
 
+## 2026-09-06 · DEPTH-01 capa 3D y LIVE-01 previews en vivo
+
+### Capa de profundidad 3D (portada desde ALS DevStudioMed)
+
+- Escritorio: el hero se inclina siguiendo el puntero con brillo especular sobre la tarjeta, la órbita ALS pasa a ser un anillo inclinado en 3D real, los chips de profundidad hacen parallax y los botones se vuelven magnéticos.
+- Inclinación 3D en tarjetas de proyecto, panel de capacidades (con flip al cambiar de pestaña), proceso, mini brief y mapa; los reveals entran con perspectiva.
+- **Móvil y tablet:** la escena 3D deja de estar apagada. Las tarjetas y el hero se inclinan según su distancia al centro del viewport, y el giroscopio se activa solo en Android; en iOS aparece un botón «3D» porque el permiso exige un gesto.
+- Todo se desactiva con `prefers-reduced-motion`.
+
+### JavaScript en módulos ES
+
+- `scripts/main.js` pasa a ser el punto de entrada y el comportamiento se reparte en `scripts/modules/` (env, dom, space, cursor, hero-carousel, capabilities, projects, global-map, nav, contact, depth, reveal, live-preview), con JSDoc y `@ts-check`.
+- `jsconfig.json` permite verificar tipos con `tsc` en modo estricto sin build; el script del index pasa a `type="module"`.
+
+### Mapa mundial fuera del HTML
+
+- El SVG del mapa (135 KB) sale de `index.html` a `assets/brand/world-map.svg` y se inyecta con `fetch`. **`index.html` baja de 196 KB a 58 KB** y el mapa pasa a ser un recurso cacheable aparte. Sin JavaScript el hueco se oculta mediante la regla del `<noscript>`.
+
+### LIVE-01 · Previsualización en vivo de los proyectos
+
+- Cada tarjeta conserva su captura estática (es la que pinta el LCP y el respaldo si algo falla) y monta encima un `<iframe>` con el sitio real, de modo que la landing muestra el estado actual del proyecto y no una foto envejecida.
+- Escritorio: se monta al pasar el puntero o al enfocar con teclado. Táctil: una sola tarjeta viva, la más centrada del viewport.
+- El iframe es decorativo: `inert`, `aria-hidden`, `tabindex="-1"`, `pointer-events:none`, `sandbox="allow-scripts allow-same-origin"`, `allow=""` y `referrerpolicy="no-referrer"`. La tarjeta sigue siendo un enlace normal.
+- Interruptor «Vista en vivo / Vista estática» junto a los filtros, con preferencia persistida. No se ofrece con `prefers-reduced-data` ni con el ahorro de datos del sistema.
+- `vercel.json` añade `frame-src` con los 13 orígenes de proyecto que aceptan ser embebidos.
+- `field-hours.vercel.app` y `donacionesvenezuela.vercel.app` responden `X-Frame-Options: DENY` y `frame-ancestors 'none'`; quedan marcados con `data-live="off"` y conservan su captura. Para activarlos hay que cambiar la cabecera **en sus propios despliegues**: retirar `X-Frame-Options` y pasar su CSP a `frame-ancestors 'self' https://alsdevstudio.vercel.app`.
+
+### Endurecimiento y correcciones sobre el port
+
+- **Rendimiento táctil:** el bucle de scroll de `depth.js` deja de leer el DOM (centros cacheados, invalidados por `ResizeObserver`, `resize`, `visualViewport` y `orientationchange`), las escrituras de variables se deduplican y `will-change` solo se pone en los elementos visibles. Medido con Chrome y CPU estrangulada 4×: el recálculo de estilo durante el scroll baja de 6,66 s a 5,42 s (**−19 %**) y el número de layouts un 18 % sin estrangular.
+- El brillo radial de las tarjetas y el magnetismo de los botones pasan a una escritura por frame; antes leían `getBoundingClientRect()` en cada evento de puntero (principal riesgo de INP con 15 tarjetas y ratones de alta frecuencia).
+- Giroscopio: filtro paso bajo, zona muerta, deriva lenta del punto neutro y reasignación de ejes según `screen.orientation.angle`, para que no tiemble en reposo ni se descuadre en apaisado.
+- Nuevo tilt de pulsación en táctil, con todos los listeners pasivos, y congelación de la escena mientras el dedo arrastra el carrusel.
+- Detección de gama baja (`deviceMemory`, `hardwareConcurrency` y un vigilante de frames real, porque iOS no expone `deviceMemory`): recorta los desenfoques y las animaciones infinitas vía `body.is-low-tier`. Se añade soporte de `prefers-reduced-transparency`.
+- `contain:layout paint` se limita a `@media (hover:none)`: un portátil táctil informa `pointer:coarse` **y** tiene hover real, y la contención le recortaría la sombra de 70 px de `.project-card:hover`.
+- Se retira `will-change:transform` de todos los botones y se deja solo en `.magnetic`, que únicamente existe en escritorio.
+- La tarjeta que hospeda un iframe congela su inclinación 3D (`is-live-host`): transformar en 3D un ancestro del iframe obliga a re-rasterizar el documento anidado en cada frame.
+- La vista en vivo tampoco se ofrece con `prefers-reduced-motion`: dentro del iframe corre el sitio real con sus animaciones y no se pueden silenciar desde fuera.
+- Añadidos los `data-step` que faltaban en el bloque Proceso; sin ellos el numeral fantasma de DEPTH-01 no se renderizaba.
+- Corregido el chip «02 / código», que se salía de la pantalla hasta 101 px entre 901 y 1520 px de ancho. Ahora queda dentro con 18 px de margen como mínimo en toda la banda.
+- `global-map.js` ya no oculta el hueco del mapa si falla el `fetch`: el `aspect-ratio` ya lo reservó y ocultarlo provocaría un salto de layout tardío.
+- Cada sección de `main.js` se inicializa aislada: un fallo en una no deja el resto de la página sin JavaScript.
+- El interruptor de vista en vivo recibe `min-height:44px` en móvil, igual que los filtros (WCAG 2.2 · 2.5.8).
+
+### Verificación
+
+- `tsc` en modo estricto sobre `scripts/**`: sin errores.
+- Chrome real, 1440×900 y Pixel 7: 0 errores de consola y 0 solicitudes fallidas; 24 elementos reciben `tilt-3d`, el mapa se inyecta con sus 7 marcadores, las 15 tarjetas y las 15 diapositivas siguen presentes.
+- 3D comprobado en funcionamiento: hero y tarjetas con `--tilt`/`--rx` reales en escritorio, inclinación por scroll en móvil, y `transform:none` con `prefers-reduced-motion`.
+- Hit-testing: enlace de tarjeta, botones del carrusel y CTA del hero siguen recibiendo el clic; el carrusel avanza de 01 a 02.
+- Vista en vivo: montaje y desmontaje correctos, respeto del interruptor, `data-live="off"` nunca monta, y una sola tarjeta viva en móvil.
+- Regresión visual contra `13d528b` con animaciones apagadas: escritorio idéntico salvo el botón nuevo (0,01 %) y la corrección de contraste de contacto (0,19 %); alturas de sección sin cambios excepto el `+118 px` de la nueva barra de herramientas.
+- axe (wcag2a/aa, wcag21aa, wcag22aa, best-practice): 0 violaciones en escritorio y móvil.
+
+### Rollback de esta release
+
+`git revert` del commit de esta release y push a `main`. Vercel redesplegará el estado anterior. Si solo molesta la vista en vivo, basta con retirar `initLivePreview()` de `scripts/main.js`; el 3D y el resto siguen funcionando. Si solo molesta el 3D, retirar `initDepth()`.
+
 ## 2026-08-30 · OPT-06 SEO, contacto y despliegue público
 
 - Publicado el commit `5f4d009` en `main`; Vercel lo desplegó automáticamente en `https://alsdevstudio.vercel.app/`.
