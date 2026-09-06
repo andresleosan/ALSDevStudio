@@ -1,3 +1,4 @@
+// @ts-check
 (() => {
   const responsivePictureSelector = '.hero-picture,.project-picture';
 
@@ -12,7 +13,7 @@
     image.dataset.lastFailedSrc = failedSource;
     const extension = (() => {
       try {
-        return new URL(failedSource, document.baseURI).pathname.split('.').pop().toLowerCase();
+        return new URL(failedSource, document.baseURI).pathname.split('.').pop()?.toLowerCase() ?? '';
       } catch {
         return '';
       }
