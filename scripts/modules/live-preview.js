@@ -2,27 +2,34 @@
 /**
  * Previsualización en vivo de los proyectos (LIVE-01).
  *
- * Cada tarjeta conserva su captura estática — es la que pinta el LCP y la que se ve si algo falla.
- * Encima, bajo demanda, se monta un <iframe> con el sitio real para que lo que muestra la landing
- * sea el estado actual del proyecto y no una foto envejecida.
+ * Cada tarjeta conserva su captura estática — es la que pinta el LCP, la que se ve mientras
+ * el sitio carga y la que queda si algo falla. Encima se monta un <iframe> con el sitio real,
+ * de modo que la landing muestra el estado actual del proyecto y no una foto envejecida.
  *
- * - Escritorio (puntero fino): se monta al pasar el puntero o al enfocar la tarjeta con el teclado.
- * - Táctil: se monta en la tarjeta más centrada del viewport, una sola a la vez.
- * - Nunca se monta con `prefers-reduced-data`, con el ahorro de datos del sistema activo,
- *   ni en las tarjetas marcadas con `data-live="off"` (sitios que rechazan ser embebidos).
+ * Las tarjetas que están en pantalla se muestran en vivo desde el primer momento, sin esperar
+ * a que el puntero pase por encima. Como cada marco es un sitio completo, hay un tope de marcos
+ * simultáneos: quedan vivas las tarjetas más cercanas al centro del viewport, y la que tiene el
+ * puntero o el foco nunca se queda fuera del cupo.
  *
- * El iframe es decorativo: no recibe puntero ni foco, y la tarjeta sigue siendo un enlace normal.
+ * No se monta nada con `prefers-reduced-motion`, con `prefers-reduced-data`, con el ahorro de
+ * datos del sistema, ni en las tarjetas marcadas con `data-live="off"` (sitios que rechazan ser
+ * embebidos). El marco es decorativo: no recibe puntero ni foco, y la tarjeta sigue siendo un
+ * enlace normal.
  */
-import { finePointerQuery, coarsePointerQuery, saveDataQuery, reducedMotionQuery, frameThrottle, clamp } from './env.js';
+import { finePointerQuery, saveDataQuery, reducedMotionQuery, frameThrottle } from './env.js';
 import { query, queryAll } from './dom.js';
 
-/** Ancho de escritorio que se simula dentro del iframe antes de escalarlo a la tarjeta.
+/** Ancho de escritorio que se simula dentro del marco antes de escalarlo a la tarjeta.
  *  El alto va fijado en el CSS a 900px (1440 / 1.6), la misma proporción 16/10 de .project-visual. */
 const FRAME_WIDTH = 1440;
-/** Si el sitio no carga en este tiempo, se retira el iframe y se queda la captura. */
-const LOAD_TIMEOUT = 9000;
-/** Cuánto tiene que estar visible una tarjeta para considerarla candidata en táctil. */
-const VISIBILITY_THRESHOLD = 0.55;
+/** Marcos vivos a la vez. Cada uno es un sitio completo, así que el tope es el presupuesto. */
+const CONCURRENT = { fino: 4, grueso: 2 };
+/** Separación entre montajes: evita disparar varias cargas de sitio en el mismo instante. */
+const MOUNT_STAGGER = 200;
+/** Si el sitio no carga en este tiempo, se retira el marco y se queda la captura. */
+const LOAD_TIMEOUT = 12000;
+/** Se empieza a cargar un poco antes de que la tarjeta entre en pantalla. */
+const PRELOAD_MARGIN = '20% 0px';
 /** Clave de la preferencia de la persona. */
 const STORAGE_KEY = 'als:live-preview:v1';
 
@@ -52,7 +59,7 @@ export function initLivePreview() {
     return saveDataQuery.matches || connection?.saveData === true;
   };
 
-  // Con «reducir movimiento» tampoco se ofrece: dentro del iframe corre el sitio real con
+  // Con «reducir movimiento» tampoco se ofrece: dentro del marco corre el sitio real con
   // todas sus animaciones y no hay forma de silenciarlas desde fuera del documento embebido.
   if (dataSaver() || reducedMotionQuery.matches) {
     if (toggle) toggle.hidden = true;
@@ -60,10 +67,18 @@ export function initLivePreview() {
   }
 
   let enabled = readPreference();
-  /** @type {LiveCard | null} */
-  let mounted = null;
+  /** Tarjetas con marco montado. @type {Map<LiveCard, { shell: HTMLElement, timer: number }>} */
+  const live = new Map();
+  /** Tarjetas dentro del viewport, o a punto de entrar. @type {Set<LiveCard>} */
+  const visible = new Set();
+  /** La que tiene el puntero encima o el foco. @type {LiveCard | null} */
+  let hovered = null;
+  /** @type {number | undefined} */
+  let staggerTimer;
 
-  /** Escala el iframe para que su ancho simulado ocupe exactamente el hueco de la tarjeta. */
+  const cupo = () => (finePointerQuery.matches ? CONCURRENT.fino : CONCURRENT.grueso);
+
+  /** Escala el marco para que su ancho simulado ocupe exactamente el hueco de la tarjeta. */
   const rescale = (/** @type {LiveCard} */ item) => {
     item.visual.style.setProperty('--live-scale', String(item.visual.clientWidth / FRAME_WIDTH));
   };
@@ -73,22 +88,19 @@ export function initLivePreview() {
     if (item) rescale(item);
   }));
 
-  const unmount = () => {
-    if (!mounted) return;
-    const item = mounted;
-    mounted = null;
+  const unmount = (/** @type {LiveCard} */ item) => {
+    const entry = live.get(item);
+    if (!entry) return;
+    window.clearTimeout(entry.timer);
+    live.delete(item);
     resizeObserver.unobserve(item.visual);
+    entry.shell.remove();
     item.visual.classList.remove('is-live', 'is-live-ready');
     item.card.classList.remove('is-live-host');
-    query('.project-live', HTMLElement, item.visual)?.remove();
-    delete item.visual.dataset.liveState;
   };
 
   const mount = (/** @type {LiveCard} */ item) => {
-    if (!enabled || mounted === item) return;
-    if (item.visual.dataset.liveFailed === 'true') return;
-    unmount();
-    mounted = item;
+    if (live.has(item) || item.visual.dataset.liveFailed === 'true') return;
 
     const shell = document.createElement('div');
     shell.className = 'project-live';
@@ -110,77 +122,97 @@ export function initLivePreview() {
     frame.setAttribute('scrolling', 'no');
 
     const timer = window.setTimeout(() => {
-      // El sitio no respondió a tiempo (o rechazó el embebido): se vuelve a la captura y no se reintenta.
+      // El sitio no respondió a tiempo, o rechazó el embebido: se vuelve a la captura y no se reintenta.
       item.visual.dataset.liveFailed = 'true';
-      if (mounted === item) unmount();
+      unmount(item);
     }, LOAD_TIMEOUT);
 
     frame.addEventListener('load', () => {
       window.clearTimeout(timer);
-      if (mounted === item) item.visual.classList.add('is-live-ready');
+      if (live.has(item)) item.visual.classList.add('is-live-ready');
     });
 
     shell.append(frame);
     rescale(item);
     item.visual.append(shell);
     item.visual.classList.add('is-live');
-    // La tarjeta anfitriona se marca para congelar su inclinación 3D: transformar en 3D un
-    // ancestro del iframe obliga a re-rasterizar el documento anidado en cada frame.
+    // La tarjeta anfitriona se marca para que el CSS congele su inclinación 3D donde resulta
+    // cara: en táctil el scroll inclina todas las tarjetas visibles a la vez.
     item.card.classList.add('is-live-host');
+    live.set(item, { shell, timer });
     resizeObserver.observe(item.visual);
   };
 
-  // --- Escritorio: la tarjeta bajo el puntero o con el foco ---
-  if (finePointerQuery.matches) {
-    cards.forEach(item => {
-      item.card.addEventListener('pointerenter', () => mount(item));
-      item.card.addEventListener('focusin', () => mount(item));
-      item.card.addEventListener('pointerleave', () => { if (mounted === item) unmount(); });
-      item.card.addEventListener('focusout', event => {
-        if (mounted === item && !item.card.contains(/** @type {Node | null} */ (event.relatedTarget))) unmount();
-      });
-    });
-  }
+  /** Distancia de la tarjeta al centro del viewport; la señalada por el puntero manda. */
+  const score = (/** @type {LiveCard} */ item) => {
+    if (item === hovered) return -1;
+    const box = item.card.getBoundingClientRect();
+    return Math.abs(box.top + box.height / 2 - window.innerHeight / 2);
+  };
 
-  // --- Táctil: una sola tarjeta viva, la más cercana al centro del viewport ---
-  /** @type {Set<LiveCard>} */
-  const visible = new Set();
+  /** Decide qué tarjetas deben estar vivas y ajusta la diferencia. */
+  const sync = frameThrottle(() => {
+    window.clearTimeout(staggerTimer);
+    if (!enabled) {
+      [...live.keys()].forEach(unmount);
+      return;
+    }
+    const elegidas = [...visible]
+      .filter(item => item.visual.dataset.liveFailed !== 'true')
+      .sort((a, b) => score(a) - score(b))
+      .slice(0, cupo());
 
-  const pickCentered = frameThrottle(() => {
-    if (!enabled || !coarsePointerQuery.matches) return;
-    const center = window.innerHeight / 2;
-    /** @type {LiveCard | null} */
-    let best = null;
-    let bestDistance = Infinity;
-    visible.forEach(item => {
-      if (item.visual.dataset.liveFailed === 'true') return;
-      const box = item.card.getBoundingClientRect();
-      const distance = Math.abs(box.top + box.height / 2 - center);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        best = item;
-      }
-    });
-    // Solo se monta si de verdad está en la banda central; si no, se descarga para no gastar datos.
-    if (best && bestDistance < clamp(window.innerHeight * 0.4, 160, 420)) mount(best);
-    else unmount();
+    // Primero se libera cupo y después se ocupa, así nunca se supera el tope.
+    [...live.keys()].forEach(item => { if (!elegidas.includes(item)) unmount(item); });
+
+    // Los montajes se escalonan para no lanzar varias cargas de sitio en el mismo frame.
+    const pendientes = elegidas.filter(item => !live.has(item));
+    const siguiente = () => {
+      const item = pendientes.shift();
+      if (!item) return;
+      if (enabled && visible.has(item)) mount(item);
+      if (pendientes.length) staggerTimer = window.setTimeout(siguiente, MOUNT_STAGGER);
+    };
+    siguiente();
   });
 
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       const item = cards.find(candidate => candidate.card === entry.target);
       if (!item) return;
-      if (entry.isIntersecting && entry.intersectionRatio >= VISIBILITY_THRESHOLD) visible.add(item);
-      else visible.delete(item);
+      if (entry.isIntersecting) {
+        visible.add(item);
+      } else {
+        visible.delete(item);
+        unmount(item);
+      }
     });
-    pickCentered.run();
-  }, { threshold: [0, VISIBILITY_THRESHOLD, 1] });
+    sync.run();
+  }, { threshold: 0, rootMargin: PRELOAD_MARGIN });
   cards.forEach(item => observer.observe(item.card));
 
-  window.addEventListener('scroll', pickCentered.run, { passive: true });
-  window.addEventListener('resize', pickCentered.run, { passive: true });
-  // Una pestaña en segundo plano no necesita mantener un sitio ajeno cargado.
-  document.addEventListener('visibilitychange', () => { if (document.hidden) unmount(); });
+  // El puntero y el teclado solo cambian la prioridad: la tarjeta señalada nunca se queda fuera.
+  cards.forEach(item => {
+    const marcar = () => { hovered = item; sync.run(); };
+    const desmarcar = () => { if (hovered === item) { hovered = null; sync.run(); } };
+    item.card.addEventListener('pointerenter', marcar, { passive: true });
+    item.card.addEventListener('focusin', marcar);
+    item.card.addEventListener('pointerleave', desmarcar, { passive: true });
+    item.card.addEventListener('focusout', event => {
+      if (!item.card.contains(/** @type {Node | null} */ (event.relatedTarget))) desmarcar();
+    });
+  });
+
+  window.addEventListener('scroll', sync.run, { passive: true });
+  window.addEventListener('resize', sync.run, { passive: true });
+  // Una pestaña en segundo plano no necesita mantener sitios ajenos cargados.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) [...live.keys()].forEach(unmount);
+    else sync.run();
+  });
+  // Al filtrar proyectos cambian las tarjetas visibles.
+  queryAll('.filter', HTMLButtonElement).forEach(filter =>
+    filter.addEventListener('click', () => sync.run()));
 
   // --- Interruptor visible ---
   const syncToggle = () => {
@@ -198,11 +230,10 @@ export function initLivePreview() {
     enabled = !enabled;
     writePreference(enabled);
     syncToggle();
-    if (enabled) pickCentered.run();
-    else unmount();
+    sync.run();
   });
   syncToggle();
-  pickCentered.run();
+  sync.run();
 }
 
 /** Lee la preferencia guardada; por defecto la vista en vivo está activa. */
