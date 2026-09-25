@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* Mismos tokens que styles/main.css */
+  :root {
+    --ink-deep:#041224; --panel:#0d2746; --panel-soft:#123353;
+    --blue:#4d9bff; --mint:#65d49d; --paper:#f5f8fb; --muted:#aab9cb;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { width:1200px; height:630px; overflow:hidden; }
+
+  .card {
+    position:relative; width:1200px; height:630px;
+    display:grid; place-items:center;
+    background:
+      radial-gradient(120% 140% at 50% -20%, #14395f 0%, var(--panel) 34%, var(--ink-deep) 72%);
+    font-family:'DM Sans',sans-serif;
+  }
+
+  /* Órbitas del fondo: el mismo gesto espacial del hero, muy contenido. */
+  .orbit { position:absolute; border-radius:50%; border:1px solid rgba(77,155,255,.13); }
+  .orbit.o1 { width:1080px; height:1080px; top:-330px; left:60px; }
+  .orbit.o2 { width:760px;  height:760px;  top:-170px; left:220px; border-color:rgba(101,212,157,.10); }
+  .orbit.o3 { width:1500px; height:1500px; top:-560px; left:-150px; border-color:rgba(221,237,252,.05); }
+  .glow {
+    position:absolute; width:620px; height:620px; border-radius:50%;
+    background:radial-gradient(circle, rgba(77,155,255,.20) 0%, rgba(77,155,255,0) 68%);
+  }
+
+  /* Zona segura: todo vive dentro del cuadrado central, de modo que un recorte
+     cuadrado o 4:3 (WhatsApp, Telegram) siga mostrando marca y mensaje enteros. */
+  .safe {
+    position:relative; z-index:2;
+    width:640px; display:flex; flex-direction:column; align-items:center;
+    text-align:center;
+  }
+
+  /* El logo ya es un sello circular con anillo propio: el disco blanco va justo
+     por debajo, del mismo diámetro, para que no se lea un anillo dentro de otro. */
+  .seal {
+    position:relative; width:196px; height:196px;
+    display:grid; place-items:center;
+    filter:drop-shadow(0 20px 46px rgba(0,0,0,.46));
+  }
+  .seal::before {
+    content:''; position:absolute; inset:5px; border-radius:50%;
+    background:var(--paper);
+  }
+  .seal img { position:relative; width:196px; height:196px; object-fit:contain; }
+
+  .eyebrow {
+    margin-top:34px;
+    font:500 15px/1 'IBM Plex Mono',monospace; letter-spacing:.17em;
+    color:var(--mint); text-transform:uppercase;
+  }
+
+  h1 {
+    margin-top:20px;
+    font:600 53px/1.02 'Space Grotesk',sans-serif; letter-spacing:-.045em;
+    color:var(--paper);
+  }
+  h1 em { font-style:normal; color:var(--blue); }
+
+  .domain {
+    margin-top:26px; padding:9px 20px;
+    border:1px solid rgba(221,237,252,.18); border-radius:999px;
+    background:rgba(4,18,36,.45);
+    font:500 15px/1 'IBM Plex Mono',monospace; letter-spacing:.13em;
+    color:var(--muted); text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="orbit o1"></div>
+    <div class="orbit o2"></div>
+    <div class="orbit o3"></div>
+    <div class="glow"></div>
+    <div class="safe">
+      <div class="seal"><img src="LOGO_SRC" alt=""></div>
+      <div class="eyebrow">// Software solutions · Medellín, CO</div>
+      <h1>Soluciones de software<br>para un <em>mundo digital.</em></h1>
+      <div class="domain">www.alsdevstudio.com</div>
+    </div>
+  </div>
+</body>
+</html>
