@@ -7,18 +7,24 @@
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_CO">
-  <meta property="og:url" content="https://alsdevstudio.vercel.app/">
+  <meta property="og:site_name" content="ALS DevStudio">
+  <meta property="og:url" content="https://www.alsdevstudio.com/">
   <meta property="og:title" content="ALS DevStudio — Software solutions">
   <meta property="og:description" content="Soluciones de software para un mundo digital.">
-  <meta property="og:image" content="https://alsdevstudio.vercel.app/assets/brand/og-image.png">
+  <!-- JPG y no PNG: WhatsApp descarta la previsualización cuando la imagen pesa de más,
+       y la URL debe resolver en 200 directo — un redirect deja la tarjeta sin imagen. -->
+  <meta property="og:image" content="https://www.alsdevstudio.com/assets/brand/og-image.jpg">
+  <meta property="og:image:secure_url" content="https://www.alsdevstudio.com/assets/brand/og-image.jpg">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="ALS DevStudio — soluciones de software para un mundo digital.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ALS DevStudio — Software solutions">
   <meta name="twitter:description" content="Soluciones de software para un mundo digital.">
-  <meta name="twitter:image" content="https://alsdevstudio.vercel.app/assets/brand/og-image.png">
-  <link rel="canonical" href="https://alsdevstudio.vercel.app/">
+  <meta name="twitter:image" content="https://www.alsdevstudio.com/assets/brand/og-image.jpg">
+  <meta name="twitter:image:alt" content="ALS DevStudio — soluciones de software para un mundo digital.">
+  <link rel="canonical" href="https://www.alsdevstudio.com/">
   <meta name="theme-color" content="#071a2f">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/brand/logo-als.png">
@@ -29,10 +35,10 @@
       "@graph": [
         {
           "@type": "Organization",
-          "@id": "https://alsdevstudio.vercel.app/#organization",
+          "@id": "https://www.alsdevstudio.com/#organization",
           "name": "ALS DevStudio",
-          "url": "https://alsdevstudio.vercel.app/",
-          "logo": "https://alsdevstudio.vercel.app/assets/brand/logo-als.png",
+          "url": "https://www.alsdevstudio.com/",
+          "logo": "https://www.alsdevstudio.com/assets/brand/logo-als.png",
           "areaServed": "CO",
           "contactPoint": {
             "@type": "ContactPoint",
@@ -43,11 +49,11 @@
         },
         {
           "@type": "WebSite",
-          "@id": "https://alsdevstudio.vercel.app/#website",
-          "url": "https://alsdevstudio.vercel.app/",
+          "@id": "https://www.alsdevstudio.com/#website",
+          "url": "https://www.alsdevstudio.com/",
           "name": "ALS DevStudio — Software solutions",
           "description": "Soluciones de software para un mundo digital.",
-          "publisher": {"@id": "https://alsdevstudio.vercel.app/#organization"},
+          "publisher": {"@id": "https://www.alsdevstudio.com/#organization"},
           "inLanguage": "es-CO"
         }
       ]

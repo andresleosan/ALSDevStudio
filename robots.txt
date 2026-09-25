@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://alsdevstudio.vercel.app/sitemap.xml
+Sitemap: https://www.alsdevstudio.com/sitemap.xml
