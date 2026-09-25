@@ -2,9 +2,10 @@
   "name": "als-capturas",
   "private": true,
   "type": "module",
-  "description": "Herramienta de desarrollo: regenera las capturas de los proyectos de la landing. Vive fuera de la raiz para que el sitio siga siendo estatico sin build.",
+  "description": "Herramienta de desarrollo: regenera las capturas de los proyectos de la landing y la tarjeta Open Graph. Vive fuera de la raiz para que el sitio siga siendo estatico sin build.",
   "scripts": {
-    "capturar": "node capturar.mjs"
+    "capturar": "node capturar.mjs",
+    "og": "node og.mjs"
   },
   "devDependencies": {
     "playwright": "1.56.1",
