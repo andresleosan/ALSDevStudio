@@ -150,7 +150,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .hero-card::after { content:''; position:absolute; inset:0; z-index:6; border-radius:inherit; background:radial-gradient(560px circle at var(--glare-x,50%) var(--glare-y,-20%),rgba(255,255,255,.18),rgba(255,255,255,.05) 34%,transparent 62%); opacity:0; transition:opacity .45s ease; mix-blend-mode:screen; pointer-events:none; }
 .hero-visual.is-tilting .hero-card::after { opacity:1; }
 .hero-card-media { position:relative; overflow:hidden; background:#eaf2f8; }
-.hero-card-media::before { content:'LIVE / ALS PORTFOLIO'; position:absolute; top:16px; right:16px; z-index:3; padding:7px 10px; border:1px solid rgba(255,255,255,.3); border-radius:999px; background:rgba(7,26,47,.62); color:var(--paper); backdrop-filter:blur(10px); font:500 9px 'IBM Plex Mono',monospace; letter-spacing:.08em; }
+.hero-card-media::before { content:'LIVE / ALS PORTAFOLIO'; position:absolute; top:16px; right:16px; z-index:3; padding:7px 10px; border:1px solid rgba(255,255,255,.3); border-radius:999px; background:rgba(7,26,47,.62); color:var(--paper); backdrop-filter:blur(10px); font:500 9px 'IBM Plex Mono',monospace; letter-spacing:.08em; }
 .hero-card:hover .hero-card-media::before { border-color:rgba(101,212,157,.7); color:var(--mint); }
 .hero-card-media::after { content:''; position:absolute; inset:0; z-index:2; background:linear-gradient(135deg,rgba(255,255,255,.2),transparent 38%,rgba(7,26,47,.22)); pointer-events:none; }
 .hero-slides { position:relative; aspect-ratio:16/10; overflow:hidden; background:#eaf2f8; touch-action:pan-y; user-select:none; }
@@ -270,7 +270,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
    Un cruce progresivo hace que se lea como «la pagina cambio», que es justo lo contrario. */
 .project-visual.is-live-ready .project-live { opacity:1; }
 /* La diapositiva activa del hero usa el mismo marco: el card ya lleva el distintivo
-   «LIVE / ALS PORTFOLIO», así que aquí no hace falta repetirlo. */
+   «LIVE / ALS PORTAFOLIO», así que aquí no hace falta repetirlo. */
 .hero-slides .project-live { z-index:2; }
 .hero-slides.is-live-ready .project-live { opacity:1; }
 .project-live-frame { position:absolute; top:0; left:0; width:1440px; height:900px; border:0; background:#0d2746; transform-origin:0 0; transform:scale(var(--live-scale,.4)); pointer-events:none; }
