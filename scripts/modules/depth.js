@@ -18,6 +18,7 @@ import { query, queryAll, relativePointer } from './dom.js';
 const TILT_TARGETS = [
   ['.global-map-wrap', 3],
 ];
+const projectHoverQuery = window.matchMedia('(hover: hover)');
 
 const HERO_TILT = { x: 9, y: 12, orbit: 24, scroll: 8, gyro: 10 };
 
@@ -34,6 +35,7 @@ const TILT_MARGIN = '15% 0px';
 const SCENE_VARS = [
   '--rx', '--ry', '--tilt-x', '--tilt-y',
   '--orbit-x', '--orbit-y', '--glare-x', '--glare-y',
+  '--card-x', '--card-y',
   '--mag-x', '--mag-y',
 ];
 
@@ -64,6 +66,9 @@ export function initDepth() {
     const targets = TILT_TARGETS.flatMap(([selector, max]) =>
       queryAll(String(selector), HTMLElement).map(element => ({ element, max: Number(max) })),
     );
+    if (mode === 'pointer' && projectHoverQuery.matches) {
+      targets.push(...queryAll('.project-card', HTMLElement).map(element => ({ element, max: 7 })));
+    }
     targets.forEach(({ element }) => element.classList.add('tilt-3d'));
 
     if (mode === 'pointer') teardown = initPointerDepth(heroVisual, heroCard, orbit, targets);
@@ -92,6 +97,7 @@ export function initDepth() {
 
   start();
   onMediaChange([finePointerQuery, coarsePointerQuery, reducedMotionQuery, mobileQuery], () => restart());
+  onMediaChange([projectHoverQuery], () => restart(true));
   return {
     restart: () => restart(true),
     stop: () => {
@@ -108,7 +114,7 @@ function resetScene() {
   queryAll('.tilt-3d,.hero-visual,.orbit,.hero-card,.magnetic', HTMLElement).forEach(element => {
     SCENE_VARS.forEach(name => element.style.removeProperty(name));
     element.style.removeProperty('will-change');
-    element.classList.remove('is-pressed-3d');
+    element.classList.remove('tilt-3d', 'is-pressed-3d');
   });
   query('.hero-visual', HTMLElement)?.classList.remove('is-tilting');
 }
@@ -151,9 +157,13 @@ function initPointerDepth(heroVisual, heroCard, orbit, targets) {
   }
 
   targets.forEach(({ element, max }) => {
+    const isProject = element.classList.contains('project-card');
     const move = frameThrottle(/** @param {PointerEvent} event */ event => {
-      const { x, y } = relativePointer(element, event);
-      setVars(element, { '--ry': `${(x * max * 2).toFixed(2)}deg`, '--rx': `${(-y * max * 2).toFixed(2)}deg` });
+      const { x, y, box } = relativePointer(element, event);
+      setVars(element, { '--ry': `${(clamp(x, -0.5, 0.5) * max * 2).toFixed(2)}deg`, '--rx': `${(-clamp(y, -0.5, 0.5) * max * 2).toFixed(2)}deg` });
+      if (isProject) {
+        setVars(element, { '--card-x': `${((x + 0.5) * box.width).toFixed(1)}px`, '--card-y': `${((y + 0.5) * box.height).toFixed(1)}px` });
+      }
     });
     pending.push(move.cancel);
     element.addEventListener('pointermove', move.run, { passive: true, signal });

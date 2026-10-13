@@ -143,9 +143,62 @@
       </div>
       <div class='scroll-cue'>desplaza para explorar</div>
     </section>
-    <div class="marquee" aria-hidden="true"><div class="marquee-track"><span>software a medida</span><b>✦</b><span>experiencias web</span><b>✦</b><span>sistemas que escalan</span><b>✦</b><span>software a medida</span><b>✦</b><span>experiencias web</span><b>✦</b><span>sistemas que escalan</span><b>✦</b></div></div>
+    <div class="marquee">
+      <div class="marquee-viewport">
+        <div class="marquee-track" id="services-banner">
+          <ul class="marquee-group" role="list" aria-label="Servicios">
+            <li>Software a medida</li><li>Diseño web</li><li>Tiendas virtuales</li><li>Productos digitales</li><li>Landing pages</li><li>Interfaces claras</li><li>Aplicaciones web</li><li>Diseño responsive</li>
+          </ul>
+          <ul class="marquee-group" aria-hidden="true">
+            <li>Software a medida</li><li>Diseño web</li><li>Tiendas virtuales</li><li>Productos digitales</li><li>Landing pages</li><li>Interfaces claras</li><li>Aplicaciones web</li><li>Diseño responsive</li>
+          </ul>
+        </div>
+      </div>
+      <button class="marquee-toggle" type="button" data-marquee-toggle aria-controls="services-banner" aria-label="Pausar banner de servicios" hidden>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path class="marquee-pause-icon" d="M5 3v10M11 3v10" fill="none" stroke="currentColor" stroke-width="2"/><path class="marquee-play-icon" d="m5 2 8 6-8 6Z" fill="currentColor"/></svg>
+        <span data-marquee-label>Pausar</span>
+      </button>
+    </div>
 
-    <section class="section global-section" id="alcance"><div class="wrap"><div class="section-heading" data-reveal><div><div class="eyebrow">01 / alcance global</div><h2>Tu ubicación no es el límite.</h2></div><p>Ideas que cruzan fronteras, productos que encuentran a las personas correctas.</p></div><div class="global-stage" data-reveal><div class="global-intro"><div class="global-signal"><span><i></i> trabajo remoto</span><span>colaboración a distancia</span></div><h3>Una buena idea puede viajar más lejos que el mapa.</h3><p>Desde donde estés, podemos convertir una necesidad concreta en una experiencia digital clara, útil y lista para crecer.</p><div class="global-metrics"><div><strong>07</strong><span>referencias<br>del mapa</span></div><div><strong>01</strong><span>forma de<br>empezar: hablar</span></div></div><div class="global-location-list" role="group" aria-label="Ubicaciones conectadas"><button class="global-location is-active" type="button" data-location="usa"><span>01</span><strong>Estados Unidos</strong><small>Una idea que cruza el mapa.</small></button><button class="global-location" type="button" data-location="mexico"><span>02</span><strong>México</strong><small>Diseñamos cerca, aunque estés lejos.</small></button><button class="global-location" type="button" data-location="colombia"><span>03</span><strong>Colombia</strong><small>El punto desde donde conectamos.</small></button><button class="global-location" type="button" data-location="venezuela"><span>04</span><strong>Venezuela</strong><small>Producto con contexto local.</small></button><button class="global-location" type="button" data-location="brasil"><span>05</span><strong>Brasil</strong><small>Más alcance para tu próximo paso.</small></button><button class="global-location" type="button" data-location="espana"><span>06</span><strong>España</strong><small>La conversación también llega lejos.</small></button><button class="global-location" type="button" data-location="jersey"><span>07</span><strong>Jersey</strong><small>Un punto más en nuestra órbita.</small></button></div></div><div class="global-map-wrap"><div class="global-map-label"><span>MAPA ILUSTRATIVO</span><span>ALS / 2026</span></div><div class="global-map-host" data-map-src="assets/brand/world-map.svg" aria-hidden="true"></div><div class="global-map-console"><div class="global-map-selection" aria-live="polite"><div class="global-map-selection-head"><span>foco activo</span><strong id="global-map-selection">Estados Unidos</strong></div><div class="global-map-coordinates"><span id="global-latitude">38° 00′ N</span><span id="global-longitude">97° 00′ W</span></div></div><div class="global-map-insight"><div><span>señal als / global</span><strong>Una conexión puede<br>empezar en cualquier lugar.</strong></div><div class="global-map-nodebar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div><div class="global-map-footer"><span><i></i> mapa ilustrativo · sin sedes declaradas</span><span>selecciona un punto para explorar</span></div></div></div><div class="global-status" id="global-status" role="status" aria-live="polite"><span>punto activo</span><strong>Estados Unidos · una idea que cruza el mapa.</strong></div></div></div></section>
+    <section class="section global-section" id="alcance">
+      <div class="wrap">
+        <div class="section-heading" data-reveal>
+          <div><div class="eyebrow">01 / alcance global</div><h2>Tu ubicación no es el límite.</h2></div>
+          <p>Ideas que cruzan fronteras, productos que encuentran a las personas correctas.</p>
+        </div>
+        <div class="global-stage" data-reveal>
+          <div class="global-intro">
+            <div class="global-signal"><span><i></i> trabajo remoto</span><span>colaboración a distancia</span></div>
+            <h3>Una buena idea puede viajar más lejos que el mapa.</h3>
+            <p>Desde donde estés, podemos convertir una necesidad concreta en una experiencia digital clara, útil y lista para crecer.</p>
+            <div class="global-metrics"><div><strong>07</strong><span>referencias<br>del mapa</span></div><div><strong>01</strong><span>forma de<br>empezar: hablar</span></div></div>
+            <button class="global-rotation-toggle" type="button" data-map-toggle aria-controls="global-map-selection" aria-label="Pausar recorrido automático de países" hidden>Pausar recorrido</button>
+            <div class="global-location-list" role="group" aria-label="Ubicaciones del mapa">
+              <button class="global-location is-active" type="button" data-location="usa"><span>01</span><strong>Estados Unidos</strong><small>Una idea que cruza el mapa.</small></button>
+              <button class="global-location" type="button" data-location="mexico"><span>02</span><strong>México</strong><small>Diseñamos cerca, aunque estés lejos.</small></button>
+              <button class="global-location" type="button" data-location="colombia"><span>03</span><strong>Colombia</strong><small>El punto desde donde conectamos.</small></button>
+              <button class="global-location" type="button" data-location="venezuela"><span>04</span><strong>Venezuela</strong><small>Producto con contexto local.</small></button>
+              <button class="global-location" type="button" data-location="brasil"><span>05</span><strong>Brasil</strong><small>Más alcance para tu próximo paso.</small></button>
+              <button class="global-location" type="button" data-location="espana"><span>06</span><strong>España</strong><small>La conversación también llega lejos.</small></button>
+              <button class="global-location" type="button" data-location="jersey"><span>07</span><strong>Jersey</strong><small>Un punto más en nuestra órbita.</small></button>
+            </div>
+          </div>
+          <div class="global-map-wrap">
+            <div class="global-map-label"><span>MAPA ILUSTRATIVO</span><span>ALS / 2026</span></div>
+            <div class="global-map-host" data-map-src="assets/brand/world-map.svg" aria-hidden="true"></div>
+            <div class="global-map-console">
+              <div class="global-map-selection">
+                <div class="global-map-selection-head"><span>foco activo</span><strong id="global-map-selection">Estados Unidos</strong></div>
+                <div class="global-map-coordinates"><span id="global-latitude">38° 00′ N</span><span id="global-longitude">97° 00′ W</span></div>
+              </div>
+              <div class="global-map-insight"><div><span>señal als / global</span><strong>Una conexión puede<br>empezar en cualquier lugar.</strong></div><div class="global-map-nodebar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            </div>
+            <div class="global-map-footer"><span><i></i> mapa ilustrativo · sin sedes declaradas</span><span>selecciona un punto para explorar</span></div>
+          </div>
+        </div>
+        <div class="global-status" id="global-status" role="status" aria-live="polite"><span>punto activo</span><strong>Estados Unidos · una idea que cruza el mapa.</strong></div>
+      </div>
+    </section>
 
 
     <section class="section" id="proyectos">
@@ -182,29 +235,53 @@
       <a class="project-card" data-project-key="dialon" href="https://dialon.pages.dev/" target="_blank" rel="noopener noreferrer" aria-label="Abrir proyecto Dialon" data-category="product"><div class="project-visual"><picture class="project-picture"><source type="image/avif" srcset="assets/projects/responsive/480/dialon.avif 480w, assets/projects/responsive/768/dialon.avif 768w, assets/projects/responsive/1200/dialon.avif 1200w" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px"><source type="image/webp" srcset="assets/projects/responsive/480/dialon.webp 480w, assets/projects/responsive/768/dialon.webp 768w, assets/projects/responsive/1200/dialon.webp 1200w" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px"><img class="project-image" src="assets/projects/dialon.jpg" alt="Prototipo de Dialon con dos paneles opuestos para una conversación bilingüe" width="1440" height="900" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px" loading="lazy" decoding="async" fetchpriority="low"></picture></div><div class="project-body"><span class="project-status">En construcción</span><h3>Dialon</h3><p>Prototipo para explorar conversaciones bilingües cara a cara.</p></div></a>
       <a class="project-card" data-project-key="vigia" href="https://vigiaapp.pages.dev/" target="_blank" rel="noopener noreferrer" aria-label="Abrir proyecto Vigia" data-category="product"><div class="project-visual"><picture class="project-picture"><source type="image/avif" srcset="assets/projects/responsive/480/vigia.avif 480w, assets/projects/responsive/768/vigia.avif 768w, assets/projects/responsive/1200/vigia.avif 1200w" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px"><source type="image/webp" srcset="assets/projects/responsive/480/vigia.webp 480w, assets/projects/responsive/768/vigia.webp 768w, assets/projects/responsive/1200/vigia.webp 1200w" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px"><img class="project-image" src="assets/projects/vigia.jpg" alt="Página de Vigia que presenta un prototipo de seguridad personal en construcción" width="1440" height="900" sizes="(max-width: 680px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 35px), 579px" loading="lazy" decoding="async" fetchpriority="low"></picture></div><div class="project-body"><span class="project-status">En construcción</span><h3>Vigia</h3><p>Prototipo de una herramienta de seguridad personal y registro de evidencia.</p></div></a>
     </div></div></section>
-    <section class="section" id="proceso">
+    <section class="section process-section" id="proceso" aria-labelledby="process-title">
       <div class="wrap">
-        <div class="section-heading" data-reveal>
-          <div><div class="eyebrow">03 / proceso</div><h2>Cómo trabajaremos.</h2></div>
+        <div class="section-heading">
+          <div><div class="eyebrow">03 / proceso</div><h2 id="process-title">Cómo trabajaremos.</h2></div>
           <p>El alcance se acuerda contigo. Cada etapa tiene algo concreto que revisar.</p>
         </div>
-        <div class="process-grid" data-reveal>
-          <article class="process-item">
-            <div class="process-number">01 / definir</div>
-            <h3>Primero, entender tu negocio.</h3>
-            <p>Conversamos sobre el problema, los usuarios y las prioridades para acordar qué construir.</p>
-          </article>
-          <article class="process-item">
-            <div class="process-number">02 / construir</div>
-            <h3>Del diseño a una versión usable.</h3>
-            <p>Revisamos la propuesta visual y los avances de desarrollo con el alcance acordado como referencia.</p>
-          </article>
-          <article class="process-item">
-            <div class="process-number">03 / entregar</div>
-            <h3>Revisar antes de publicar.</h3>
-            <p>Comprobamos el funcionamiento y preparamos la entrega. Las mejoras posteriores se acuerdan según lo que necesites.</p>
-          </article>
-        </div>
+        <ol class="process-grid" role="list">
+          <li class="process-item">
+            <div class="process-step"><span class="process-number" aria-hidden="true">01</span><span>Definir</span></div>
+            <svg class="process-visual" viewBox="0 0 280 150" fill="none" aria-hidden="true" focusable="false">
+              <path d="M39 31h135a10 10 0 0 1 10 10v53a10 10 0 0 1-10 10H76l-25 19v-19H39a10 10 0 0 1-10-10V41a10 10 0 0 1 10-10Z" fill="#0d2746" stroke="#4d9bff" stroke-width="1.5"/>
+              <path d="M52 53h69M52 68h108M52 83h87" stroke="#aab9cb" stroke-width="3" stroke-linecap="round"/>
+              <path d="M155 76h79a10 10 0 0 1 10 10v32a10 10 0 0 1-10 10h-9v13l-18-13h-52a10 10 0 0 1-10-10V86a10 10 0 0 1 10-10Z" fill="#123353" stroke="#65d49d" stroke-width="1.5"/>
+              <circle cx="177" cy="102" r="3" fill="#65d49d"/><circle cx="195" cy="102" r="3" fill="#65d49d"/><circle cx="213" cy="102" r="3" fill="#65d49d"/>
+              <path d="m224 30 5-9m8 22 10-2" stroke="#4d9bff" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="process-copy"><h3>Primero, entender tu negocio.</h3><p>Conversamos sobre el problema, los usuarios y las prioridades para acordar qué construir.</p></div>
+          </li>
+          <li class="process-item">
+            <div class="process-step"><span class="process-number" aria-hidden="true">02</span><span>Construir</span></div>
+            <svg class="process-visual" viewBox="0 0 280 150" fill="none" aria-hidden="true" focusable="false">
+              <rect x="30" y="23" width="220" height="112" rx="8" fill="#0d2746" stroke="#4d9bff" stroke-width="1.5"/>
+              <path d="M30 44h220" stroke="#4d9bff" stroke-opacity=".5"/>
+              <circle cx="43" cy="34" r="2" fill="#aab9cb"/><circle cx="52" cy="34" r="2" fill="#aab9cb"/><circle cx="61" cy="34" r="2" fill="#aab9cb"/>
+              <rect x="47" y="61" width="68" height="56" rx="3" fill="#123353" stroke="#4d9bff" stroke-opacity=".5"/>
+              <path d="m60 104 14-16 10 10 10-23 11 29" stroke="#4d9bff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M132 64h68M132 77h91M132 90h61" stroke="#aab9cb" stroke-width="3" stroke-linecap="round"/>
+              <rect x="131" y="104" width="47" height="12" rx="3" fill="#65d49d"/>
+              <path d="m212 104 23 16-13 2-6 12-4-30Z" fill="#041224" stroke="#65d49d" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            <div class="process-copy"><h3>Del diseño a una versión usable.</h3><p>Revisamos la propuesta visual y los avances de desarrollo con el alcance acordado como referencia.</p></div>
+          </li>
+          <li class="process-item">
+            <div class="process-step"><span class="process-number" aria-hidden="true">03</span><span>Entregar</span></div>
+            <svg class="process-visual" viewBox="0 0 280 150" fill="none" aria-hidden="true" focusable="false">
+              <rect x="49" y="23" width="170" height="112" rx="8" fill="#0d2746" stroke="#4d9bff" stroke-width="1.5"/>
+              <path d="M49 44h170" stroke="#4d9bff" stroke-opacity=".5"/>
+              <circle cx="62" cy="34" r="2" fill="#aab9cb"/><circle cx="71" cy="34" r="2" fill="#aab9cb"/><circle cx="80" cy="34" r="2" fill="#aab9cb"/>
+              <path d="m68 65 4 4 7-8m-11 23 4 4 7-8m-11 23 4 4 7-8" stroke="#65d49d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M91 65h95M91 84h72M91 103h49" stroke="#aab9cb" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="214" cy="112" r="25" fill="#65d49d"/>
+              <path d="m204 112 7 7 13-15" stroke="#041224" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="m236 65 7-6m-4 22 11-1" stroke="#4d9bff" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="process-copy"><h3>Revisar antes de publicar.</h3><p>Comprobamos el funcionamiento y preparamos la entrega. Las mejoras posteriores se acuerdan según lo que necesites.</p></div>
+          </li>
+        </ol>
       </div>
     </section>
     <section class="section contact-section" id="contacto">

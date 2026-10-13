@@ -102,3 +102,22 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - Al regresar a una portada conservada en memoria, el carrusel relee la preferencia de pausa para aplicar el restablecimiento efectuado en cookies.
 - Dirección y NIT aportados para los HTML; reenvío Porkbun observado por DNS y destino Gmail/acceso exclusivo confirmados por el titular. Retención de consultas: revisión mensual y eliminación tras seis meses sin actividad, adoptada expresamente; otros documentos por necesidad legal/contractual y revisión al cierre. La configuración privada de proveedores mantiene sus límites de verificación.
 - Gestión manual documentada en `docs/legal/OPERACION-Y-SOLICITUDES.md`; no se añade CRM, formulario ni envío automático. Canonical y sitemap para las tres páginas, enlaces legales y SIC, cancelaciones dentro de términos.
+
+### Hover de proyectos · 2026-10-13
+- Reutilizar el modo de puntero de `depth.js` para las tarjetas: inclinación máxima de 7 grados como en el efecto anterior, elevación de 8 px y brillo contenido en la captura. Una lectura de posición por frame para inclinación y brillo.
+- Conservar galería, tipografía y contenido actuales. Activar solo en escritorio con puntero fino y movimiento permitido; limpiar variables y clases al cambiar de modo. Móvil, movimiento reducido y teclado conservan enlaces y foco estable. Sin dependencias, marcos externos ni almacenamiento nuevo.
+
+### Recorrido automático del mapa · 2026-10-13
+- Intervalo anterior de 4200 ms, con un solo temporizador. La API start/stop sigue coordinada por main.js y respeta pausa elegida en memoria, visibilidad, hover y lowPowerMotion. No guardar preferencias nuevas en el navegador.
+- Botón nativo antes de la lista para pausar o reanudar. Elegir un país o enfocar sus controles detiene el recorrido hasta reanudación explícita. Solo las elecciones manuales se anuncian; los avances no mueven foco ni producen anuncios periódicos.
+- Mantener animaciones decorativas del mapa desactivadas. Rotación solo mientras la sección es visible, en escritorio con movimiento permitido; en móvil y movimiento reducido se conserva la selección manual.
+
+### Recorrido del proceso · 2026-10-13
+- Tres etapas dentro de una superficie continua, conectadas por una línea de lectura. Ilustraciones SVG propias de conversación, construcción y revisión; su función es distinguir las fases reales del servicio. Lista ordenada con títulos y texto siempre visibles, también sin JavaScript.
+- Conservar tinta/blanco/menta de ALS y tipografías actuales: Space Grotesk para títulos, IBM Plex Mono para fases y números. Fondo sólido más oscuro para separar esta secuencia de las capturas de proyectos; sin sombras ni efectos que sugieran botones.
+- Tres columnas desde 901 px; recorrido vertical en tablet y móvil, con ilustración junto al texto cuando cabe. CSS/HTML acotados a proceso, sin dependencias, animación automática, nuevos compromisos comerciales ni conexiones externas.
+
+### Banner de servicios · 2026-10-13
+- Ocho frases diferentes en dos grupos idénticos: el segundo mantiene la continuidad del desplazamiento CSS lineal. Separación adaptable y grupos de al menos un viewport para evitar huecos en pantallas anchas.
+- Movimiento habilitado solo con JavaScript y sin preferencia de movimiento reducido. Botón nativo de pausa/reanudación fuera del área en movimiento; hover detiene temporalmente. Un único grupo expuesto como lista de servicios a tecnologías de asistencia. Sin JS o con movimiento reducido se muestra un único grupo estático, con salto de línea.
+- Estado de pausa en memoria mediante clase CSS; sin temporizadores, almacenamiento, dependencias ni solicitudes nuevas. Tipografía y colores existentes, control de 44 px mínimo y anchos reservados para que cambiar su etiqueta no provoque saltos.

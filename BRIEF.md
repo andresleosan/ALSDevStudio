@@ -53,3 +53,15 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 - El titular solicita publicar las políticas y el trabajo de la auditoría inicial. Completar los datos esenciales sin inventarlos; distinguir compromisos adoptados de configuración de proveedores sin verificar.
 - Corregir el restablecimiento de preferencias al volver mediante el historial, conectar los documentos desde el footer y comprobar su lectura y navegación en móvil.
 - El titular aportó dirección y NIT para publicar, confirmó Porkbun → Gmail con acceso exclusivo y adoptó revisión mensual con eliminación de consultas sin contrato tras seis meses sin actividad. Para proyectos, pagos y reclamaciones adopta conservación por necesidad legal/contractual y revisión al cierre. No se revisaron documentos de identidad ni cuentas privadas.
+
+## Recuperar animación de proyectos · 2026-10-13
+- El titular solicita recuperar la animación de las tarjetas al pasar el cursor. Restaurar inclinación, elevación y brillo del efecto anterior dentro de la galería actual, con retorno suave al salir y respeto a movimiento reducido.
+
+## Recuperar recorrido de países · 2026-10-13
+- Recuperar la selección automática de países del mapa. Incorporar pausa/reanudación visible y conservar la elección manual, las etiquetas de mapa ilustrativo y las preferencias de movimiento.
+
+## Rediseñar proceso · 2026-10-13
+- El titular solicita mejorar la sección de proceso porque no le convence su presentación en filas. Dar forma visual a las tres etapas reales, conservando el alcance acordado y el contenido sobre revisiones y mejoras posteriores.
+
+## Recuperar banner de servicios · 2026-10-13
+- Recuperar el desplazamiento continuo de la banda y ampliar/separar las frases para evitar repeticiones cercanas. Usar servicios y descripciones ya presentes en el sitio.

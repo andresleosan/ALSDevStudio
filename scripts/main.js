@@ -10,6 +10,7 @@ import { initNav } from './modules/nav.js';
 import { initContact } from './modules/contact.js';
 import { initDepth } from './modules/depth.js';
 import { initReveal } from './modules/reveal.js';
+import { initMarquee } from './modules/marquee.js';
 
 /**
  * Aísla errores síncronos de inicialización; no cubre imports ni callbacks posteriores.
@@ -32,6 +33,7 @@ safely('cursor', initCursor);
 safely('reveal', initReveal);
 const hero = safely('carrusel', initHeroCarousel);
 safely('proyectos', initProjects);
+safely('banner de servicios', initMarquee);
 const globalMap = safely('mapa global', initGlobalMap);
 safely('navegación', initNav);
 safely('contacto', initContact);
