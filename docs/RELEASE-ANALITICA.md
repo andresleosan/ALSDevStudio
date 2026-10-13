@@ -36,7 +36,18 @@ Comprobación local completada por Cronos después de revisión independiente:
 - `node test-results/design-qa.mjs`: **PASS**, 19 comprobaciones, cinco anchos, proyectos/contacto/animaciones preservados y dos auditorías axe sin violaciones automáticas. Persisten comprobaciones manuales de contraste complejo en portada.
 - `node --check scripts/analytics.js` y `git diff --check`: **PASS**. Revisión de seguridad: HTML del diálogo fijo, ningún parámetro de visitante interpolado, no hay secretos ni ampliación de CSP. Corregidos los defectos de retirada/persistencia encontrados por la revisión independiente. Sin hallazgos críticos en este cambio.
 
-Evidencia local regenerable en `test-results/analytics-consent-qa-results.json`, capturas `analytics-dialog-*.png` y reportes de regresión. El historial del navegador/bfcache real no se presenta como ensayado: sí se probó la relectura antes de cada envío y la retirada entre pestañas. La recepción real del proveedor se verificará después del push normal mediante Chrome y el dashboard, sin falsear su detección de automatización.
+Evidencia local regenerable en `test-results/analytics-consent-qa-results.json`, capturas `analytics-dialog-*.png` y reportes de regresión. El historial del navegador/bfcache real no se presenta como ensayado: sí se probó la relectura antes de cada envío y la retirada entre pestañas.
+
+## Publicación y recepción real
+
+Publicado mediante push normal de `712784207154376f8354a728e902e4be9441012a`, con autor y committer `Andres Santiago` y correo noreply de `andresleosan`; hash confirmado en origin/main. Sin reescritura de historia.
+
+- `LEGAL_BASE=https://www.alsdevstudio.com node test-results/legal-release-smoke.mjs`: **PASS**, nueve archivos publicados coinciden con la fuente; cabeceras, enlaces, teclado, restablecimiento, móvil y sin JavaScript correctos. Cero cookies, errores u orígenes externos en el recorrido rechazado.
+- Chrome real con sesión del navegador, sin modificar UA ni webdriver: antes de aceptar y después de rechazar, **cero solicitudes** al servicio de Analytics. Al aceptar, una descarga del script HTTP 200 y un POST de vista HTTP 200. Payload observado: origen/ruta pública, versión del runtime, fecha y referente vacío; no contenía consulta ni datos de contacto, y Referer HTTP vacío.
+- Retirar mediante el pie y recargar produjo **cero solicitudes** adicionales de Analytics. La prueba terminó con analítica rechazada en ese navegador.
+- Dashboard autenticado mostró **Visitors 1 / Page Views 1**, ruta `/`, país Colombia y sistema Windows. Se trata de la visita de prueba, no de tráfico orgánico. Panel dejado abierto para el titular; evidencia visual observada en la sesión. Desde aquí empiezan las estadísticas; no se recupera historial anterior a la integración.
+
+Los contadores prueban recepción de este ensayo, no exactitud universal de medición ni ausencia de subregistro. Persisten los límites contractuales y profesionales descritos arriba.
 
 ## Reversión
 
