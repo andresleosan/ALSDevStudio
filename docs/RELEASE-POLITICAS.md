@@ -26,4 +26,10 @@ Hacer push normal a origin/main con autor y committer de andresleosan. Verificar
 
 Si es necesario revertir, usar `git revert <commit-de-esta-publicacion>` desde un árbol limpio y publicar ese nuevo commit con `git push origin main`. Conserva la historia y no requiere force push. Revertir la entrega completa retira páginas y enlaces legales; valorar una corrección localizada para no volver a dejar el sitio sin información. No hay datos de clientes ni bases que restaurar.
 
-Este documento se prepara antes del push: la comprobación de producción se informa después y no se da por ejecutada anticipadamente. La autorización para esta publicación no autoriza futuros cambios de condiciones ni borrados ajenos al alcance.
+La autorización para esta publicación no autoriza futuros cambios de condiciones ni borrados ajenos al alcance.
+
+## Comprobación posterior al push
+
+Commit publicado: `6da5a7ac32cc29169f755e2e818e41becf599407`, con autor y committer Andres Santiago y correo noreply de andresleosan. Push normal confirmado en origin/main.
+
+`LEGAL_BASE=https://www.alsdevstudio.com node test-results/legal-release-smoke.mjs`: PASS. Ocho archivos públicos coinciden con la versión aprobada, las tres políticas responden HTTP 200 y conservan las cabeceras restrictivas. En navegador se comprobaron enlaces, ancla de cancelaciones, restablecimiento por teclado y regreso al carrusel, 1440/320 px, lectura sin JavaScript y alternativa al botón. Cero cookies, solicitudes a otros orígenes y errores en ese recorrido. Evidencia local: `test-results/legal-release-live.json`. No se enviaron consultas a terceros ni se verificaron cuentas privadas.

@@ -1,7 +1,7 @@
 # Auditoría de privacidad, accesibilidad y cumplimiento
 Inspección inicial: 12 de octubre de 2026. Actualización para publicación legal: 13 de octubre de 2026. Alcance: repositorio ALS DevStudio, observaciones públicas y declaraciones del titular. No incluye acceso a cuentas de proveedores, conversaciones privadas, contratos ni verificación documental de identidad. Es una revisión de riesgos condicionada por los hechos, no certificación legal ni WCAG.
 
-Estado antes del push legal: las correcciones técnicas anteriores están publicadas en ee0ac23. Los tres textos públicos están completos con los datos aportados y la publicación fue autorizada por el titular. La verificación local del 13 de octubre está registrada al final; la comprobación de producción se realiza después del push, sin anticipar su resultado.
+Estado final de esta publicación: las correcciones técnicas anteriores están publicadas en ee0ac23 y los tres textos legales y el reset en `6da5a7a`, con publicación autorizada por el titular. La verificación local y de producción del 13 de octubre están registradas al final. Persisten pendientes operativos y de revisión profesional, sin certificación de cumplimiento integral.
 
 ## Inspección inicial antes de modificar
 Esta tabla conserva la situación encontrada el 12 de octubre, no los pendientes actuales. Las confirmaciones posteriores del titular aparecen más abajo: identidad y contactos aportados, publicación de dirección y NIT autorizada, proveedores del correo identificados y criterio de conservación adoptado. La autenticidad documental y la configuración privada de las cuentas no se verificaron.
@@ -25,7 +25,7 @@ Se preguntó al titular por identidad/contactos, mercados/contratación y almace
 | ID | Prioridad inicial | Hallazgo inicial | Estado y acción |
 |---|---|---|---|
 | P01 | Alta | Los iframes cargaban por defecto, incluso cuando fallaba localStorage, sin información ni elección | Resuelto técnicamente: embebidos retirados, CSP frame-src none; capturas y enlaces permanecen. Corrección publicada en ee0ac23 |
-| P02 | Alta | Sin política con responsable ni prácticas reales de las consultas comerciales | Parcial: políticas completadas con identificación, finalidades, proveedores, conservación y derechos. Aplicación manual y comprobación posterior de publicación pendientes |
+| P02 | Alta | Sin política con responsable ni prácticas reales de las consultas comerciales | Parcial: políticas publicadas y comprobadas, con identificación, finalidades, proveedores, conservación y derechos. Aplicación manual pendiente de evidencia |
 | P03 | Alta | «Conexiones verificadas» y lugares conectados sin evidencia documental | Resuelto en el contenido revisado: mapa presentado como ilustración de colaboración remota |
 | P04 | Alta | Licencias/permisos para recursos de clientes no documentados | Pendiente: inventario ampliado a mascotas; autorización de integración no acredita derechos originales frente a terceros |
 | P05 | Media | Tipografías remotas contactaban Google automáticamente | Resuelto técnicamente: archivos locales, OFL y procedencia documentada; corrección publicada en ee0ac23 |
@@ -37,7 +37,7 @@ Se preguntó al titular por identidad/contactos, mercados/contratación y almace
 | A04 | Media | Cambio del resultado del contacto sin anuncio accesible | Resuelto en la versión revisada mediante región de estado polite |
 | A05 | Media | Contraste de etiquetas translúcidas dependía de capturas claras | Parcial: corrección conservadora aplicada; permanecen comprobaciones manuales de fondos complejos y estados |
 | A06 | Baja | Nombre ARIA en grupo genérico de notas de contacto | Resuelto en la versión revisada: rol de grupo y repetición de auditoría registrados |
-| A07 | Media | El restablecimiento podía conservar la pausa anterior al regresar al carrusel | Corrección local verificada por Cronos: releer almacenamiento en pageshow, conservar estado en memoria si la lectura falla; publicación de este ajuste sin confirmar |
+| A07 | Media | El restablecimiento podía conservar la pausa anterior al regresar al carrusel | Resuelto en el alcance probado: releer almacenamiento en pageshow y conservar estado en memoria si la lectura falla. Publicado en 6da5a7a y recorrido de reset comprobado en producción |
 
 ## Normativa oficial
 Fuentes consultadas en la auditoría inicial del 12-10-2026. El 13-10-2026 se volvieron a consultar Ley 1581, Decreto 1074, Ley 1480 consolidada y documentación oficial de proveedores para preparar la publicación. Aplicación final sujeta a identidad, actividad y mercados reales.
@@ -113,7 +113,7 @@ Se conserva la evidencia registrada entonces; no se repitieron estas pruebas al 
 4. Revisar contratos de desarrollo: alcance, hitos/cobros, inicio consentido, liquidación por cancelación, garantías, propiedad intelectual y atención de reclamos. Evaluar consumo y tratamiento internacional según los mercados a los que se dirija la actividad; aceptar clientes de cualquier país no acredita revisión de todas sus normas.
 5. Acreditar permisos de los recursos en docs/legal/INVENTARIO-RECURSOS.md, incluidas las mascotas. La autorización del titular para integrarlas no demuestra derechos originales frente a terceros. No se encontraron testimonios en la revisión inicial.
 6. Completar revisión de todos los estados de contraste con fondos complejos, lector de pantalla real y zoom nativo. La accesibilidad de proyectos externos queda fuera de esta auditoría. Queda pendiente ejercitar una restauración real desde bfcache.
-7. Repetir red/cookies y comprobar los textos en producción tras su despliegue autorizado. Este informe previo al push no confirma ese despliegue ni certifica cumplimiento integral.
+7. Repetir inventario y pruebas si cambian scripts, integraciones o configuración de alojamiento. La comprobación de producción descrita abajo corresponde a esta entrega; no garantiza futuras configuraciones ni certifica cumplimiento integral.
 
 ## Verificación de la publicación preparada · 13 de octubre
 
@@ -123,3 +123,9 @@ Se conserva la evidencia registrada entonces; no se repitieron estas pruebas al 
 - `node test-results/legal-release-smoke.mjs`: PASS local; ocho archivos servidos coinciden con su fuente, cabeceras restrictivas, canonical e indexación, ancla de cancelaciones, reset por teclado y regreso al carrusel, tres documentos sin JavaScript y alternativa de borrado desde el navegador.
 - Revisión independiente de textos: sin contradicciones bloqueantes con los hechos declarados; se precisaron requerimiento de subsanación y comunicación previa de cambios, y se sustituyó el enlace de datos de SIC por una página oficial localizada. Los plazos generales de conservación por obligación requieren concretarse con apoyo contable/jurídico según cada documento.
 - No se enviaron correos ni mensajes, no se inspeccionaron conversaciones privadas, y no se comprobó entrega del buzón. No se modificaron las cuentas de proveedores ni se ejecutaron borrados de clientes.
+
+## Comprobación en producción
+
+El push normal de `6da5a7ac32cc29169f755e2e818e41becf599407` se confirmó en origin/main con identidad andresleosan. Las tres políticas devolvieron HTTP 200 en https://www.alsdevstudio.com/ y coincidieron con los archivos preparados.
+
+`LEGAL_BASE=https://www.alsdevstudio.com node test-results/legal-release-smoke.mjs`: PASS. Ocho archivos públicos coinciden, cabeceras verificadas; enlaces y ancla de cancelaciones, reset por teclado y regreso, 1440/320 px y tres páginas sin JavaScript. Cero cookies, solicitudes a terceros o errores en el recorrido. Evidencia local: `test-results/legal-release-live.json`. Los límites operativos, documentales y de cuentas privadas permanecen abiertos.

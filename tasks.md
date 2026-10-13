@@ -411,8 +411,9 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Reversión documentada en `docs/RELEASE-DESIGN-MASCOT.md`; sin migraciones ni cambios de datos.
 
 ## LEGAL-RELEASE · 2026-10-13
-- Estado: aprobada para publicación. Publicación solicitada expresamente; datos esenciales y criterio de retención recibidos del titular. Revisión normativa oficial, técnica y de textos completada con límites documentados.
+- Estado: desplegada. Publicación solicitada expresamente; datos esenciales y criterio de retención recibidos del titular. Revisión normativa oficial, técnica y de textos completada con límites documentados. Commit publicado: `6da5a7ac32cc29169f755e2e818e41becf599407`.
 - Completar políticas y enlaces, corregir restablecimiento al volver con historial y documentar la gestión manual de autorizaciones, conservación y solicitudes.
 - Validar ocho auditorías de accesibilidad, red/almacenamiento, navegación legal, teclado y preferencias; publicar únicamente textos completos según la información recibida y verificar el despliegue.
 - Evidencia local: `privacy-final.mjs` PASS (ocho auditorías axe sin violaciones automáticas); `privacy-reset-regression.mjs` PASS (cuatro comprobaciones); `a11y-followup.mjs` PASS (móvil y ampliación CSS); `legal-release-smoke.mjs` PASS (textos, cabeceras, enlaces, teclado, reset y sin JavaScript). Revisión independiente sin bloqueantes; sin hallazgos críticos de seguridad en el cambio. No certifica cumplimiento integral ni verifica cuentas privadas.
 - Alcance, pendientes y reversión en `docs/RELEASE-POLITICAS.md`. Comprobar contenido y red en producción después del push normal con identidad andresleosan.
+- Producción verificada: `LEGAL_BASE=https://www.alsdevstudio.com node test-results/legal-release-smoke.mjs` PASS; ocho archivos coinciden, enlaces/anclas, reset por teclado, 1440/320 px, sin JavaScript, cero cookies, orígenes externos o errores en el recorrido. Informe local: `test-results/legal-release-live.json`. Autor y committer andresleosan; push normal y hash remoto comprobado.
