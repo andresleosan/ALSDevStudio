@@ -74,3 +74,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 - El titular solicita activar estadísticas de visitas. Integrar Vercel Web Analytics básico para visitas y páginas, sin eventos personalizados, publicidad ni Speed Insights.
 - Ofrecer autorización opcional previa, rechazo equivalente y acceso permanente para cambiar o retirar la elección. Informar de datos, finalidades y límites reales; la ausencia de cookies del proveedor no se presenta como exención automática.
 - Activación incluida en Hobby, sin contratar un plan. Mantener documentado el pendiente de adecuar el alojamiento a la actividad comercial. La solicitud de activación incluye publicar la integración necesaria y comprobar su funcionamiento.
+
+## Identificación en el aviso de analítica · 2026-10-13
+- Redacción aprobada por el titular: destacar ALS DevStudio en el párrafo principal y ubicar el nombre completo del responsable en texto secundario junto al contacto, con acceso a la política de privacidad.

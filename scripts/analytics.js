@@ -45,10 +45,10 @@
     <button type="button" class="analytics-dismiss" data-analytics-close aria-label="Cerrar sin activar analítica">×</button>
     <p class="eyebrow">Tu elección · Analítica opcional</p>
     <h2 id="analytics-title" tabindex="-1" autofocus>Estadísticas de visitas</h2>
-    <p>Si aceptas, Andrés Leonardo Santiago González —ALS DevStudio— usará Vercel Web Analytics para conocer las visitas y páginas consultadas y mejorar este sitio.</p>
+    <p>Si aceptas, ALS DevStudio usará Vercel Web Analytics para conocer las visitas y páginas consultadas y mejorar este sitio.</p>
     <p>Se enviarán datos técnicos como página, referente, fecha, dispositivo y ubicación aproximada. Puedes rechazar y seguir navegando, o retirar tu elección desde «Preferencias de analítica».</p>
     <div class="analytics-details"><a href="cookies.html#analitica">Datos y plazos</a><a href="privacidad.html">Privacidad y derechos</a></div>
-    <p class="analytics-contact">Contacto: <a href="mailto:alsdevstudio@alsdevstudio.com">alsdevstudio@alsdevstudio.com</a></p>
+    <p class="analytics-contact">Responsable: Andrés Leonardo Santiago González, quien opera como ALS DevStudio.<br>Contacto: <a href="mailto:alsdevstudio@alsdevstudio.com">alsdevstudio@alsdevstudio.com</a></p>
     <p class="analytics-state" data-analytics-status role="status"></p>
     <div class="analytics-actions">
       <button type="button" data-analytics-choice="denied">Rechazar analítica</button>
