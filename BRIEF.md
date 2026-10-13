@@ -65,3 +65,12 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Recuperar banner de servicios · 2026-10-13
 - Recuperar el desplazamiento continuo de la banda y ampliar/separar las frases para evitar repeticiones cercanas. Usar servicios y descripciones ya presentes en el sitio.
+
+## Verificar configuración privada de Vercel · 2026-10-13
+- El titular aclara que desea resolver la revisión pendiente del alojamiento, sin añadir un banner de cookies. Inspeccionar el panel autenticado de ALS DevStudio y contrastar los límites con documentación oficial.
+- Documentar analítica, rendimiento, registros, integraciones y acceso; reducir el uso opcional de datos para entrenamiento en este proyecto. Cualquier cambio de plan o proveedor queda sujeto a decisión del titular.
+
+## Analítica de visitas solicitada · 2026-10-13
+- El titular solicita activar estadísticas de visitas. Integrar Vercel Web Analytics básico para visitas y páginas, sin eventos personalizados, publicidad ni Speed Insights.
+- Ofrecer autorización opcional previa, rechazo equivalente y acceso permanente para cambiar o retirar la elección. Informar de datos, finalidades y límites reales; la ausencia de cookies del proveedor no se presenta como exención automática.
+- Activación incluida en Hobby, sin contratar un plan. Mantener documentado el pendiente de adecuar el alojamiento a la actividad comercial. La solicitud de activación incluye publicar la integración necesaria y comprobar su funcionamiento.
