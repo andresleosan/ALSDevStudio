@@ -14,6 +14,11 @@ Emprendedores, negocios locales, equipos técnicos y clientes que necesitan una 
 - Interacciones visibles: cursor/orbita, reveal al scroll, hover en tarjetas y transiciones respetando `prefers-reduced-motion`.
 - Contacto accionable por WhatsApp y GitHub.
 
+## Ampliación del portafolio — 2026-10-12
+- Conservar BPT-Jersey con su dominio `https://www.bptjersey.com/` y corregir su previsualización.
+- Añadir Hampton Estates inmediatamente después de BPT, compartiendo fila en escritorio.
+- Añadir Dialon y Vigia con enlaces públicos y estado «En construcción».
+
 ## Restricciones
 - Mantener el proyecto como HTML/CSS/JavaScript estático, sin backend ni dependencias de build.
 - No afirmar métricas o capacidades que no estén verificadas.

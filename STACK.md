@@ -57,6 +57,11 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - **Coste:** se respeta `prefers-reduced-data` y el ahorro de datos del sistema, y hay un interruptor visible con preferencia persistida.
 - **Requisito por proyecto:** el sitio embebido no puede responder `X-Frame-Options` ni `frame-ancestors` restrictivo, y su origen debe estar en el `frame-src` de `vercel.json`. Los que no cumplen se marcan con `data-live="off"`.
 
+### Ampliación del portafolio — 2026-10-12
+- Se conserva el diseño actual y la cuadrícula de dos columnas; Hampton Estates sigue a BPT. Dialon y Vigia se añaden juntos al final, en la categoría Producto, con una etiqueta textual «En construcción».
+- Galería y carrusel comparten los 18 proyectos y capturas responsivas del pipeline existente.
+- BPT (`X-Frame-Options: SAMEORIGIN`, `frame-ancestors 'self'`) y Vigia (`frame-ancestors 'none'`) rechazan el embebido: usan `data-live="off"`, captura estática y enlace externo. Hampton Estates y Dialon se autorizan explícitamente en `frame-src`.
+
 ## Verificación
 - Sintaxis y referencias locales con PowerShell.
 - Prueba visual manual en navegador local si el navegador conectado está disponible.

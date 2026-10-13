@@ -1,5 +1,16 @@
 # Tareas — ALS DevStudio
 
+## PORT-01 — Ampliación del portafolio — 2026-10-12
+- Estado: aprobada (implementación local; sin desplegar).
+- Alcance: corregir la vista previa de BPT; añadir Hampton Estates a su lado; incorporar Dialon y Vigia como proyectos en construcción en galería y carrusel.
+- Capturas: pipeline existente ejecutado para BPT, Hampton Estates, Dialon y Vigia; 28 imágenes JPG/AVIF/WebP verificadas y 128 referencias locales existentes.
+- QA: `node test-results/portfolio-qa.mjs` — PASS en Chromium a 320×568, 390×844, 430×932, 768×1024 y 1440×900; sin overflow, imágenes rotas, errores JavaScript ni respuestas locales fallidas. Galería y carrusel: 18 proyectos; filtros y enlaces verificados. Capturas de evidencia y resultados en `test-results/portfolio-*` (artefactos locales ignorados por Git).
+- Previsualizaciones verificadas con las cabeceras de `vercel.json`: Hampton Estates y Dialon cargan en vivo; BPT y Vigia conservan la captura sin montar marcos bloqueados.
+- Seguridad: enlaces HTTPS con `noopener`, orígenes de marcos permitidos explícitamente, sandbox existente conservado; sin dependencias nuevas, secretos, endpoints ni hallazgos críticos en el cambio.
+- `node --check scripts/main.js` y `git diff --check`: PASS.
+
+## Tareas anteriores
+
 - [x] Auditoría de landing heredada y definición de alcance.
 - [x] Consulta de assets de marca en `F:\Proyectos\ALS DevStudio\Img`.
 - [x] Consulta pública de repositorios y demos de `andresleosan`.
