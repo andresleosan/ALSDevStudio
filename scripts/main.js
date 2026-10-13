@@ -1,9 +1,5 @@
 // @ts-check
-/**
- * Punto de entrada de ALS DevStudio.
- * Cada módulo se encarga de una sección; aquí solo se inicializan y se coordinan
- * los cambios de modo de rendimiento (móvil, ahorro de datos, reduced-motion).
- */
+// Coordina las secciones y sus cambios de modo de rendimiento.
 import { lowPowerMotion, onMediaChange, reducedMotionQuery, mobileQuery, coarsePointerQuery, saveDataQuery } from './modules/env.js';
 import { initSpace } from './modules/space.js';
 import { initCursor } from './modules/cursor.js';
@@ -14,10 +10,9 @@ import { initNav } from './modules/nav.js';
 import { initContact } from './modules/contact.js';
 import { initDepth } from './modules/depth.js';
 import { initReveal } from './modules/reveal.js';
-import { initLivePreview } from './modules/live-preview.js';
 
 /**
- * Aísla cada sección: un fallo en una no puede dejar sin JavaScript al resto de la página.
+ * Aísla errores síncronos de inicialización; no cubre imports ni callbacks posteriores.
  * @template T
  * @param {string} nombre
  * @param {() => T} init
@@ -41,7 +36,6 @@ const globalMap = safely('mapa global', initGlobalMap);
 safely('navegación', initNav);
 safely('contacto', initContact);
 safely('capa 3D', initDepth);
-safely('vista en vivo', initLivePreview);
 
 const refreshPerformanceMode = () => {
   space?.sync();

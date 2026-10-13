@@ -1,7 +1,4 @@
 // @ts-check
-/**
- * Galería de proyectos: filtros por categoría con estado accesible.
- */
 import { queryAll } from './dom.js';
 
 export function initProjects() {

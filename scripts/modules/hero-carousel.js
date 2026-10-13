@@ -1,8 +1,5 @@
 // @ts-check
-/**
- * Carrusel del hero: navegación accesible, autoplay respetuoso, swipe táctil
- * e hidratación progresiva de imágenes (solo el slide activo y el siguiente).
- */
+// Cada avance carga las imágenes de la diapositiva activa y la siguiente.
 import { mobilePerformanceMode, reducedMotionQuery } from './env.js';
 import { query, queryAll } from './dom.js';
 
@@ -72,8 +69,7 @@ export function initHeroCarousel() {
   }
 
   /**
-   * Activa las fuentes reales de un slide. Se desmonta el `picture` durante el
-   * cambio para que el navegador no descargue dos candidatos.
+   * Desconecta el `picture` al cambiar sus fuentes para evitar descargas duplicadas.
    * @param {HTMLElement | undefined} slide
    * @param {'high' | 'low'} fetchPriority
    */

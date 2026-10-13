@@ -1,8 +1,5 @@
 // @ts-check
-/**
- * Aparición progresiva de bloques `[data-reveal]` al entrar en el viewport.
- * Con reduced-motion o sin IntersectionObserver todo se muestra de inmediato.
- */
+// Sin IntersectionObserver o con reduced-motion se muestran todos los bloques.
 import { reducedMotion } from './env.js';
 
 export function initReveal() {

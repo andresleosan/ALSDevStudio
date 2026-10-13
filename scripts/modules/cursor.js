@@ -1,7 +1,5 @@
 // @ts-check
-/**
- * Cursor personalizado con el logo ALS. Solo con puntero fino y sin reduced-motion.
- */
+// Solo se instala al cargar con puntero fino y fuera del modo de bajo consumo.
 import { finePointer, lowPowerMotion } from './env.js';
 
 export function initCursor() {

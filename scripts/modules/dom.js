@@ -1,10 +1,6 @@
 // @ts-check
-/**
- * Utilidades de DOM con tipos estrictos para `@ts-check`.
- */
 
 /**
- * Busca un elemento y garantiza su tipo.
  * @template {Element} T
  * @param {string} selector
  * @param {new () => T} type
@@ -17,7 +13,6 @@ export function query(selector, type, root = document) {
 }
 
 /**
- * Busca todos los elementos de un tipo.
  * @template {Element} T
  * @param {string} selector
  * @param {new () => T} type

@@ -1,8 +1,5 @@
 // @ts-check
-/**
- * Fondo espacial: constelación de nodos y órbitas en un canvas fijo.
- * Se apaga en móvil, con puntero grueso, ahorro de datos o reduced-motion.
- */
+// El canvas se detiene en móvil, con puntero grueso, ahorro de datos o reduced-motion.
 import { finePointer, lowPowerMotion, onMediaChange, reducedMotionQuery, mobileQuery, coarsePointerQuery, saveDataQuery } from './env.js';
 
 /** @typedef {{ x: number, y: number, vx: number, vy: number, radius: number, phase: number, twinkle: number }} SpaceNode */
@@ -103,7 +100,6 @@ export function initSpace() {
     frame = undefined;
   };
 
-  /** Arranca o detiene el dibujo según el modo de rendimiento actual. */
   const sync = () => {
     if (lowPowerMotion()) {
       stop();

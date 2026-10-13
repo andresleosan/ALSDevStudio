@@ -66,6 +66,33 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - Sintaxis y referencias locales con PowerShell.
 - Prueba visual manual en navegador local si el navegador conectado está disponible.
 
+### PRIV-01 — Privacidad por defecto — 2026-10-12
+- Sustituye LIVE-01: se retiran marcos embebidos, inicializador y control; CSP frame-src none. Se conservan capturas locales y enlaces explícitos.
+- Tipografías locales en assets/fonts con OFL y SOURCES.json; CSP restringida a estilos y fuentes propios. Referrer-Policy no-referrer.
+- Sin analítica ni banner nuevo: se eliminan tecnologías opcionales. Solo preferencia de pausa por sesión tras elección; scripts/privacy.js elimina preferencia antigua y permite restablecer preferencias.
+- Políticas y registro de pendientes en docs/legal y docs/PRIVACIDAD-Y-CUMPLIMIENTO.md. Sin despliegue autorizado.
+
 ### Correo de contacto — 2026-10-13
 - Fila de correo en la columna introductoria, debajo de los pasos; conserva tipografía, colores y distribución del bloque actual. Enlace mailto nativo, sin formulario, JavaScript ni servicios adicionales.
 - Dirección visible con salto permitido antes de @, objetivo de al menos 44 px y foco azul sobre fondo claro. Verificar teclado y anchos de 320 a 1440 px.
+
+### Refinamiento visual con Antislop y Mobbin · 2026-10-13
+- Lectura: portafolio de desarrollo independiente para empresas y particulares, con el lenguaje geométrico de ALS. ENERGY 2 / RHYTHM 2 / MOTION 3; profundidad reservada a la escena de marca y al mapa, controles y contenido estables. Movimiento reducido conserva acceso completo.
+- Paleta: tinta y blanco existentes para lectura; verde para acciones y selección; azul para foco sobre blanco. Se sustituye el degradado del titular por un color sólido para estabilizar su contraste.
+- Tipografía: se mantienen Space Grotesk en titulares y DM Sans en texto, vinculadas a la identidad ya adoptada; IBM Plex Mono queda en referencias breves, sin exagerar espaciado ni convertir párrafos en consola.
+- Galería: dos columnas de capturas con texto fuera del marco, para que la evidencia del trabajo tenga prioridad sobre las superficies decorativas. Se conserva el orden requerido de proyectos y las fuentes responsive.
+- Proceso: filas con fase, objetivo y explicación, para mostrar una secuencia real sin repetir la composición de la galería.
+- Contacto: invitación breve, correo visible y opciones de servicio en filas con estado de selección explícito. Se conserva el aviso de privacidad y la acción WhatsApp existente.
+- Motivo de identidad: órbita original en la portada; se retiran chips superpuestos y capas redundantes sobre la captura. La flecha indica apertura de un enlace, no selección de servicio.
+- Referencias consultadas por MCP: [Büro](https://mobbin.com/sites/sections/2c741505-173b-4cfa-a885-ca4429184887), [Cloudstudio](https://mobbin.com/sites/sections/48890788-7d16-4887-baaa-5b22583ef055), [basement.studio](https://mobbin.com/sites/sections/a2f3898a-cd70-4d7d-b549-5f5dbb5a9fa6). Se toman criterios de jerarquía y presentación, sin copiar assets ni diseños completos.
+- Antislop leído desde miqdadbadjuber/anti-slop, commit 9685ca7eac70283d083fc23baa9a88e7d3cd93c4. Lectura de archivos de referencia; sin ejecutar instaladores ni modificar reglas globales.
+
+### Mascota ALS · 2026-10-13
+- Mascota junto a la firma de la portada y en la introducción del contacto, dentro del flujo del documento. Sin dependencias, conexiones externas ni JavaScript adicional.
+- Imágenes locales con dimensiones reservadas, bordes pixelados y proporción original. Uso decorativo junto a contenido equivalente: texto alternativo vacío, sin foco ni acciones implícitas.
+- Prioridad de carga baja en portada y carga diferida en contacto; tamaños reducidos en móvil. Conservar el logo de navegación y los controles existentes.
+
+### Release de diseño y mascota · 2026-10-13
+- Push solicitado expresamente por el titular. La release incluye diseño, PNG transparentes, fuentes locales, eliminación de vistas externas y cabeceras restrictivas.
+- Los borradores legales, sus enlaces y el control de restablecimiento aún no se publican. La versión de producción de scripts/privacy.js solo elimina la preferencia antigua de vistas externas.
+- Notas y reversión: `docs/RELEASE-DESIGN-MASCOT.md`. No hay migraciones, servicios nuevos ni cambios de identidad Git.

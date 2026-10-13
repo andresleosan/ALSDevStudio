@@ -1,0 +1,26 @@
+{
+  "updated": "2026-10-13",
+  "source": "Dos capturas de la mascota ALS proporcionadas por el titular en la conversación, con solicitud de integrarlas en su sitio.",
+  "preparation": "Edición con la herramienta integrada imagegen a partir de las capturas. El resultado no es un recorte exacto de los píxeles originales. La herramienta devolvió una cuadrícula opaca; el titular confirmó expresamente retirarla mediante procesamiento local.",
+  "localProcessing": "Sharp: eliminación del fondo neutro conectado a los bordes, recorte, reducción con vecino más cercano y PNG con paleta de 128 colores. Sin nuevo JavaScript o dependencia en el sitio.",
+  "assets": [
+    {
+      "file": "mascot-welcome.png",
+      "width": 224,
+      "height": 295,
+      "bytes": 29654
+    },
+    {
+      "file": "mascot-laptop.png",
+      "width": 320,
+      "height": 322,
+      "bytes": 36816
+    }
+  ],
+  "prompts": [
+    "Edit target: the user's attached FIRST mascot screenshot (232x294 portrait): the single standing smiling blue ALS pixel-art robot on charcoal background. The second user mascot screenshot shows a laptop pose only as identity reference. Ignore all website screenshots (restaurant and portfolio) in the context. Extract ONLY the standing mascot onto a genuinely transparent alpha background, tightly framed with a small even transparent margin. Remove the charcoal background. Preserve the original character faithfully: exact blue scalloped hood silhouette, thick black stair-step pixel outline, dark rectangular screen with cyan happy closed eyes and cyan cheek blocks, small cyan scarf, blue arms and feet, ALS lettering on pale-blue chest. No laptop. Keep the exact standing pose, proportions, colors and authentic crisp low-resolution pixel-art edges. Do not smooth, modernize, add gradients, glow, shadows, scenery, text outside the body, frames or accessories. This is a conservative background-removal edit of a user-owned mascot for website use, not a redesign. Output one full-body isolated mascot PNG with transparent background.",
+    "Edit target: the user's attached SECOND mascot screenshot (237x199 landscape-ish), showing the blue ALS pixel-art robot sitting with a laptop. The first user mascot screenshot (standing on charcoal) is an identity reference only. Ignore the restaurant and portfolio website screenshots in context. Extract ONLY the seated mascot WITH ITS LAPTOP onto a genuinely transparent alpha background, tightly framed with a small even transparent margin. Remove all screenshot backdrop, browser/app UI, white top strip, ALS DevStudio blue header tab, purple floor/background and any other non-character elements. Preserve the original character faithfully: exact blue scalloped hood, thick black stair-step pixel outlines, dark face screen with cyan happy closed eyes, cyan scarf, blue arms and feet. Preserve the laptop in front with light cyan ALS text, dark outlines and gray-blue surfaces. Keep the original pose and proportions and authentic crisp low-resolution pixel-art edges. Do not smooth, modernize, add glow, gradients, scenery, frames or extra text. This is a conservative background-removal edit of a user-owned mascot for website use, not a redesign. Output one full-body isolated mascot with laptop PNG with transparent background."
+  ],
+  "correctionPrompt": "Single targeted edit: remove the entire gray/white CHECKERBOARD behind the provided mascot. It is an accidental opaque background. Output an RGBA PNG with ACTUAL alpha transparency (alpha=0 outside the character), not a rendered checkerboard illustration, not gray squares or shadows. Preserve the mascot itself unchanged, its pose, ALS letters, colors and sharp pixel-art outlines. Transparent pixels must exist in the actual output file. No background scenery or new objects.",
+  "rights": "Recurso suministrado por el titular para este uso. Esta integración no acredita por sí sola la autoría original o una licencia frente a terceros."
+}

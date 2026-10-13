@@ -1,9 +1,8 @@
 // @ts-check
 /**
  * Alcance global: selección de ubicaciones sincronizada entre lista, mapa SVG y panel de datos,
- * con rotación automática cuando la sección es visible.
+ * sin rotación automática: cada ubicación se mantiene hasta que la persona elige otra.
  */
-import { lowPowerMotion } from './env.js';
 import { query, queryAll } from './dom.js';
 
 /** @typedef {{ label: string, detail: string, coords: [string, string] }} Location */
@@ -19,10 +18,8 @@ const LOCATIONS = {
   jersey: { label: 'Jersey', detail: 'un punto más en nuestra órbita.', coords: ['49° 13′ N', '02° 08′ W'] },
 };
 const LOCATION_KEYS = Object.keys(LOCATIONS);
-const ROTATION_DELAY = 4200;
 
 export function initGlobalMap() {
-  const section = query('.global-section', HTMLElement);
   const buttons = queryAll('.global-location', HTMLButtonElement);
   const statusText = query('#global-status strong', HTMLElement);
   const selection = query('#global-map-selection', HTMLElement);
@@ -36,8 +33,6 @@ export function initGlobalMap() {
   /** @type {SVGElement[]} */
   let highlights = [];
   let current = 0;
-  /** @type {number | undefined} */
-  let timer;
 
   /** @param {string} key */
   const select = key => {
@@ -57,19 +52,8 @@ export function initGlobalMap() {
     current = Math.max(0, LOCATION_KEYS.indexOf(key));
   };
 
-  const stop = () => {
-    clearInterval(timer);
-    timer = undefined;
-  };
-  const start = () => {
-    if (lowPowerMotion() || !section || timer !== undefined) return;
-    timer = window.setInterval(() => select(LOCATION_KEYS[(current + 1) % LOCATION_KEYS.length]), ROTATION_DELAY);
-  };
-  const restart = () => { stop(); start(); };
-
-  buttons.forEach(button => button.addEventListener('click', event => {
+  buttons.forEach(button => button.addEventListener('click', () => {
     select(button.dataset.location ?? '');
-    if (event.detail !== 0) restart();
   }));
 
   /**
@@ -86,9 +70,8 @@ export function initGlobalMap() {
     svg.removeAttribute('aria-labelledby');
     markers.forEach(marker => {
       ['role', 'tabindex', 'aria-label', 'aria-pressed'].forEach(name => marker.removeAttribute(name));
-      marker.addEventListener('click', event => {
+      marker.addEventListener('click', () => {
         select(marker.dataset.location ?? '');
-        if (event.detail !== 0) restart();
       });
     });
     select(LOCATION_KEYS[current]);
@@ -115,20 +98,13 @@ export function initGlobalMap() {
   };
 
   query('.global-map-selection', HTMLElement)?.removeAttribute('aria-live');
-  const statusRegion = query('#global-status', HTMLElement);
-  statusRegion?.removeAttribute('role');
-  statusRegion?.removeAttribute('aria-live');
 
   select('usa');
   loadMap();
 
-  if (section && !lowPowerMotion()) {
-    section.addEventListener('focusin', stop);
-    section.addEventListener('focusout', start);
-    const observer = new IntersectionObserver(entries => entries.forEach(entry => (entry.isIntersecting ? start() : stop())), { threshold: 0.2 });
-    observer.observe(section);
-    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-  }
+  // main.js conserva esta API para coordinar preferencias. El mapa manual no inicia ciclos.
+  const start = () => {};
+  const stop = () => {};
 
   return { start, stop };
 }

@@ -1,18 +1,5 @@
 // @ts-check
-/**
- * Capa de profundidad 3D (DEPTH-01 / DEPTH-02).
- *
- * - Escritorio (puntero fino): inclinación y brillo siguiendo el puntero, parallax de chips,
- *   órbita magnética y botones magnéticos.
- * - Móvil y tablet (puntero grueso): inclinación dirigida por el scroll, por la pulsación
- *   del dedo y por el giroscopio. En Android el giroscopio se activa solo; en iOS requiere
- *   permiso y se ofrece un botón «3D».
- *
- * En táctil no se mide nada dentro del bucle de scroll: las posiciones se cachean y solo se
- * invalidan al redimensionar, al girar el dispositivo o cuando cambia el alto del documento.
- *
- * Todo se apaga con `prefers-reduced-motion` y se recorta en dispositivos de gama baja.
- */
+// reduced-motion desactiva la profundidad; en gama baja se limitan sus efectos.
 import {
   pointerDepthEnabled,
   touchDepthEnabled,
@@ -29,15 +16,10 @@ import { query, queryAll, relativePointer } from './dom.js';
 
 /** Elementos que se inclinan y su ángulo máximo en grados. */
 const TILT_TARGETS = [
-  ['.project-card', 7],
-  ['.capability-panel', 4],
-  ['.process-item', 6],
-  ['.playground-option', 8],
   ['.global-map-wrap', 3],
-  ['.contact-playground', 2.5],
 ];
 
-const HERO_TILT = { x: 9, y: 12, parallax: 18, orbit: 24, scroll: 8, gyro: 10 };
+const HERO_TILT = { x: 9, y: 12, orbit: 24, scroll: 8, gyro: 10 };
 
 /** Giroscopio: suavizado, deriva del punto neutro, zona muerta y recorrido útil (grados). */
 const GYRO = { smooth: 0.16, drift: 0.0015, deadzone: 1.2, range: 26 };
@@ -50,9 +32,9 @@ const TILT_MARGIN = '15% 0px';
 
 /** Variables inline que puede dejar cualquiera de los dos modos. */
 const SCENE_VARS = [
-  '--rx', '--ry', '--tilt-x', '--tilt-y', '--px', '--py',
+  '--rx', '--ry', '--tilt-x', '--tilt-y',
   '--orbit-x', '--orbit-y', '--glare-x', '--glare-y',
-  '--card-x', '--card-y', '--mag-x', '--mag-y',
+  '--mag-x', '--mag-y',
 ];
 
 /** @typedef {{ element: HTMLElement, max: number }} TiltTarget */
@@ -66,7 +48,6 @@ export function initDepth() {
   let lowTier = lowTierDevice();
   if (lowTier) document.body.classList.add('is-low-tier');
 
-  /** Modo que corresponde ahora mismo al dispositivo y a las preferencias del usuario. */
   function currentMode() {
     if (pointerDepthEnabled()) return 'pointer';
     if (touchDepthEnabled()) return 'touch';
@@ -90,8 +71,7 @@ export function initDepth() {
   }
 
   /**
-   * Vuelve a montar la capa: al conectar un ratón a la tablet, al girar el dispositivo
-   * o al cambiar `prefers-reduced-motion`. Si el modo no cambia, no se toca nada.
+   * Remonta la capa al cambiar de modo; `force` permite aplicar una degradación sin cambiarlo.
    * @param {boolean} [force]
    */
   function restart(force) {
@@ -102,7 +82,7 @@ export function initDepth() {
     start();
   }
 
-  /** El vigilante de frames detectó que el dispositivo no llega: se recorta y se remonta. */
+  /** Los frames lentos activan las mismas restricciones que la detección de gama baja. */
   function degrade() {
     if (lowTier) return;
     lowTier = true;
@@ -153,8 +133,6 @@ function initPointerDepth(heroVisual, heroCard, orbit, targets) {
       setVars(heroVisual, {
         '--tilt-y': `${(x * HERO_TILT.y).toFixed(2)}deg`,
         '--tilt-x': `${(-y * HERO_TILT.x).toFixed(2)}deg`,
-        '--px': `${(x * HERO_TILT.parallax).toFixed(1)}px`,
-        '--py': `${(y * HERO_TILT.parallax).toFixed(1)}px`,
       });
       if (orbit) setVars(orbit, { '--orbit-x': `${(x * HERO_TILT.orbit).toFixed(1)}px`, '--orbit-y': `${(y * HERO_TILT.orbit).toFixed(1)}px` });
       if (heroCard) {
@@ -167,7 +145,7 @@ function initPointerDepth(heroVisual, heroCard, orbit, targets) {
     heroVisual.addEventListener('pointerleave', () => {
       move.cancel();
       heroVisual.classList.remove('is-tilting');
-      setVars(heroVisual, { '--tilt-x': '0deg', '--tilt-y': '0deg', '--px': '0px', '--py': '0px' });
+      setVars(heroVisual, { '--tilt-x': '0deg', '--tilt-y': '0deg' });
       if (orbit) setVars(orbit, { '--orbit-x': '0px', '--orbit-y': '0px' });
     }, { signal });
   }
@@ -185,21 +163,7 @@ function initPointerDepth(heroVisual, heroCard, orbit, targets) {
     }, { signal });
   });
 
-  // Brillo radial de las tarjetas de proyecto siguiendo el puntero.
-  // Igual que el tilt: una lectura de layout por frame, no una por evento. Un ratón de
-  // alta frecuencia entrega varios pointermove coalescidos en el mismo frame.
-  queryAll('.project-card', HTMLElement).forEach(card => {
-    const glow = frameThrottle(/** @param {PointerEvent} event */ event => {
-      const { x, y } = relativePointer(card, event);
-      setVars(card, { '--card-x': `${((x + 0.5) * 100).toFixed(1)}%`, '--card-y': `${((y + 0.5) * 100).toFixed(1)}%` });
-    });
-    pending.push(glow.cancel);
-    card.addEventListener('pointermove', glow.run, { passive: true, signal });
-    card.addEventListener('pointerleave', glow.cancel, { passive: true, signal });
-  });
-
-  // Botones magnéticos.
-  queryAll('.button,.nav-cta', HTMLElement).forEach(item => {
+  queryAll('.hero-actions .button', HTMLElement).forEach(item => {
     item.classList.add('magnetic');
     const magnet = frameThrottle(/** @param {PointerEvent} event */ event => {
       const { x, y } = relativePointer(item, event);
@@ -234,7 +198,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
   const scrollTargets = lowTier ? [] : targets;
   const scale = lowTier ? 0.6 : 1;
 
-  const state = { scrollTilt: 0, scrollParallax: 0, gyroX: 0, gyroY: 0, heroVisible: false, frozen: false };
+  const state = { scrollTilt: 0, gyroX: 0, gyroY: 0, heroVisible: false, frozen: false };
   /** @type {Set<HTMLElement>} */
   const visibleTargets = new Set();
   const targetMax = new Map(targets.map(({ element, max }) => [element, max]));
@@ -251,8 +215,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
   let scrollTop = window.scrollY;
 
   /**
-   * Escribe una custom property solo si cambió de verdad: cada escritura invalida el
-   * estilo del elemento y con varias tarjetas por frame eso se nota en móvil.
+   * Evita escrituras repetidas de custom properties para reducir invalidaciones de estilo.
    * @param {HTMLElement} element
    * @param {string} name
    * @param {string} value
@@ -269,7 +232,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
   }
 
   /**
-   * Guarda el centro del elemento en coordenadas de documento.
+   * `top` y `center` usan coordenadas de documento; `left` permanece relativo al viewport.
    * @param {HTMLElement} element
    * @returns {Metrics}
    */
@@ -286,7 +249,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     return entry;
   }
 
-  /** Pasada de medición: se lee TODO seguido, sin escribir en medio, para un solo reflow. */
+  /** Agrupa lecturas de geometría sin escrituras intermedias para evitar reflows repetidos. */
   function measure() {
     viewportHeight = window.innerHeight;
     scrollTop = window.scrollY;
@@ -299,12 +262,9 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     if (!heroVisual || state.frozen) return;
     setVar(heroVisual, '--tilt-x', `${(state.scrollTilt - state.gyroY * HERO_TILT.gyro * scale).toFixed(1)}deg`);
     setVar(heroVisual, '--tilt-y', `${(state.gyroX * HERO_TILT.gyro * 1.2 * scale).toFixed(1)}deg`);
-    setVar(heroVisual, '--px', `${(state.gyroX * HERO_TILT.parallax * scale).toFixed(1)}px`);
-    setVar(heroVisual, '--py', `${(state.scrollParallax + state.gyroY * HERO_TILT.parallax * scale).toFixed(1)}px`);
   };
 
-  // Vigilancia del ritmo de frames: en iOS no hay `deviceMemory`, así que se mide el coste
-  // real durante los primeros frames de scroll y se degrada si el móvil no llega.
+  // Los primeros frames de scroll permiten detectar lentitud aunque deviceMemory no esté disponible.
   let budgetDone = lowTier;
   let budgetSamples = 0;
   let budgetSlow = 0;
@@ -326,7 +286,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     if (budgetSlow / budgetSamples > 0.35) onLowTier();
   }
 
-  // Inclinación por scroll: ni un `getBoundingClientRect` dentro del bucle, todo sale de la caché.
+  // La inclinación por scroll usa geometría en caché para evitar lecturas de layout por tarjeta.
   const onScroll = frameThrottle(() => {
     checkBudget(performance.now());
     if (disposed) return; // el vigilante pudo degradar y remontar la capa en este mismo frame
@@ -345,13 +305,11 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     if (heroVisual && state.heroVisible) {
       const t = offset(heroVisual);
       state.scrollTilt = t * HERO_TILT.scroll * scale;
-      state.scrollParallax = t * 14 * scale;
       applyHero();
     }
   });
 
-  // `scrollY` se lee en el propio evento de scroll, cuando el layout ya está limpio.
-  // Leerlo dentro del rAF, después de haber escrito variables, costaría un reflow por frame.
+  // Lee scrollY antes de escribir estilos en rAF para evitar un reflow entre tarjetas.
   const onScrollEvent = () => {
     scrollTop = window.scrollY;
     onScroll.run();
@@ -377,8 +335,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
       }
       if (entry.isIntersecting) {
         visibleTargets.add(element);
-        // Capa de compositor solo mientras se ve: promocionar 15 tarjetas a la vez
-        // agota la memoria de vídeo de un móvil modesto.
+        // Limita las capas de compositor a tarjetas visibles para reducir el uso de memoria de vídeo.
         if (!lowTier) element.style.willChange = 'transform';
         metricsDirty = true;
         onScroll.run();
@@ -397,8 +354,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
   /** @type {ResizeObserver | undefined} */
   let resizeObserver;
   if ('ResizeObserver' in window) {
-    // El alto del documento cambia al filtrar proyectos, al cambiar de pestaña de
-    // capacidades o al cargar una imagen: basta con marcar la caché como sucia.
+    // Los filtros y las imágenes pueden cambiar posiciones; la geometría se recalcula en el próximo frame.
     resizeObserver = new ResizeObserver(() => {
       metricsDirty = true;
       onScroll.run();
@@ -415,8 +371,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     if (!document.hidden) invalidate();
   }, { signal });
 
-  // Mientras el dedo arrastra el carrusel la escena se congela: si el plano 3D gira
-  // bajo el dedo, el swipe pierde precisión y los botones del card bailan.
+  // Congela la escena durante el arrastre para mantener estable el plano del swipe.
   const carousel = query('[data-hero-carousel]', HTMLElement);
   if (carousel) {
     const thaw = () => {
@@ -430,8 +385,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     carousel.addEventListener('pointercancel', thaw, { passive: true, signal });
   }
 
-  // Pulsación: la tarjeta se inclina hacia el dedo y vuelve al soltar. Todos los
-  // listeners son pasivos, así que nunca bloquean el scroll ni el swipe.
+  // Los listeners pasivos conservan el scroll y el swipe nativos durante la pulsación.
   targets.forEach(({ element, max }) => {
     /** @param {PointerEvent} event */
     const release = event => {
@@ -468,7 +422,6 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
 
   onScrollEvent();
 
-  // Giroscopio.
   /** @type {{ x: number, y: number } | null} */
   let baseline = null;
   const smooth = { x: 0, y: 0 };
@@ -503,13 +456,12 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
       : angle === 180 ? { x: -gamma, y: -beta }
       : { x: gamma, y: beta };
     if (!baseline) baseline = { x: raw.x, y: raw.y };
-    // Deriva muy lenta del punto neutro (~10 s): recentra si cambias de postura sin
-    // comerse la inclinación que estás haciendo en este momento.
+    // Recentrar lentamente adapta el punto neutro a cambios de postura sin cancelar el giro actual.
     baseline.x += (raw.x - baseline.x) * GYRO.drift;
     baseline.y += (raw.y - baseline.y) * GYRO.drift;
     const targetX = clamp(deadzone(raw.x - baseline.x), -GYRO.range, GYRO.range) / GYRO.range;
     const targetY = clamp(deadzone(raw.y - baseline.y), -GYRO.range, GYRO.range) / GYRO.range;
-    // Filtro paso bajo: quita el temblor del sensor sin retardo perceptible.
+    // El filtro paso bajo suaviza el temblor del sensor.
     smooth.x += (targetX - smooth.x) * GYRO.smooth;
     smooth.y += (targetY - smooth.y) * GYRO.smooth;
     state.gyroX = smooth.x;
@@ -556,7 +508,6 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     motionToggle?.setAttribute('aria-pressed', 'true');
   }
 
-  /** Pide permiso de sensores; devuelve true si se concedió. */
   const requestGyro = async () => {
     try {
       return (await OrientationEvent?.requestPermission?.()) === 'granted';
@@ -603,8 +554,7 @@ function initTouchDepth(heroVisual, targets, lowTier, onLowTier) {
     return stop;
   }
 
-  // Chrome concede el permiso sin gesto; iOS lo rechaza fuera de un gesto y entonces
-  // se ofrece el botón «3D» del carrusel.
+  // Si el permiso requiere un gesto del usuario, el botón 3D permite volver a solicitarlo.
   requestGyro().then(granted => {
     if (granted && !lowTier) enableGyro();
     else offerToggle();

@@ -369,6 +369,17 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - La iteración requiere evidencia real, cero hallazgos críticos de seguridad, cero regresiones, errores de consola, solicitudes fallidas, rutas rotas u overflow horizontal.
 - No desplegar a producción sin aprobación explícita del operador.
 
+## PRIV-01 — Privacidad, accesibilidad y cumplimiento — 2026-10-12
+- Estado: revisión. Correcciones técnicas verificadas; documentos legales preparados con pendientes explícitos. Sin despliegue.
+- Alcance autorizado: auditoría, eliminar terceros automáticos, preparar políticas según hechos confirmados, corregir barreras/afirmaciones, verificar red/almacenamiento/teclado/contraste y documentar pendientes.
+- Evidencia e investigación: docs/PRIVACIDAD-Y-CUMPLIMIENTO.md.
+
+### Evidencia PRIV-01
+- node test-results/privacy-final.mjs: PASS; 8 auditorías axe 4.14.0 sin violaciones automáticas; cero terceros/cookies/errores en el recorrido local; teclado, 18 proyectos, filtros, páginas legales y restablecimiento verificados.
+- Seguimiento: corregido rol de las notas de contacto; retirado fondo decorativo heredado por navegación legal. Ambas pruebas repetidas: privacy-final.mjs y a11y-followup.mjs PASS. Capturas estabilizadas inspeccionadas; 320 CSS px y ampliación CSS 200 % sin desbordamiento. La simulación no equivale a zoom nativo; contraste complejo y lector de pantalla mantienen sus límites documentados.
+- Reforzado el contraste de navegación y etiquetas sobre imágenes: opacidad de fondo 0,9; cálculo conservador documentado para contenido blanco de fondo. Repetición final de QA registrada en el informe.
+- Persisten verificaciones humanas y administrativas detalladas en docs/PRIVACIDAD-Y-CUMPLIMIENTO.md; no se afirma cumplimiento integral ni ausencia de riesgos.
+
 ## CONTACT-EMAIL — Correo visible — 2026-10-13
 - Estado: aprobada para publicación; push autorizado por el titular el 2026-10-13.
 - Dirección confirmada visible debajo de los pasos del contacto, con enlace mailto nativo y adaptación a móvil. Sin cambios al mini brief ni servicios adicionales.
@@ -376,3 +387,25 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Revisión independiente del fragmento: etiqueta 5,70:1; enlace 16,45:1; hover/foco 5,02:1. No se envió ningún correo ni se comprobó entrega del buzón.
 - Release acotada: correo visible, siete reglas CSS y documentación de esta mejora. QA repetido sobre la versión exacta preparada para commit, con cabeceras de producción: teclado, 320/390/768/1440 px, cero errores JavaScript, cero violaciones axe en el bloque nuevo y enlace operativo sin JavaScript. Evidencia local: test-results/email-push-qa.json.
 - Reversión: revertir el commit «feat: mostrar correo de contacto como alternativa a WhatsApp» y publicar la reversión. Sin migraciones ni datos que restaurar.
+
+## DESIGN-01 · Antislop y referencias Mobbin · 2026-10-13
+- Estado: revisión. Implementación y verificación local completadas; usuario eligió modo during. Sin publicación.
+- Portada y capturas con menos capas; galería, proceso y contacto con jerarquías distintas; limpieza de CSS y comentarios dentro del alcance.
+- Verificar: 18 proyectos y orden, filtros, carrusel, selección y enlace WhatsApp, correo, menú y anclas, teclado, 320/390/768/1024/1440 px, movimiento reducido, consola, red y axe. Inspección visual antes/después.
+- Conservar los borradores legales y el resto de trabajo previo. Sin push ni despliegue en esta iteración.
+- Evidencia final: `node test-results/design-qa.mjs` PASS (19 comprobaciones, cinco anchos, cero errores y cero violaciones automáticas axe); `node --check` y `git diff --check` PASS; JSON-LD válido. Capturas inspeccionadas con movimiento normal y reducido.
+- Corrección adicional verificada: `transform-style:flat` en la escena de portada evita el recorte de pintura del pie del carrusel en Chromium. Galería y contacto conservan posiciones estables al interactuar.
+- Revisión independiente: DOM, proyectos y referencias preservados; eliminados cálculos de parallax sin uso y corregido comentario desactualizado. Sin hallazgos críticos en el alcance revisado.
+- Delivery Gate, referencias Mobbin, contraste, decisiones y límites: `docs/DESIGN-01-REVISION.md`. Persisten pendientes legales y verificaciones manuales fuera del alcance; no se afirma certificación integral.
+
+## MASCOT-01 · Integración de mascota ALS · 2026-10-13
+- Estado: revisión. Integración y verificación local completadas. El titular confirmó el procesamiento local el 2026-10-13; cuadrícula retirada y dos PNG transparentes incorporados.
+- Incorporar la mascota del titular en portada y contacto con archivos locales y dimensiones reservadas. Conservar diseño pixel art, controles, proyectos y avisos existentes.
+- Verificar carga, proporción, ausencia de solapamientos y desbordamiento, teclado, móvil, movimiento reducido y funcionamiento sin JavaScript. Inspeccionar capturas y repetir regresión del diseño.
+- Sin publicación ni cambios de Git en esta iteración.
+- Evidencia: `node test-results/mascot-qa.mjs` PASS en ocho anchos, sin solapamientos, desbordamiento ni errores; imágenes operativas sin JavaScript. `node test-results/design-qa.mjs` PASS en las 19 comprobaciones y dos auditorías axe sin violaciones automáticas. Capturas de portada/contacto inspeccionadas en 1440 y 390 px; `git diff --check` PASS. Detalles y límites en `docs/MASCOT-01-REVISION.md`.
+
+## RELEASE-DESIGN-MASCOT · 2026-10-13
+- Estado: aprobada para publicación. Push solicitado expresamente por el titular; DESIGN-01 y MASCOT-01 incluidos. Copia exacta del índice verificada: `design-qa.mjs` PASS (19 comprobaciones, axe sin violaciones automáticas), `mascot-qa.mjs` PASS (ocho anchos), comprobación estática de referencias/fuentes/exclusión de borradores y sintaxis PASS. Captura final inspeccionada.
+- Incluye correcciones técnicas de PRIV-01: tipografías propias, eliminación de marcos externos, limpieza de preferencia antigua y cabeceras. Los documentos legales y sus enlaces permanecen pendientes en local.
+- Reversión documentada en `docs/RELEASE-DESIGN-MASCOT.md`; sin migraciones ni cambios de datos.

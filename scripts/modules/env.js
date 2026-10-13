@@ -1,8 +1,5 @@
 // @ts-check
-/**
- * Entorno y preferencias del dispositivo.
- * Centraliza las media queries y los modos de rendimiento que usan los demás módulos.
- */
+// Comparte las consultas de preferencias y los modos de rendimiento entre módulos.
 
 export const finePointerQuery = window.matchMedia('(pointer: fine)');
 export const coarsePointerQuery = window.matchMedia('(pointer: coarse)');
@@ -23,24 +20,15 @@ export function mobilePerformanceMode() {
   return mobileQuery.matches || coarsePointerQuery.matches || saveDataQuery.matches || connection?.saveData === true;
 }
 
-/** El usuario pidió reducir el movimiento. */
 export function reducedMotion() {
   return reducedMotionQuery.matches;
 }
 
-/** El usuario pidió reducir la transparencia (desenfoques de fondo incluidos). */
 export function reducedTransparency() {
   return reducedTransparencyQuery.matches;
 }
 
-/**
- * Dispositivo de gama baja.
- *
- * `deviceMemory` solo existe en Chromium y devuelve 0,25 / 0,5 / 1 / 2 / 4 / 8.
- * `hardwareConcurrency` no sirve por sí solo: los iPhone declaran 4 núcleos siendo
- * rápidos y muchos Android modestos declaran 8 por el big.LITTLE. Por eso los núcleos
- * solo cuentan cuando la RAM declarada también es baja.
- */
+// Los núcleos solo cuentan junto con RAM baja; sin una lectura de memoria no se clasifica el dispositivo.
 export function lowTierDevice() {
   const hints = /** @type {{ deviceMemory?: number, hardwareConcurrency?: number }} */ (
     /** @type {any} */ (navigator)
@@ -95,7 +83,6 @@ export function frameThrottle(handler) {
 }
 
 /**
- * Suscribe un manejador a varias media queries.
  * @param {MediaQueryList[]} queries
  * @param {() => void} handler
  */
@@ -104,7 +91,6 @@ export function onMediaChange(queries, handler) {
 }
 
 /**
- * Limita un número a un rango.
  * @param {number} value
  * @param {number} min
  * @param {number} max

@@ -1,7 +1,4 @@
 // @ts-check
-/**
- * Navegación: enlace activo por sección, barra de progreso de scroll, menú móvil y año del footer.
- */
 import { desktopQuery } from './env.js';
 import { query, queryAll } from './dom.js';
 

@@ -1,7 +1,4 @@
 // @ts-check
-/**
- * Mini brief de contacto: la opción elegida define el resultado y el mensaje de WhatsApp.
- */
 import { query, queryAll } from './dom.js';
 
 const WHATSAPP_NUMBER = '573146432135';
