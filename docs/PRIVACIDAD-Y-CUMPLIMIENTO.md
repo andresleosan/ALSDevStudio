@@ -1,0 +1,125 @@
+# Auditoría de privacidad, accesibilidad y cumplimiento
+Inspección inicial: 12 de octubre de 2026. Actualización para publicación legal: 13 de octubre de 2026. Alcance: repositorio ALS DevStudio, observaciones públicas y declaraciones del titular. No incluye acceso a cuentas de proveedores, conversaciones privadas, contratos ni verificación documental de identidad. Es una revisión de riesgos condicionada por los hechos, no certificación legal ni WCAG.
+
+Estado antes del push legal: las correcciones técnicas anteriores están publicadas en ee0ac23. Los tres textos públicos están completos con los datos aportados y la publicación fue autorizada por el titular. La verificación local del 13 de octubre está registrada al final; la comprobación de producción se realiza después del push, sin anticipar su resultado.
+
+## Inspección inicial antes de modificar
+Esta tabla conserva la situación encontrada el 12 de octubre, no los pendientes actuales. Las confirmaciones posteriores del titular aparecen más abajo: identidad y contactos aportados, publicación de dirección y NIT autorizada, proveedores del correo identificados y criterio de conservación adoptado. La autenticidad documental y la configuración privada de las cuentas no se verificaron.
+| Aspecto | Evidencia | Verificación |
+|---|---|---|
+| Actividad | BRIEF.md y web: desarrollo de software, sitios y productos digitales a medida | Contenido verificado; no acredita identidad mercantil |
+| Público | Emprendedores, negocios locales, equipos técnicos; idioma español | Declarado en brief |
+| Ubicación | Footer Medellín, Colombia; +57 314 643 2135; JSON-LD areaServed CO | Publicado, no confirmado por documentos del titular |
+| Países mapa | Estados Unidos, México, Colombia, Venezuela, Brasil, España, Jersey | No demuestra sedes, clientes ni operaciones |
+| Contratación | Enlace a WhatsApp; sin checkout, cuentas, campos ni backend | Verificado código; contratos/pagos posteriores no comprobables |
+| Responsable | Marca ALS DevStudio | Nombre legal, identificación aplicable, dirección y email pendientes |
+| Datos iniciales | Preferencia de pausa en sessionStorage; preferencia de marcos en localStorage; lecturas locales de puntero/dispositivo | Código verificado |
+| Terceros iniciales | Google Fonts; proyectos embebidos por defecto; WhatsApp por enlace; configuración Vercel | Código verificado; cuentas y conservación sin auditar |
+
+Se preguntó al titular por identidad/contactos, mercados/contratación y almacenamiento/acceso/conservación de consultas, además de analítica fuera del código. No se infiere identidad legal del nombre de usuario de GitHub.
+
+## Riesgos priorizados y estado al 13 de octubre
+
+«Resuelto» se limita al hallazgo y a la versión revisada; no certifica toda la web ni sustituye las comprobaciones pendientes.
+
+| ID | Prioridad inicial | Hallazgo inicial | Estado y acción |
+|---|---|---|---|
+| P01 | Alta | Los iframes cargaban por defecto, incluso cuando fallaba localStorage, sin información ni elección | Resuelto técnicamente: embebidos retirados, CSP frame-src none; capturas y enlaces permanecen. Corrección publicada en ee0ac23 |
+| P02 | Alta | Sin política con responsable ni prácticas reales de las consultas comerciales | Parcial: políticas completadas con identificación, finalidades, proveedores, conservación y derechos. Aplicación manual y comprobación posterior de publicación pendientes |
+| P03 | Alta | «Conexiones verificadas» y lugares conectados sin evidencia documental | Resuelto en el contenido revisado: mapa presentado como ilustración de colaboración remota |
+| P04 | Alta | Licencias/permisos para recursos de clientes no documentados | Pendiente: inventario ampliado a mascotas; autorización de integración no acredita derechos originales frente a terceros |
+| P05 | Media | Tipografías remotas contactaban Google automáticamente | Resuelto técnicamente: archivos locales, OFL y procedencia documentada; corrección publicada en ee0ac23 |
+| P06 | Media | Accesos, respaldos, CRM y conservación desconocidos | Parcial: acceso exclusivo declarado, reenvío Porkbun hacia Gmail identificado y criterio de conservación adoptado; cuentas, copias y ejecución sin auditar |
+| P07 | Media | Condiciones de servicios, anticipos/cancelación no aportadas | Parcial: transferencia previo acuerdo y preferencia comercial confirmadas; no sustituye contratos ni revisión del régimen aplicable |
+| A01 | Media | Número de opción seleccionada contraste 1:1 | Resuelto en la versión revisada mediante corrección CSS; evidencia inicial conservada abajo |
+| A02 | Media | Etiqueta del mini brief contraste 2,90–3,28:1 | Resuelto en la versión revisada mediante corrección CSS; evidencia inicial conservada abajo |
+| A03 | Media | Mapa y marquee se movían automáticamente sin pausa propia | Resuelto en la versión revisada: estáticos, con selección manual del mapa |
+| A04 | Media | Cambio del resultado del contacto sin anuncio accesible | Resuelto en la versión revisada mediante región de estado polite |
+| A05 | Media | Contraste de etiquetas translúcidas dependía de capturas claras | Parcial: corrección conservadora aplicada; permanecen comprobaciones manuales de fondos complejos y estados |
+| A06 | Baja | Nombre ARIA en grupo genérico de notas de contacto | Resuelto en la versión revisada: rol de grupo y repetición de auditoría registrados |
+| A07 | Media | El restablecimiento podía conservar la pausa anterior al regresar al carrusel | Corrección local verificada por Cronos: releer almacenamiento en pageshow, conservar estado en memoria si la lectura falla; publicación de este ajuste sin confirmar |
+
+## Normativa oficial
+Fuentes consultadas en la auditoría inicial del 12-10-2026. El 13-10-2026 se volvieron a consultar Ley 1581, Decreto 1074, Ley 1480 consolidada y documentación oficial de proveedores para preparar la publicación. Aplicación final sujeta a identidad, actividad y mercados reales.
+- Colombia privacidad: [Ley 1581, arts. 2 y 8–17](https://www.cancilleria.gov.co/normograma/compilacion/docs/ley_1581_2012.htm) y [Decreto 1074, capítulo 25](https://cancilleria.gov.co/sites/default/files/Normograma/docs/decreto_1074_2015_pr025.htm). Revisar autorización informada cuando proceda, prueba, finalidades, derechos, responsables y seguridad. Consultas: 10 días hábiles, posible extensión de 5; reclamos: 15, posible extensión de 8 con aviso justificado. Supresión/revocación con límites legales o contractuales.
+- Consumo: [Ley 1480 consolidada, arts. 5.3, 11 y 42–50](https://normograma.dian.gov.co/dian/compilacion/docs/ley_1480_2011.htm) y [Ley 2439/2024](https://www1.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=257116). No tener checkout no excluye contratos a distancia por mensajes. B2B tampoco excluye automáticamente relación de consumo. Retracto de servicios, cuando procede: 5 días hábiles desde contrato; excepción si prestación comenzó con acuerdo del consumidor. La excepción de bienes personalizados no debe extenderse automáticamente a software como servicio a medida.
+- Reembolso por retracto: art. 47 vigente, 15 días calendario con sus requisitos. [Divulgación judicial C-192/2026](https://cortesuprema.gov.co/informativo-vicepresidencia-jurisprudencia-junio-2026/) informa extensión a modalidades del artículo. No se obtuvo sentencia íntegra: requiere revisión profesional para cerrar cláusulas. Evitar plazos antiguos de 30 días y anticipos «no reembolsables» absolutos.
+- UE: [RGPD art. 3](https://www.boe.es/buscar/doc.php?id=DOUE-L-2016-80807) y [EDPB 3/2018](https://www.edpb.europa.eu/sites/default/files/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf). Accesibilidad desde Europa no basta; comprobar establecimiento, oferta dirigida y monitorización. Si aplica, revisar bases, transparencia, encargados, transferencias y representante cuando corresponda.
+- España: [LSSI arts. 4 y 22.2](https://www.boe.es/buscar/act.php?id=BOE-A-2002-13758) y [guía AEPD de cookies](https://www.aepd.es/guias/guia-cookies.pdf). Ámbito territorial pendiente. Almacenamiento/acceso no exceptuado necesita consentimiento previo; excepciones para comunicación y servicio solicitado estrictamente necesario. Ausencia de cookies no significa ausencia de datos.
+- Jersey: [Data Protection (Jersey) Law 2018 art. 4](https://www.jerseylaw.je/laws/current/l_3_2018). Régimen propio; no equiparar automáticamente a UE/Reino Unido. Mapa no demuestra nexo territorial.
+- Accesibilidad Colombia: [Ley 1618 art. 6](https://normograma.crcom.gov.co/crc/compilacion/docs/ley_1618_2013.htm); [Resolución 1519/2020 arts. 2–3](https://normograma.mintic.gov.co/mintic/compilacion/docs/resolucion_mintic_1519_2020.htm) aplica a sujetos obligados de Ley 1712, no demuestra obligación idéntica para todo portafolio privado. [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) se usa como objetivo técnico, no certificación.
+- Recursos: [DNDA](https://www.derechodeautor.gov.co/es/transparencia-y-acceso-informacion-publica/informacion-de-la-entidad/116-preguntas-y-respuestas-frecuentes/preguntas-y-respuestas-frecuentes). Ser autor del desarrollo o que una web sea pública no demuestra permiso sobre todos sus recursos ni derechos conservados tras cesión al cliente.
+
+## Datos e integraciones
+- Alojamiento: recibe IP/cabeceras/URL para entregar contenido; no se comprobó retención ni acceso a logs. Confirmar cuenta, localización, MFA, colaboradores, contratos, subencargados y exportaciones.
+- Vercel: configuración presente; no se revisó la cuenta. No se detectó analítica en el código cliente revisado, lo que no verifica dashboard Analytics, Speed Insights, log drains ni otros servicios de la cuenta. Fuentes: [aviso de privacidad](https://vercel.com/legal/privacy-notice), [DPA](https://vercel.com/legal/dpa) y [Analytics](https://vercel.com/docs/analytics/privacy-policy). El aviso público no demuestra los ajustes ni acuerdos de esta cuenta.
+- WhatsApp: la navegación entrega conexión y mensaje predefinido; solo al enviar la consulta ALS recibe número/perfil/contenido según servicio. El titular declara acceso exclusivo y adoptó el criterio de conservación indicado abajo. Revisar dispositivos vinculados, permisos, copias e integraciones CRM/API; no se inspeccionó su configuración. [Política oficial](https://www.whatsapp.com/legal/privacy-policy).
+- Correo: alsdevstudio@alsdevstudio.com utiliza reenvío de Porkbun; Cronos verificó los registros MX públicos. El titular confirmó Gmail como destino final y declaró ser la única persona con acceso. Los MX no demuestran por sí solos ese destino ni los permisos de la cuenta. Remitente, mensaje y adjuntos pasan por los proveedores del canal; no se inspeccionaron reglas, sesiones, copias ni retención de proveedores. Fuentes consultadas el 13-10-2026: [Porkbun](https://porkbun.com/legal/agreement/privacy_policy) y [Google/Gmail](https://policies.google.com/privacy?hl=es).
+- Fuentes remotas iniciales: Google recibía solicitudes con IP; no implica por sí solo publicidad. Se retiraron y las fuentes se sirven localmente. [Explicación de Google](https://fonts.googleblog.com/2022/11/your-privacy-and-google-fonts.html).
+- Proyectos externos: podían ejecutar servicios propios dentro de iframes. Se retiraron para visitantes de ALS. Los enlaces siguen sujetos al sitio de destino; la retirada no borra cookies históricas de otros dominios.
+
+## Cookies y consentimiento
+La solución retiró las tecnologías opcionales embebidas. No se incorpora banner ni se detectó analítica en el código cliente revisado; esto no describe la configuración privada del alojamiento. La preferencia de pausa responde a una acción solicitada y se guarda en sessionStorage para la pestaña; no identifica visitantes. El registro de consentimiento anterior no existía: la preferencia antigua de vista no constituye autorización informada. El código intenta eliminar su clave de localStorage cuando el navegador lo permite.
+
+El botón restablece la pausa de la pestaña actual y elimina la antigua clave local compartida por el mismo origen; no modifica la pausa de otras pestañas ni borra conversaciones o datos de otros servicios. El ajuste local de pageshow vuelve a leer la pausa al regresar al portafolio; si el almacenamiento está bloqueado, conserva la elección en memoria. Si se incorpora analítica/marketing después, inventariar primero y bloquear lo no exceptuado hasta elección informada, con rechazo equivalente y retirada accesible.
+
+## Límites de la verificación
+Los resultados iniciales y la regresión posterior se distinguen más abajo. La prueba de una sesión no certifica ausencia universal de seguimiento. Dirección y NIT fueron aportados para los HTML de identificación; no se duplican aquí ni se certifica su autenticidad documental. Adoptar un criterio de conservación no demuestra que ya se hayan revisado o eliminado datos. Quedan sin auditar las cuentas, registros, copias, acuerdos con proveedores, ejecución de procedimientos, contratos, permisos de recursos y alcance por mercados.
+
+## Confirmaciones recibidas del titular
+- Responsable: Andrés Leonardo Santiago González, persona natural freelancer con RUT DIAN según su declaración; no se verificó el documento. Medellín, Colombia; alsdevstudio@alsdevstudio.com; WhatsApp +57 314 643 2135 confirmado. El 13 de octubre aportó dirección y NIT y autorizó publicarlos en los HTML de identificación, sin duplicarlos en este informe.
+- Atiende empresas y personas naturales; acepta clientes de cualquier país, pagos a su cuenta bancaria previo acuerdo.
+- Prefiere no conceder reembolsos comerciales por cancelación. El texto propuesto no lo convierte en prohibición absoluta: preserva retracto, garantías e incumplimiento y exige condiciones contractuales válidas.
+- Los chats permanecen en WhatsApp y solo él tiene acceso según su declaración. Confirmó también acceso exclusivo al Gmail que recibe el reenvío del correo del dominio; no se revisaron sesiones ni dispositivos de ninguna cuenta.
+- El 13 de octubre adoptó una revisión mensual y la eliminación de consultas sin contrato tras seis meses de inactividad. Para documentos de proyectos, pagos y reclamaciones, la conservación responde a las necesidades legales o contractuales aplicables y se revisa al cerrar el asunto. La adopción de este criterio no acredita una primera revisión, eliminaciones ya ejecutadas ni borrado de copias de proveedores.
+- Se prepara una guía operativa para autorización cuando corresponda, conservación y atención de derechos/reclamaciones. Su redacción no demuestra que ya existan registros ni que el procedimiento haya sido ejecutado.
+
+## Evidencia de la versión anterior
+El recolector de navegador usó contexto limpio, sin enviar mensajes ni formularios. Evidencia: test-results/privacy-baseline-report.md, privacy-baseline-local.json y privacy-baseline-public.json.
+- Publicado: 319 solicitudes y 20 hosts; local original: 337 y 21. Son recorridos de observación, no un benchmark idéntico de rendimiento.
+- Cookie _GRECAPTCHA ya presente antes del scroll: Google, ruta /recaptcha, SameSite=None, Secure/HttpOnly, aproximadamente 180 días. No se guardan en el informe valores de identificadores.
+- Proyectos embebidos contactaban Google Fonts, reCAPTCHA Enterprise, Firebase App Check y Firestore; se observó además POST /api/vitals desde Mundo Celular.
+- No se detectaron cookies propias de ALS ni claves local/session durante la visita sin elección. Esto no excluía seguimiento por terceros.
+
+## Cambios y pruebas iniciales del 12 de octubre
+
+Se conserva la evidencia registrada entonces; no se repitieron estas pruebas al actualizar el informe el 13 de octubre. Sus cálculos de contraste y capturas describen la versión ensayada, no todos los estados de diseños posteriores.
+
+- Se eliminó scripts/modules/live-preview.js y su inicialización/control. CSP frame-src none; fuentes locales; Referrer-Policy no-referrer. Los 18 proyectos mantienen capturas/enlaces.
+- En aquella revisión local: política de cookies navegable con botón de restablecimiento; privacidad y términos con datos confirmados y avisos visibles de revisión; noindex para los tres documentos. En ese momento no se habían publicado los cambios. El estado posterior de publicación se distingue al inicio y en el seguimiento del 13 de octubre.
+- Contrastes del mini brief corregidos; mapa y marquee estáticos; resultado del contacto anunciado; skip link primero y destino de foco explícito; alternativos más descriptivos de los cuatro proyectos observados.
+- node test-results/privacy-final.mjs: PASS. 18 imágenes, filtros, teclado, enlaces legales, ausencia de overflow 320/390/768/1440, navegación sin JavaScript, eliminación de preferencia heredada y restablecimiento de pausa.
+- Contexto limpio: cero cookies, cero iframes, cero solicitudes a otros orígenes durante el recorrido; cero errores de consola/JavaScript/respuestas HTTP fallidas. No prueba configuración privada ni futuras inyecciones de proveedores.
+- axe-core 4.14.0: cero violaciones automáticas WCAG 2 A/AA, 2.1 AA y 2.2 AA en portada y tres documentos, móvil/escritorio. La revisión de incomplete detectó una etiqueta ARIA sin rol válido en las notas de contacto: se añadió role=group. Se eliminó el fondo decorativo heredado por el menú legal. Nueva ejecución integral: cero violaciones; los tres documentos legales tampoco tienen incomplete. En portada persisten comprobaciones de contraste con fondos complejos; no equivalen ni a fallo confirmado ni a conformidad certificada.
+- Prueba específica del mapa/contrastes y menú por agente: 11 aserciones. Root revisó los archivos y repitió su propia prueba integral.
+- La inspección visual inicialmente bloqueada por el entorno pudo completarse en el seguimiento. Se revisaron capturas estabilizadas del contacto en escritorio/móvil, privacidad móvil, cookies escritorio y portada con ampliación CSS. Evidencia: test-results/a11y-followup-*.png y a11y-followup-results.json. No se probó lector de pantalla real.
+- node test-results/a11y-followup.mjs: PASS en las cuatro páginas. Sin desbordamiento a 320 CSS px ni con ampliación CSS al 200 %. Esta última es una simulación: no sustituye el zoom nativo del navegador ni una comprobación exhaustiva de todos los estados.
+- Contraste calculado con sRGB: texto secundario #aab9cb sobre fondos #071a2f/#0d2746/#123353 = 8,78/7,53/6,47:1; selección #071a2f sobre #65d49d = 9,57:1. El gradiente del título supera 3:1 para texto grande. La revisión conservadora de fondos translúcidos sobre blanco detectó riesgo en navegación y etiquetas de capturas: se aumentó su opacidad a 0,9. El texto mint sobre ese fondo compuesto alcanza 7,25:1; navegación con decoración, al menos 5,62:1 en los extremos calculados. Estos cálculos no equivalen a verificar cada píxel o estado animado.
+
+## Seguimiento del 13 de octubre
+
+- Cronos confirmó la publicación de las correcciones técnicas en ee0ac23. No se infiere de ello que las políticas legales en preparación ni el ajuste posterior del reset estén publicados.
+- El titular autorizó publicar privacidad.html, terminos.html, cookies.html y esta auditoría inicial, con los datos y criterios confirmados arriba. Los Markdown de borradores legales se conservan como archivo histórico y no son la versión pública final; no deben sustituir a los HTML revisados.
+- La revisión del reset encontró que volver al carrusel podía conservar userPaused en memoria después de borrar la clave. Cronos reprodujo el fallo y cambió readStoredPause para aceptar un valor de respaldo: pageshow relee la clave, usa userPaused si la lectura falla y después sincroniza controles y autoplay.
+- Evidencia comunicada por Cronos: node test-results/privacy-reset-regression.mjs, PASS con cuatro aserciones tras el ajuste final; incluye evento PageTransitionEvent con persisted simulado, retorno con Atrás y retorno mediante enlace. El navegador no utilizó bfcache real en ese recorrido: no se presenta la simulación como una restauración real comprobada. No se volvió a ejecutar la prueba al redactar este documento.
+- Se precisó el alcance del reset: pausa de esta pestaña y antigua clave local; la eliminación depende del acceso al almacenamiento. La falta de JavaScript ofrece la alternativa de borrar datos desde el navegador.
+- Los registros anteriores de node --check en main/privacy/global-map y git diff --check con PASS se conservan como evidencia histórica; no son nuevas comprobaciones de esta actualización.
+
+## Pendientes de operación y verificación
+
+1. Aplicar y registrar la revisión mensual adoptada, las eliminaciones de consultas sin contrato y las decisiones de conservación de proyectos, pagos y reclamaciones; revisar también copias y limitaciones de borrado de proveedores. No afirmar ejecuciones sin evidencia.
+2. Aplicar el mecanismo de autorización informada cuando corresponda, su prueba y el registro de solicitudes de derechos/reclamaciones y seguimiento. La guía está preparada en docs/legal/OPERACION-Y-SOLICITUDES.md; no equivale a un procedimiento ya ejecutado.
+3. Verificar las cuentas de Vercel, Porkbun, Gmail y WhatsApp: servicios activos e inyecciones, accesos, registros, copias, DPA/acuerdos, regiones y subencargados. Considerar MFA y revisión de sesiones/dispositivos; no se afirma que ya estén configurados.
+4. Revisar contratos de desarrollo: alcance, hitos/cobros, inicio consentido, liquidación por cancelación, garantías, propiedad intelectual y atención de reclamos. Evaluar consumo y tratamiento internacional según los mercados a los que se dirija la actividad; aceptar clientes de cualquier país no acredita revisión de todas sus normas.
+5. Acreditar permisos de los recursos en docs/legal/INVENTARIO-RECURSOS.md, incluidas las mascotas. La autorización del titular para integrarlas no demuestra derechos originales frente a terceros. No se encontraron testimonios en la revisión inicial.
+6. Completar revisión de todos los estados de contraste con fondos complejos, lector de pantalla real y zoom nativo. La accesibilidad de proyectos externos queda fuera de esta auditoría. Queda pendiente ejercitar una restauración real desde bfcache.
+7. Repetir red/cookies y comprobar los textos en producción tras su despliegue autorizado. Este informe previo al push no confirma ese despliegue ni certifica cumplimiento integral.
+
+## Verificación de la publicación preparada · 13 de octubre
+
+- `node test-results/privacy-final.mjs`: PASS sobre portada y tres políticas terminadas; ocho auditorías axe-core 4.14.0 sin violaciones automáticas, cero errores, cookies o solicitudes externas en el recorrido. Anchos 320/390/768/1440, teclado, filtros, dieciocho imágenes, enlaces y restablecimiento. Se actualizó la expectativa del pie sin JavaScript de tres a cinco enlaces al añadir cancelaciones y SIC; el primer ensayo falló únicamente en esa expectativa antigua.
+- `node test-results/privacy-reset-regression.mjs`: PASS en cuatro comprobaciones, incluida lectura bloqueada que conserva la pausa en memoria. Persisted se simula; el regreso real con Atrás no utilizó bfcache.
+- `node test-results/a11y-followup.mjs`: PASS en cuatro páginas sin desbordamiento a 320 px o ampliación CSS del 200 %. Inspección de capturas actuales de privacidad móvil y cookies en escritorio/móvil: texto legible y sin recortes. No equivale a zoom nativo ni prueba con lector de pantalla. Axe mantiene comprobaciones manuales de contraste complejo en portada; los documentos legales no presentan incompletos.
+- `node test-results/legal-release-smoke.mjs`: PASS local; ocho archivos servidos coinciden con su fuente, cabeceras restrictivas, canonical e indexación, ancla de cancelaciones, reset por teclado y regreso al carrusel, tres documentos sin JavaScript y alternativa de borrado desde el navegador.
+- Revisión independiente de textos: sin contradicciones bloqueantes con los hechos declarados; se precisaron requerimiento de subsanación y comunicación previa de cambios, y se sustituyó el enlace de datos de SIC por una página oficial localizada. Los plazos generales de conservación por obligación requieren concretarse con apoyo contable/jurídico según cada documento.
+- No se enviaron correos ni mensajes, no se inspeccionaron conversaciones privadas, y no se comprobó entrega del buzón. No se modificaron las cuentas de proveedores ni se ejecutaron borrados de clientes.

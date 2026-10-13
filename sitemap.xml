@@ -2,6 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.alsdevstudio.com/</loc>
-    <lastmod>2026-08-30</lastmod>
+    <lastmod>2026-10-13</lastmod>
+  </url>
+  <url>
+    <loc>https://www.alsdevstudio.com/privacidad.html</loc>
+    <lastmod>2026-10-13</lastmod>
+  </url>
+  <url>
+    <loc>https://www.alsdevstudio.com/terminos.html</loc>
+    <lastmod>2026-10-13</lastmod>
+  </url>
+  <url>
+    <loc>https://www.alsdevstudio.com/cookies.html</loc>
+    <lastmod>2026-10-13</lastmod>
   </url>
 </urlset>

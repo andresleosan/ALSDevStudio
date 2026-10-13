@@ -48,3 +48,8 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Publicación autorizada · 2026-10-13
 - El titular solicitó push del diseño y la mascota. Se incluyen las correcciones técnicas verificadas de privacidad que acompañan esta versión; los borradores legales con datos pendientes se conservan en local.
+
+## Publicación de políticas · 2026-10-13
+- El titular solicita publicar las políticas y el trabajo de la auditoría inicial. Completar los datos esenciales sin inventarlos; distinguir compromisos adoptados de configuración de proveedores sin verificar.
+- Corregir el restablecimiento de preferencias al volver mediante el historial, conectar los documentos desde el footer y comprobar su lectura y navegación en móvil.
+- El titular aportó dirección y NIT para publicar, confirmó Porkbun → Gmail con acceso exclusivo y adoptó revisión mensual con eliminación de consultas sin contrato tras seis meses sin actividad. Para proyectos, pagos y reclamaciones adopta conservación por necesidad legal/contractual y revisión al cierre. No se revisaron documentos de identidad ni cuentas privadas.

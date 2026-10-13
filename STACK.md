@@ -96,3 +96,9 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - Push solicitado expresamente por el titular. La release incluye diseño, PNG transparentes, fuentes locales, eliminación de vistas externas y cabeceras restrictivas.
 - Los borradores legales, sus enlaces y el control de restablecimiento aún no se publican. La versión de producción de scripts/privacy.js solo elimina la preferencia antigua de vistas externas.
 - Notas y reversión: `docs/RELEASE-DESIGN-MASCOT.md`. No hay migraciones, servicios nuevos ni cambios de identidad Git.
+
+### Publicación legal · 2026-10-13
+- Documentos HTML estáticos y enlaces de contacto, sin agregar formulario, analítica ni proveedores nuevos. La política de cancelaciones se integra en términos.
+- Al regresar a una portada conservada en memoria, el carrusel relee la preferencia de pausa para aplicar el restablecimiento efectuado en cookies.
+- Dirección y NIT aportados para los HTML; reenvío Porkbun observado por DNS y destino Gmail/acceso exclusivo confirmados por el titular. Retención de consultas: revisión mensual y eliminación tras seis meses sin actividad, adoptada expresamente; otros documentos por necesidad legal/contractual y revisión al cierre. La configuración privada de proveedores mantiene sus límites de verificación.
+- Gestión manual documentada en `docs/legal/OPERACION-Y-SOLICITUDES.md`; no se añade CRM, formulario ni envío automático. Canonical y sitemap para las tres páginas, enlaces legales y SIC, cancelaciones dentro de términos.

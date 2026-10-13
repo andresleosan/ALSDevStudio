@@ -39,11 +39,12 @@ export function initHeroCarousel() {
   let swipe = null;
   let userPaused = readStoredPause();
 
-  function readStoredPause() {
+  /** @param {boolean} [fallback] */
+  function readStoredPause(fallback = false) {
     try {
       return sessionStorage.getItem(PAUSE_STORAGE_KEY) === 'true';
     } catch {
-      return false;
+      return fallback;
     }
   }
 
@@ -241,7 +242,10 @@ export function initHeroCarousel() {
   }
   document.addEventListener('visibilitychange', syncAutoplay);
   window.addEventListener('pagehide', stop);
-  window.addEventListener('pageshow', syncAutoplay);
+  window.addEventListener('pageshow', () => {
+    userPaused = readStoredPause(userPaused);
+    syncAutoplay();
+  });
   reducedMotionQuery.addEventListener('change', syncAutoplay);
 
   setSlide(0, 'init');

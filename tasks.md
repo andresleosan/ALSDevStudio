@@ -409,3 +409,10 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Estado: aprobada para publicación. Push solicitado expresamente por el titular; DESIGN-01 y MASCOT-01 incluidos. Copia exacta del índice verificada: `design-qa.mjs` PASS (19 comprobaciones, axe sin violaciones automáticas), `mascot-qa.mjs` PASS (ocho anchos), comprobación estática de referencias/fuentes/exclusión de borradores y sintaxis PASS. Captura final inspeccionada.
 - Incluye correcciones técnicas de PRIV-01: tipografías propias, eliminación de marcos externos, limpieza de preferencia antigua y cabeceras. Los documentos legales y sus enlaces permanecen pendientes en local.
 - Reversión documentada en `docs/RELEASE-DESIGN-MASCOT.md`; sin migraciones ni cambios de datos.
+
+## LEGAL-RELEASE · 2026-10-13
+- Estado: aprobada para publicación. Publicación solicitada expresamente; datos esenciales y criterio de retención recibidos del titular. Revisión normativa oficial, técnica y de textos completada con límites documentados.
+- Completar políticas y enlaces, corregir restablecimiento al volver con historial y documentar la gestión manual de autorizaciones, conservación y solicitudes.
+- Validar ocho auditorías de accesibilidad, red/almacenamiento, navegación legal, teclado y preferencias; publicar únicamente textos completos según la información recibida y verificar el despliegue.
+- Evidencia local: `privacy-final.mjs` PASS (ocho auditorías axe sin violaciones automáticas); `privacy-reset-regression.mjs` PASS (cuatro comprobaciones); `a11y-followup.mjs` PASS (móvil y ampliación CSS); `legal-release-smoke.mjs` PASS (textos, cabeceras, enlaces, teclado, reset y sin JavaScript). Revisión independiente sin bloqueantes; sin hallazgos críticos de seguridad en el cambio. No certifica cumplimiento integral ni verifica cuentas privadas.
+- Alcance, pendientes y reversión en `docs/RELEASE-POLITICAS.md`. Comprobar contenido y red en producción después del push normal con identidad andresleosan.
