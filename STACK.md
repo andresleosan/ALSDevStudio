@@ -65,3 +65,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 ## Verificación
 - Sintaxis y referencias locales con PowerShell.
 - Prueba visual manual en navegador local si el navegador conectado está disponible.
+
+### Correo de contacto — 2026-10-13
+- Fila de correo en la columna introductoria, debajo de los pasos; conserva tipografía, colores y distribución del bloque actual. Enlace mailto nativo, sin formulario, JavaScript ni servicios adicionales.
+- Dirección visible con salto permitido antes de @, objetivo de al menos 44 px y foco azul sobre fondo claro. Verificar teclado y anchos de 320 a 1440 px.

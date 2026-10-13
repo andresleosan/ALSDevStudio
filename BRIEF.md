@@ -26,3 +26,6 @@ Emprendedores, negocios locales, equipos técnicos y clientes que necesitan una 
 
 ## Referencia de datos
 El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL devuelve 404. Los repositorios que coinciden con la landing y el perfil público consultado pertenecen a `https://github.com/andresleosan`.
+
+## Correo visible en contacto — 2026-10-13
+- Integrar alsdevstudio@alsdevstudio.com como alternativa visible a WhatsApp en la sección de contacto, con enlace para abrir el cliente de correo y diseño adaptable a móvil.

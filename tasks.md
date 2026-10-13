@@ -368,3 +368,11 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Documentar en `STACK.md` cualquier cambio al Design DNA o a la estrategia de animación antes de implementarlo.
 - La iteración requiere evidencia real, cero hallazgos críticos de seguridad, cero regresiones, errores de consola, solicitudes fallidas, rutas rotas u overflow horizontal.
 - No desplegar a producción sin aprobación explícita del operador.
+
+## CONTACT-EMAIL — Correo visible — 2026-10-13
+- Estado: aprobada para publicación; push autorizado por el titular el 2026-10-13.
+- Dirección confirmada visible debajo de los pasos del contacto, con enlace mailto nativo y adaptación a móvil. Sin cambios al mini brief ni servicios adicionales.
+- QA Chromium: dirección y enlace completos, foco visible con Tab/Shift+Tab, objetivo de 44–45 px, sin desbordamiento a 320/390/768/1440 px ni errores JavaScript. axe en contacto: cero violaciones automáticas. Capturas inspeccionadas; se añadió separación para que el contorno de foco no roce la etiqueta.
+- Revisión independiente del fragmento: etiqueta 5,70:1; enlace 16,45:1; hover/foco 5,02:1. No se envió ningún correo ni se comprobó entrega del buzón.
+- Release acotada: correo visible, siete reglas CSS y documentación de esta mejora. QA repetido sobre la versión exacta preparada para commit, con cabeceras de producción: teclado, 320/390/768/1440 px, cero errores JavaScript, cero violaciones axe en el bloque nuevo y enlace operativo sin JavaScript. Evidencia local: test-results/email-push-qa.json.
+- Reversión: revertir el commit «feat: mostrar correo de contacto como alternativa a WhatsApp» y publicar la reversión. Sin migraciones ni datos que restaurar.
