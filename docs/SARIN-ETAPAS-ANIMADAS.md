@@ -32,6 +32,14 @@ Cronos repitió Pages4/4, integración10/10 y fotogramas14/14 PASS en el candida
 
 La promoción continúa la extensión concreta solicitada del componente Sarin y sus animaciones, cuya publicación el titular autorizó expresamente en esta sesión. No cambia el dominio, acceso, proveedores ni datos. El registro del candidato solo modifica documentación; los archivos públicos promovidos son los revisados.
 
+## Publicación verificada
+
+Promoción por fast-forward a main`14eff0ad7e2714d21c40fb7376b460dc83895cc8`, producción Cloudflare`6868de73`. Cronos repitió en https://www.alsdevstudio.com/ Pages4/4, integración10/10 y fotogramas14/14 PASS. Informes preservados: `test-results/sarin-steps-production-scenes.json` y `sarin-steps-production-frames.json`.
+
+Chrome real muestra las tres tarjetas `finished`, todos los clones vacíos y los tres globos de252,6875px, sin overflow. Captura `test-results/sarin-steps-live-chrome.jpg`, con las tres tarjetas completas y marca de aprobación visible. La vista de entrada se deja preparada para recorrer las animaciones desde el inicio.
+
+Revisión HTTP independiente: ocho recursos200 iguales al build (textos normalizados CRLF/LF y cuatroPNG idénticos), WWW indexable/canonical, CSP y Analytics intactos, cuatro redirecciones301 de Pages raíz/8f2ced74 conservando ruta/query. Sin bloqueantes ni cambios públicos en el cierre documental.
+
 ## Reversión
 
 Base pública conocida `f007f93a9905ebe3411e4546f6c1e582812a5191`. Revertir el commit funcional mediante un nuevo commit normal, resolver documentos conservando la evidencia y hacer push a main; esperar Pages y verificar la recuperación de las tres tarjetas estáticas. No cambia DNS, correo, analítica, almacenamiento ni plan. El saludo en vuelo y el tecleo de los encabezados permanecen en la base.
