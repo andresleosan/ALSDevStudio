@@ -1,53 +1,70 @@
-<!-- Esta es la plantilla que scripts/nuevo-proyecto.sh y scripts/adoptar-proyecto.sh copian a la
-     raíz de cada proyecto generado. Las rutas de abajo (.cronos/...) son relativas a la raíz DEL
-     PROYECTO, no a la raíz de este kit fuente (acá, en el kit fuente, AGENCY.md/MASTER_PROMPT.md
-     viven directo en la raíz, sin .cronos/ — ver README.md, "Estructura de este kit"). Ver
-     adr/ADR-011-multiplataforma-opencode-codex-vscode.md para el porqué de este archivo. -->
+# ALS DevStudio · Guía del Proyecto para Agentes
 
-# Cronos
+Bienvenido a **ALS DevStudio**, el sitio web oficial y portafolio de Andrés Santiago (Medellín, Colombia) enfocado en diseño y desarrollo de sitios web, tiendas y aplicaciones a medida.
 
-Eres **Cronos**, agente primario de desarrollo full-stack (arquitectura, backend, frontend, datos,
-integraciones, seguridad, QA, rendimiento, despliegue), con delegación controlada y un ciclo de
-autocrítica obligatorio antes de dar cualquier tarea por terminada. Conservas la autoridad final.
+Este documento establece los principios de arquitectura, estándares de código y directrices de desarrollo para cualquier asistente o agente de IA que trabaje en esta base de código.
 
-## Lee esto primero
+---
 
-Antes de cualquier otra cosa, en esta misma carpeta:
-1. `.cronos/AGENCY.md` — principios, arquitectura, reglas de oro completas, ciclo de autocrítica.
-2. `.cronos/MASTER_PROMPT.md` — el flujo completo, empezando por el Paso 0.
+## 1. Visión y Filosofía
 
-Si `.cronos/` no existe en este proyecto, dilo explícitamente antes de seguir — puede ser un
-proyecto todavía sin adoptar al core (ver Flujo B de `MASTER_PROMPT.md`, `scripts/adoptar-proyecto.sh`)
-o una instalación incompleta.
+- **Rendimiento extremo y ligereza:** Este proyecto se basa en tecnologías web nativas (HTML5 semántico, CSS moderno con variables CSS y JavaScript Vanilla modular con ES Modules). No se deben introducir frameworks pesados (React, Vue, Tailwind, etc.) a menos que se solicite explícitamente.
+- **Mejora progresiva (*Progressive Enhancement*):** La experiencia base debe ser funcional incluso sin JavaScript (usando etiquetas `<noscript>`, semántica clara y estilos adecuados).
+- **Estética oscura y cyberpunk pulida:** Identidad visual propia basada en tonos oscuros (`--ink`, `--ink-deep`, `--panel`), toques de menta (`--mint: #65d49d`), azul tecnológico (`--blue: #4d9bff`) y tipografías *Space Grotesk*, *DM Sans* e *IBM Plex Mono*.
+- **Accesibilidad (a11y - WCAG 2.2 AA):** Toda interacción debe ser navegable por teclado (`:focus-visible`), compatible con lectores de pantalla (estados `aria-pressed`, `aria-live`, etiquetas semánticas) y respetar `prefers-reduced-motion`.
 
-## Reglas de oro (resumen — ante cualquier diferencia, manda `.cronos/AGENCY.md`, no este resumen)
+---
 
-Esta sección es defensa en profundidad, mismo criterio que ya documentó `adr/ADR-003`: si por lo
-que sea no llegas a leer `.cronos/AGENCY.md` en esta sesión, estas reglas te siguen aplicando
-igual, porque son parte de este mismo archivo que tu plataforma carga sí o sí.
+## 2. Estructura del Proyecto
 
-- Un hallazgo crítico de seguridad detectado por ti mismo bloquea el avance, sin excepciones.
-- Ninguna tarea pasa a "aprobada" sin evidencia real y verificable de que las pruebas corrieron y
-  pasaron — nunca la suposición de que "probablemente ya funciona".
-- No hay despliegue a producción, migración destructiva, ni gasto nuevo en APIs de pago sin
-  confirmación explícita del operador.
-- Toda migración lleva plan de reversión documentado antes de aplicarse; las destructivas además
-  exigen backup verificado y confirmación explícita.
-- Puedes delegar tareas acotadas a un máximo de 3 subagentes sin delegación anidada. No leen
-  secretos, no modifican Git, no despliegan, no migran, no generan gasto ni aprueban tareas;
-  revisas sus archivos y repites las pruebas antes de aceptar resultados.
-- Si detectas una tensión real entre dos decisiones válidas (ej. seguridad vs. velocidad), se la
-  escalas al operador — no inventas tú un criterio de desempate.
-- DDD siempre: `BRIEF.md` → `STACK.md` → `tasks.md` → código, con checkpoints de confirmación
-  humana antes de construir (el detalle completo vive en `.cronos/MASTER_PROMPT.md`).
-- Hablas siempre en español, salvo nombres de archivos/variables de código.
+```text
+├── index.html                 # Página principal y estructura semántica
+├── privacidad.html            # Política de privacidad
+├── terminos.html              # Términos y condiciones
+├── cookies.html               # Política de cookies
+├── styles/
+│   ├── main.css               # Hoja de estilos central con arquitectura por secciones
+│   └── ...
+├── scripts/
+│   ├── main.js                # Punto de entrada de inicialización de módulos
+│   ├── picture-fallback.js    # Soporte responsivo de imágenes
+│   └── modules/               # Módulos JS específicos y aislados
+│       ├── env.js             # Detección de entorno, medios y capacidades
+│       ├── dom.js             # Utilidades de selección DOM seguras
+│       ├── projects.js        # Lógica de filtrado y paginación del portafolio
+│       ├── hero-carousel.js   # Carrusel del Hero principal
+│       ├── global-map.js      # Mapa interactivo SVG
+│       ├── space.js           # Fondo canvas interactivo
+│       ├── mascot-scenes.js   # Escenas e interacciones de Sarin Bot
+│       └── ...
+└── assets/                    # Imágenes, fuentes, marcas y proyectos
+```
 
-## Plataforma
+---
 
-Este proyecto puede usarse desde OpenCode, Codex CLI o VS Code (GitHub Copilot). Detecta cuál te
-está ejecutando ahora mismo (`.cronos/MASTER_PROMPT.md`, Paso 0): la mecánica de permisos/sandbox y
-MCP ya está resuelta en el archivo de configuración que tu plataforma lee sola — `opencode.json`,
-`.codex/config.toml`, o `.github/copilot-instructions.md` + `.vscode/mcp.json`, según cuál exista
-en este proyecto. Para el modelo de IA, el criterio completo vive en `.cronos/MODELOS.md` — ninguna
-de las tres plataformas restringe qué proveedor o modelo puedes usar, cada una tiene su propio
-mecanismo de descubrimiento en vivo.
+## 3. Convenciones de Desarrollo
+
+### HTML & Marcado
+- Emplear etiquetas semánticas (`<header>`, `<main>`, `<section>`, `<article>`, `<figure>`, `<nav>`).
+- Todas las imágenes deben incluir atributos `width`, `height`, `alt` descriptivo y formato responsivo `<picture>` con fuentes AVIF/WebP.
+- Para elementos interactivos dinámicos, mantener soporte en `<noscript>`.
+
+### CSS & Estilos
+- Definir propiedades mediante tokens globales en `:root` (`--ink`, `--mint`, `--line`, etc.).
+- Diseñar mobile-first y respetar breakpoints estándar (`≤900px`, `≤680px`).
+- Preservar las reglas de `prefers-reduced-motion` y rendimiento para dispositivos de baja potencia.
+
+### JavaScript
+- Código modular bajo ES Modules (`import`/`export`).
+- Usar directiva `// @ts-check` y tipado JSDoc cuando sea aplicable.
+- Encapsular inicializaciones de forma segura con captura de excepciones para que el fallo de un módulo no comprometa al resto de la aplicación.
+- Mantener funciones puras o con efectos secundarios controlados en el DOM.
+
+---
+
+## 4. Flujo de Trabajo y Modificaciones
+
+1. **Comprensión del contexto:** Inspeccionar los archivos existentes antes de editar para no duplicar utilidades ni romper estilos compartidos.
+2. **Ediciones quirúrgicas:** Realizar modificaciones puntuales y limpias preservando comentarios, estructura y código no relacionado.
+3. **Verificación:** Probar siempre la funcionalidad, la responsividad y la accesibilidad de cada cambio antes de darlo por completado.
+4. **Idioma:** Todas las explicaciones y comentarios dirigidos al operador deben ser en español.

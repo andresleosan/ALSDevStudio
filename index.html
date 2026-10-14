@@ -71,7 +71,7 @@
   <nav class='mobile-menu' id='mobile-menu' aria-label='Navegación móvil'>
     <a href='#alcance'>alcance</a><a href='#proyectos'>proyectos</a><a href='#proceso'>proceso</a><a class='mobile-menu-cta' href='#contacto'>Hablemos <span aria-hidden='true'>↗</span></a>
   </nav>
-  <noscript><style>.nav-menu-toggle,.project-filters,.playground-options,.playground-result,.hero-carousel-controls{display:none!important}.mobile-menu{display:grid!important}.global-map-host{display:none!important}</style></noscript>
+  <noscript><style>.nav-menu-toggle,.project-filters,.playground-options,.playground-result,.hero-carousel-controls,.projects-pagination{display:none!important}.mobile-menu{display:grid!important}.global-map-host{display:none!important}</style></noscript>
   <canvas class='space-canvas' id='space-canvas' aria-hidden='true'></canvas>
   <div class='logo-cursor' aria-hidden='true'><img src='favicon.svg' alt=''></div>
 
@@ -245,10 +245,16 @@
         </div>
         <div class="projects-toolbar" data-reveal>
           <div class="project-filters" role="group" aria-label="Filtrar proyectos">
-            <button class="filter is-active" type="button" data-filter="all">Todos</button>
-            <button class="filter" type="button" data-filter="product">Producto</button>
-            <button class="filter" type="button" data-filter="web">Web</button>
-            <button class="filter" type="button" data-filter="systems">Sistemas</button>
+            <button class="filter is-active" type="button" data-filter="all"><span>Todos</span> <span class="filter-count" data-count="all">20</span></button>
+            <button class="filter" type="button" data-filter="product"><span>Producto</span> <span class="filter-count" data-count="product">9</span></button>
+            <button class="filter" type="button" data-filter="web"><span>Web</span> <span class="filter-count" data-count="web">8</span></button>
+            <button class="filter" type="button" data-filter="systems"><span>Sistemas</span> <span class="filter-count" data-count="systems">3</span></button>
+          </div>
+          <div class="projects-counter" aria-hidden="true">
+            <span class="projects-counter-label">Viendo</span>
+            <span class="projects-counter-range" id="projects-counter-range">01–04</span>
+            <span class="projects-counter-divider">/</span>
+            <span class="projects-counter-total" id="projects-counter-total">20</span>
           </div>
         </div>
         <div class="projects-grid">
@@ -281,7 +287,18 @@
         </div>
         <div class="project-body"><span class="project-status">En construcción</span><h3 id="semancontrol-title">SemanControl</h3><p>Proyecto en construcción. Próximamente compartiré más detalles.</p></div>
       </article>
-    </div></div></section>
+    </div>
+    <nav class="projects-pagination" aria-label="Paginación de proyectos" data-projects-pagination>
+      <button class="pagination-btn pagination-prev" type="button" aria-label="Página anterior de proyectos" disabled>
+        <span aria-hidden="true">‹</span> Anterior
+      </button>
+      <div class="pagination-pages" data-pagination-pages role="group" aria-label="Páginas de proyectos"></div>
+      <button class="pagination-btn pagination-next" type="button" aria-label="Página siguiente de proyectos">
+        Siguiente <span aria-hidden="true">›</span>
+      </button>
+    </nav>
+    <div class="visually-hidden" id="projects-pagination-status" role="status" aria-live="polite"></div>
+  </div></section>
     <section class="section process-section" id="proceso" aria-labelledby="process-title">
       <div class="wrap">
         <div class="section-heading">
