@@ -100,3 +100,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Globos de proceso del mismo tamaño · 2026-10-13
 - Quitar la frase «Te cuento cómo cerramos:» del tercer globo y hacer que los tres recuadros tengan igual altura, manteniendo el contenido restante y las poses de Sarin.
+
+## Retirar etiquetas de sección · 2026-10-13
+- El titular pide quitar «01 / alcance global», «02 / proyectos», «03 / proceso», «Por WhatsApp» y «04 / contacto». Conservar los títulos principales y ajustar los espacios que dejan.

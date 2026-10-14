@@ -59,3 +59,11 @@ Candidato https://39699e3a.alsdevstudio.pages.dev/ verificado200/noindex, HTML/C
 Producción https://www.alsdevstudio.com/#proceso:200/indexable, HTML/CSS iguales al build revisado. Chrome del operador, viewport1780px: frase retirada, tres globos252,6875px, sinoverflow. Captura `test-results/process-equal-live-chrome.jpg`; vista principal dejada abierta. Los commits de cierre documental no modifican el contenido público.
 
 Reversión de esta corrección: revertir únicamente `7755120` mediante otro commit normal. Base previa `3de42d6`; no revertir Argentina/Sarin/contacto ni las redirecciones de cuenta. Verificar que regresa la frase y el comportamiento anterior de altura. Sin datos, dependencias, servicios ni gasto nuevos.
+
+## Retirada de cinco etiquetas · 2026-10-13
+
+El titular solicita quitar «01 / alcance global», «02 / proyectos», «03 / proceso», «Por WhatsApp» y «04 / contacto». Se eliminan sus nodos HTML y el wrapper de WhatsApp; los márgenes superiores de los títulos quedan0. Se conservan encabezados/IDs/anclas, controles, enlaces y otros rótulos de marca.
+
+QA local de Cronos: build12/12PASS,183archivos/4.756.627bytes. Navegador320/390/900/901/1440PASS: títulos íntegros, ausencia de cinco etiquetas, márgenes0, globos iguales, sin overflow. MapaArgentina y opción WhatsApp porEspacio/Tab con número/mensaje correctos; mailto intacto. Axe main320/1440sinviolaciones, sin errores ni solicitudes externas. SinJS: encabezados HTML y enlaces nativos conservados. Reporte `test-results/section-labels-qa.json` y capturas `labels-*.png`. La comparación inline inicial de títulos se corrigió por la codificación del pipe Windows usando escapes Unicode; el contenido del sitio conservó sus acentos. Revisión estática independiente y de Cronos sin hallazgos críticos; sin cambios de scripts/assets/dependencias.
+
+Reversión: revertir únicamente el nuevo commit funcional de esta retirada mediante commit normal; basef8d12e4. Confirmar que regresan las cinco etiquetas y sus márgenes. No revertir otros cambios del sitio ni redirecciones de cuenta.

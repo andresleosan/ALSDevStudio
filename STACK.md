@@ -165,3 +165,6 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 
 ### Globos de proceso iguales · 2026-10-13
 - CSS Grid con filas adaptativas para alinear los globos por su contenido más alto. Mantener tres columnas en escritorio, personaje/texto a dos columnas hasta900 y apilado hasta680. Igualar alturas sin JavaScript ni altura fija, con texto íntegro y proporción reservada de las poses.
+
+### Retirar etiquetas de sección · 2026-10-13
+- Eliminar solo los cinco nodos solicitados del HTML y el wrapper de «Por WhatsApp». Quitar los márgenes superiores de títulos asociados a esas etiquetas. Mantener encabezados semánticos, anclas, controles y el resto de etiquetas de marca; sin cambios de scripts ni assets.
