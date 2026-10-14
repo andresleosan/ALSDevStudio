@@ -16,7 +16,13 @@ RED inicial observado: el caso sin botón daba static frente a idle. Cronos revi
 
 `node test-results/sarin-no-icon-qa.mjs`: seis casos PASS en 390/1440, sin errores ni solicitudes externas. Ausencia del botón en DOM, bucle Infinity, detención real/saludo, continuación, pausa al salir de viewport, reanudación, reducido y noJS estáticos. Capturas inspeccionadas; reporte `test-results/sarin-no-icon-local.json`. Revisión independiente confirma diff público exacto: un botón, siete reglas CSS, dos guardas; ningún bus compartido, cambio de banner, secreto o red nueva.
 
-Candidato y artefactos se verificarán antes de continuar la publicación autorizada. QA Chromium no equivale a una auditoría completa de lectores de pantalla o conformidad WCAG.
+QA Chromium no equivale a una auditoría completa de lectores de pantalla o conformidad WCAG.
+
+## Candidato verificado
+
+Fuente funcional `645a8e13a2fffc7fb125b5b0df6639dc53f8562b`, rama `feat/sarin-sin-icono-pausa`, preview https://5f9682d3.alsdevstudio.pages.dev/. Cronos repitió Pages 4/4 y QA focal 6/6 PASS en línea, inspeccionó la captura de escritorio y confirmó el resultado sin errores o redes externas. Revisión HTTP independiente: cinco recursos iguales a dist, sin círculo ni vínculo compartido; noindex/canonical/CSP/analytics y cuatro redirecciones 301 conservadas. Informes `sarin-no-icon-preview.json` y `sarin-no-icon-http-preview.json`.
+
+Promoción dentro de la corrección solicitada sobre las animaciones publicadas y autorizadas expresamente en la sesión, incorporando la aclaración del titular de no añadir pausa manual. Este registro es documental y conserva los archivos públicos del candidato.
 
 ## Reversión
 
