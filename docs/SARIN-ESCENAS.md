@@ -38,6 +38,12 @@ Candidato final `2e24e54`: https://bf38aa53.alsdevstudio.pages.dev/. Pages4/4 y 
 
 ## Reversión
 
+## Publicación autorizada
+
+El titular autorizó expresamente el 2026-10-13: «Sí, publicar las animaciones», para las tres escenas verificadas en bf38aa53 y push a main. Promoción por fast-forward de la rama candidata, sin cambios de archivos públicos respecto de 2e24e54. Build público repetido 12/12 PASS antes de promover; seguridad y reversión revisadas. Verificación del despliegue en www pendiente.
+
+## Reversión de producción
+
 Base pública conocida: `cd0536ddcc09962cf6e7bea808c8e7809ec57716`.
 
 Revertir conjuntamente los commits funcionales `2e24e54` y `633f7b2` mediante un commit normal y push a main, o revertir el commit único de promoción si la entrega se integra con squash. Pages reconstruirá la versión anterior; no reescribir historia. Restaurar conjuntamente HTML/CSS/main y las allowlists del build, retirando el módulo y el PNG nuevo de la salida pública. No modifica preferencias guardadas, reglas de redirección ni cuenta de Cloudflare. Confirmar en www el HTML/CSS anterior y la navegación/contacto tras el despliegue.
