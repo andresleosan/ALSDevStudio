@@ -152,3 +152,8 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 ### Redirección del dominio Pages · 2026-10-13
 - Bulk Redirect de Cloudflare a nivel de cuenta: origen exacto `alsdevstudio.pages.dev/` sin esquema, destino `https://www.alsdevstudio.com/`, 301. Conservar query, matching de subrutas y sufijo de ruta; no incluir subdominios para conservar los previews.
 - Configuración de plataforma, sin Functions ni cambios de DNS o código cliente. `_redirects` conserva las rutas históricas; no admite este cambio por hostname. Reversión: deshabilitar la regla dedicada, conservando la lista y el proyecto.
+
+### Argentina y Sarin bot · 2026-10-13
+- Ocho ubicaciones sincronizadas en HTML, datos JS, marcador y resaltado del SVG local. Argentina se coloca después de Brasil. Intervalo de mapa 2000 ms, con las guardas actuales de visibilidad, pausa, foco y movimiento reducido.
+- Proceso: mantener lista ordenada y tres etapas. Sarin bot como guía visual, con bienvenida, portátil y pose de revisión; PNG transparentes locales y textos HTML en globos. Usar tipografías/paleta y breakpoints actuales, imágenes decorativas con proporción reservada y lectura completa sin JavaScript.
+- El operador eligió personaje con globos de texto, sin lectura en voz alta. No se añade JavaScript ni servicio externo para las explicaciones.

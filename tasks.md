@@ -494,3 +494,13 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Crear lista y regla Bulk Redirect dedicadas: 301, HTTP/HTTPS, rutas y query conservadas, sin incluir subdominios. Comprobar raíz, documentos, asset, ruta desconocida y previews; destino sin bucles y HTTPS válido.
 - Reversión documentada: deshabilitar únicamente la nueva regla de redirección. Mantener la lista para inspección; no borrar servicios ni alterar código/DNS/correo. Sin gasto nuevo ni cambio de plan.
 - Lista `als_pages_to_www` y regla `ALS Pages a www` creadas y Enabled. `node test-results/pages-canonical-qa.mjs` PASS: siete 301 (HTTP/HTTPS, documentos, query codificada, asset y 404 final), rutas/queries conservadas, destino www200 sin bucles/indexable y preview por hash200/noindex. Evidencia y reversión en `docs/PAGES-CANONICAL.md`; sin cambios de código cliente, DNS, correo ni regla BPT existente.
+
+## MAP-ARGENTINA · Argentina y recorrido de dos segundos · 2026-10-13
+- Estado: aprobada en QA local; pendiente de preview y publicación. Añadir Argentina después de Brasil en lista/datos/SVG y actualizar las referencias de siete a ocho. Usar geometría local disponible y ubicación ilustrativa coherente.
+- Cambiar el recorrido a 2000 ms y verificar sincronización, pausa/manual, temporizador único, visibilidad, teclado, movimiento reducido y móvil.
+- QA `map-autoplay-qa.mjs` repetida por Cronos: diez comprobaciones PASS, corte1999/2000, ciclo completo, controles y sincronización. Axe sin violaciones, sin errores ni solicitudes externas. Revisión estática sin hallazgos críticos; límites del emulador y reversión en `docs/ARGENTINA-SARIN.md`.
+
+## PROCESS-SARIN · Sarin bot explica las etapas · 2026-10-13
+- Estado: aprobada en QA local; pendiente de preview y publicación. Sustituir los tres SVG por el robot ALS en poses de bienvenida, construcción con portátil y revisión. Texto de Sarin en globos, conservando los tres títulos y el alcance real del servicio.
+- Comprobar build público/PNG, dimensiones reservadas, lectura y controles en 320–1440 px, teclado, axe y funcionamiento sin JavaScript. Preparar preview y reversión antes de solicitar la publicación.
+- Operador eligió globos de texto. Build 12/12 PASS y salida 183 archivos; QA del proceso repetida por Cronos, siete anchos, PNG/proporciones, axe320/1440, reduced-motion y sinJS PASS. Sin hallazgos críticos. Evidencia y reversión en `docs/ARGENTINA-SARIN.md`.

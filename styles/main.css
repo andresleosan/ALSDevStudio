@@ -290,7 +290,11 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .process-step { display:flex; align-items:center; gap:13px; color:var(--paper); font:500 11px 'IBM Plex Mono',monospace; letter-spacing:.07em; text-transform:uppercase; }
 .process-step::after { content:''; flex:1; height:1px; margin-left:8px; background:var(--line); }
 .process-number { display:grid; place-items:center; flex:none; width:40px; height:40px; border:1px solid rgba(101,212,157,.45); border-radius:50%; color:var(--mint); font-size:14px; letter-spacing:0; }
-.process-visual { display:block; width:100%; height:150px; margin:25px 0 28px; }
+.process-character { display:flex; align-items:center; justify-content:center; height:160px; margin:24px 0 26px; }
+.process-character img { display:block; width:auto; height:auto; max-width:160px; max-height:160px; }
+.process-bubble { position:relative; padding:22px; border:1px solid rgba(101,212,157,.3); border-radius:18px; background:#0b2239; }
+.process-bubble::before { content:''; position:absolute; top:-8px; left:calc(50% - 8px); width:14px; height:14px; border-top:1px solid rgba(101,212,157,.3); border-left:1px solid rgba(101,212,157,.3); background:#0b2239; transform:rotate(45deg); }
+.process-speaker { display:block; margin-bottom:12px; color:var(--mint); font:500 10px 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; }
 .process-copy h3 { max-width:320px; min-height:2.3em; font:500 clamp(24px,2.2vw,29px)/1.15 'Space Grotesk',sans-serif; letter-spacing:-.035em; text-wrap:balance; }
 .process-copy p { margin-top:16px; color:var(--muted); font-size:15px; line-height:1.65; }
 
@@ -360,7 +364,8 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .process-item { display:grid; grid-template-columns:180px minmax(0,1fr); column-gap:28px; padding:28px; }
   .process-item + .process-item { border-left:0; border-top:1px solid var(--line); }
   .process-step { grid-column:1/-1; margin-bottom:20px; }
-  .process-visual { height:120px; margin:0; align-self:center; }
+  .process-character { height:160px; margin:0; align-self:center; }
+  .process-bubble::before { top:calc(50% - 8px); left:-8px; transform:rotate(-45deg); }
   .process-copy h3 { min-height:0; max-width:420px; }
   .process-copy p { margin-top:12px; }
   .hero-grid, .contact-card { grid-template-columns:1fr; }
@@ -444,7 +449,10 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .process-grid { border-radius:18px; }
   .process-item { grid-template-columns:1fr; padding:24px; }
   .process-step { margin-bottom:0; }
-  .process-visual { width:min(260px,100%); height:130px; margin:16px auto 20px; }
+  .process-character { height:150px; margin:20px 0 26px; }
+  .process-character img { max-width:150px; max-height:150px; }
+  .process-bubble { padding:20px; }
+  .process-bubble::before { top:-8px; left:calc(50% - 8px); transform:rotate(45deg); }
   .contact-section { padding-top:72px; }
   .contact-card { gap:32px; padding:30px 22px 34px; border-radius:16px; }
   .contact-card h2 { font-size:clamp(32px,9vw,48px); }

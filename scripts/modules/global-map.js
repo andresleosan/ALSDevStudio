@@ -15,11 +15,12 @@ const LOCATIONS = {
   colombia: { label: 'Colombia', detail: 'el punto desde donde conectamos.', coords: ['04° 43′ N', '74° 03′ W'] },
   venezuela: { label: 'Venezuela', detail: 'producto con contexto local.', coords: ['06° 25′ N', '66° 35′ W'] },
   brasil: { label: 'Brasil', detail: 'más alcance para tu próximo paso.', coords: ['10° 20′ S', '53° 12′ W'] },
+  argentina: { label: 'Argentina', detail: 'una idea que mira al sur.', coords: ['34° 00′ S', '64° 00′ W'] },
   espana: { label: 'España', detail: 'la conversación también llega lejos.', coords: ['40° 28′ N', '03° 45′ W'] },
   jersey: { label: 'Jersey', detail: 'un punto más en nuestra órbita.', coords: ['49° 13′ N', '02° 08′ W'] },
 };
 const LOCATION_KEYS = Object.keys(LOCATIONS);
-const ROTATION_DELAY = 4200;
+const ROTATION_DELAY = 2000;
 
 export function initGlobalMap() {
   const stage = query('.global-stage', HTMLElement);

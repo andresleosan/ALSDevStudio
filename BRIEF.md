@@ -89,3 +89,7 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Redirección del dominio Pages · 2026-10-13
 - El titular solicita expresamente que `https://alsdevstudio.pages.dev/` redirija a `https://www.alsdevstudio.com/`. Conservar rutas y parámetros de los enlaces; mantener los previews para revisar cambios futuros.
+
+## Argentina y proceso explicado por Sarin bot · 2026-10-13
+- Añadir Argentina a las referencias del mapa y reducir el cambio automático entre países a dos segundos, conservando pausa, selección manual y respeto al movimiento reducido.
+- Reemplazar las tres ilustraciones genéricas del proceso por Sarin bot, el robot ALS existente, explicando definir, construir y entregar mediante poses y globos de texto. Conservar el alcance y los compromisos comerciales actuales.
