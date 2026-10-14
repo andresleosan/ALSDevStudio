@@ -24,6 +24,13 @@ La fixture antigua del mapa se adaptó al consentimiento actual, ocho países y 
 
 ## Publicación y reversión
 
-Preparar una rama de preview y comprobar su despliegue antes de promover a `main`. Producción queda pendiente de confirmación explícita del operador según `.cronos/AGENCY.md` y la skill deploy-checklist.
+Rama `design/sarin-argentina`, commit funcional `7c981e10fe1732ce7eb853c7ce4a5e0721b1a5bf`. Preview verificado: https://8f2ced74.alsdevstudio.pages.dev/ (despliegue `8f2ced74-33e9-482f-9dad-947e70bed670`).
+
+- `PAGES_QA_BASE=https://8f2ced74.alsdevstudio.pages.dev node --test .github/cloudflare/pages.test.mjs`: 4/4 PASS. Artefactos, cabeceras, noindex de preview, enlaces/404, consentimiento, mapa y lectura legal a 320/1440 y sin JavaScript correctos.
+- Los tres PNG publicados coinciden byte a byte con `dist`. SVG y módulo del mapa coinciden como texto normalizando exclusivamente CRLF/LF del checkout Windows/Git; la comparación binaria inicial detectó solo cuatro CR adicionales en el SVG.
+- Chrome del operador: Sarin con tres poses/globos y Argentina seleccionada con coordenadas y silueta correctas. Evidencia: `test-results/sarin-preview-chrome.jpg` y `test-results/argentina-preview-chrome.jpg`.
+- `https://alsdevstudio.pages.dev/?qa=sarin`: 301 a `https://www.alsdevstudio.com/?qa=sarin`, conservado.
+
+Producción queda pendiente de confirmación explícita del operador según `.cronos/AGENCY.md` y la skill deploy-checklist. Los commits posteriores de documentación no alteran los archivos públicos revisados.
 
 Si falla tras publicar, usar el rollback de Cloudflare Pages al despliegue base `ab94301e-9078-40ed-9912-574a677d7132`, y revertir el commit funcional de este cambio en `main` mediante un nuevo commit normal. No usar force push ni reset remoto. Confirmar que el mapa vuelve a siete países/4200 ms y el proceso a sus tres ilustraciones anteriores. La regla Bulk Redirect del dominio Pages permanece independiente y no requiere reversión.
