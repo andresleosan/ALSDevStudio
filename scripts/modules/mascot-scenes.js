@@ -1,14 +1,17 @@
 ﻿// @ts-check
-// Vuelo y saludo controlables; tecleo en proyectos/proceso y contacto de una sola entrada.
+// Vuelo y saludo controlables; presentaciones, tarjetas y contacto de una sola entrada.
 const initialized = new WeakSet();
-const KINDS = new Set(['flight', 'projects', 'process', 'contact']);
-const TYPING_KINDS = new Set(['projects', 'process']);
+const STEP_KINDS = new Set(['step-define', 'step-build', 'step-deliver']);
+const TYPING_KINDS = new Set(['projects', 'process', ...STEP_KINDS]);
+const FRAME_KINDS = new Set(['projects', 'process', 'step-build']);
+const KINDS = new Set(['flight', 'contact', ...TYPING_KINDS]);
 
 /** @typedef {'finished' | 'static'} FinalState */
+/** @typedef {{full: HTMLElement, typed: HTMLElement}} CopyPair */
 /** @typedef {{scene: HTMLElement, actor: HTMLElement | null, kind: string, consumed: boolean,
  * inView: boolean, playing: boolean, remaining: number, userPaused: boolean,
  * toggle: HTMLButtonElement | null, toggleHandler: (() => void) | null,
- * clock: Animation | null, raf: number | null, copy: HTMLElement | null, typed: HTMLElement | null,
+ * clock: Animation | null, raf: number | null, copy: HTMLElement | null, pairs: CopyPair[],
  * images: HTMLImageElement[], imageHandlers: Map<HTMLImageElement, {load: () => void, error: () => void}>,
  * animations: Map<Animation, {finish: () => void, cancel: () => void}>}} Scene */
 
@@ -28,7 +31,7 @@ export function initMascotScenes() {
       kind: element.dataset.mascotScene ?? '', consumed: false, inView: false,
       playing: false, remaining: 0, userPaused: false,
       toggle: toggle instanceof HTMLButtonElement ? toggle : null, toggleHandler: null,
-      clock: null, raf: null, copy: null, typed: null, animations: new Map(),
+      clock: null, raf: null, copy: null, pairs: [], animations: new Map(),
       images: Array.from(element.querySelectorAll('img')), imageHandlers: new Map() });
   });
   if (!scenes.length) return;
@@ -66,9 +69,9 @@ export function initMascotScenes() {
     if (item.raf !== null) window.cancelAnimationFrame(item.raf);
     item.raf = null;
     item.copy?.classList.remove('is-typing');
-    if (item.typed) item.typed.textContent = '';
+    item.pairs.forEach(pair => { pair.typed.textContent = ''; });
     item.copy = null;
-    item.typed = null;
+    item.pairs = [];
   };
   /** El CSS mantiene la pose y el contenido completos cuando se retiran los efectos.
    * @param {Scene} item @param {FinalState} state */
@@ -130,6 +133,25 @@ export function initMascotScenes() {
     return window.matchMedia('(max-width: 680px)').matches ||
       window.matchMedia('(pointer: coarse)').matches ||
       window.matchMedia('(prefers-reduced-data: reduce)').matches || connection?.saveData === true;
+  };
+  /** Cada overlay pertenece al mismo h3/p que su original y es exclusivamente decorativo.
+   * @param {HTMLElement} copy @returns {CopyPair[] | null} */
+  const copyPairs = copy => {
+    const fullElements = Array.from(copy.querySelectorAll('[data-mascot-copy-full]'));
+    const typedElements = copy.querySelectorAll('[data-mascot-copy-typed]');
+    if (!fullElements.length || fullElements.length !== typedElements.length) return null;
+    /** @type {CopyPair[]} */
+    const pairs = [];
+    const used = new Set();
+    for (const full of fullElements) {
+      const typed = full.parentElement?.querySelector('[data-mascot-copy-typed]');
+      if (!(full instanceof HTMLElement) || !(typed instanceof HTMLElement) || full === typed ||
+          typed.parentElement !== full.parentElement || used.has(typed) ||
+          typed.getAttribute('aria-hidden') !== 'true') return null;
+      used.add(typed);
+      pairs.push({ full, typed });
+    }
+    return pairs;
   };
   /** @param {Scene} item @param {Element | null} element @param {Keyframe[]} frames
    * @param {number} duration @param {KeyframeAnimationOptions} [options] @returns {Animation | null} */
@@ -201,14 +223,15 @@ export function initMascotScenes() {
       finalize(item, 'static');
     }
   };
-  /** @param {Scene} item @param {HTMLElement} copy @param {HTMLElement} full
-   * @param {HTMLElement} typed @param {Animation} clock */
-  const startTyping = (item, copy, full, typed, clock) => {
-    const characters = Array.from(full.textContent ?? '');
-    let lastIndex = -1;
+  /** @param {Scene} item @param {HTMLElement} copy @param {CopyPair[]} pairs
+   * @param {Animation} clock @param {number} duration @param {number} typingEnd */
+  const startTyping = (item, copy, pairs, clock, duration, typingEnd) => {
+    const drafts = pairs.map(pair => ({ typed: pair.typed,
+      characters: Array.from(pair.full.textContent ?? ''), lastIndex: -1 }));
+    const totalCharacters = drafts.reduce((total, draft) => total + draft.characters.length, 0);
     item.copy = copy;
-    item.typed = typed;
-    typed.textContent = '';
+    item.pairs = pairs;
+    pairs.forEach(pair => { pair.typed.textContent = ''; });
     const tick = () => {
       item.raf = null;
       if (!item.playing || !item.clock) return;
@@ -222,13 +245,17 @@ export function initMascotScenes() {
           finalize(item, 'static');
           return;
         }
-        const progress = Math.max(0, Math.min(1, (time / 3000 - .08) / .8));
-        const index = Math.floor(progress * characters.length);
-        if (index !== lastIndex) {
-          typed.textContent = characters.slice(0, index).join('');
-          lastIndex = index;
+        const progress = Math.max(0, Math.min(1, (time / duration - .08) / (typingEnd - .08)));
+        let remaining = Math.floor(progress * totalCharacters);
+        for (const draft of drafts) {
+          const index = Math.max(0, Math.min(remaining, draft.characters.length));
+          if (index !== draft.lastIndex) {
+            draft.typed.textContent = draft.characters.slice(0, index).join('');
+            draft.lastIndex = index;
+          }
+          remaining -= index;
         }
-        if (time < 3000) item.raf = window.requestAnimationFrame(tick);
+        if (time < duration) item.raf = window.requestAnimationFrame(tick);
       } catch {
         finalize(item, 'static');
       }
@@ -247,13 +274,12 @@ export function initMascotScenes() {
     /** @param {string} name */
     const part = name => item.scene.querySelector(`[data-mascot-part="${name}"]`);
     const copy = part('window');
-    const full = copy?.querySelector('[data-mascot-copy-full]');
-    const typed = copy?.querySelector('[data-mascot-copy-typed]');
+    const pairs = copy instanceof HTMLElement ? copyPairs(copy) : null;
     if (item.kind === 'flight' && (!item.toggle || !part('flying') || !part('landed') || !(part('greeting') instanceof HTMLElement)) ||
-        TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !(full instanceof HTMLElement) ||
-          !(typed instanceof HTMLElement) || typed.getAttribute('aria-hidden') !== 'true' ||
-          !part('typing-a') || !part('typing-b') || typeof window.requestAnimationFrame !== 'function' ||
-          typeof window.cancelAnimationFrame !== 'function')) {
+        TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !pairs ||
+          FRAME_KINDS.has(item.kind) && (!part('typing-a') || !part('typing-b')) ||
+          item.kind === 'step-deliver' && !(part('approval') instanceof HTMLElement) ||
+          typeof window.requestAnimationFrame !== 'function' || typeof window.cancelAnimationFrame !== 'function')) {
       finalize(item, 'static');
       return;
     }
@@ -301,20 +327,51 @@ export function initMascotScenes() {
         }
         syncFlight(item);
       } else if (TYPING_KINDS.has(item.kind)) {
-        item.clock = animate(item, item.actor, [
+        const step = STEP_KINDS.has(item.kind);
+        const duration = step ? 3600 : 3000;
+        /** @type {Keyframe[]} */
+        let actorFrames = [
           { transform: 'rotate(0deg)', offset: 0 },
           { transform: 'rotate(0deg)', offset: 1 },
-        ], 3000, { easing: 'linear' });
-        for (const name of ['typing-a', 'typing-b']) {
-          const first = name === 'typing-a' ? 1 : 0;
-          animate(item, part(name), [
-            { opacity: first, offset: 0, easing: 'steps(1,end)' },
-            { opacity: 1 - first, offset: .5, easing: 'steps(1,end)' },
-            { opacity: first, offset: 1 },
-          ], 280, { delay: 240, iterations: 9, easing: 'linear' });
+        ];
+        if (item.kind === 'step-define') {
+          const rise = compact ? 1 : 3;
+          actorFrames = [
+            { transform: 'translateY(0) rotate(0deg)', offset: 0 },
+            { transform: `translateY(${-rise}px) rotate(-3deg)`, offset: .28 },
+            { transform: `translateY(${-rise}px) rotate(3deg)`, offset: .44 },
+            { transform: 'translateY(0) rotate(-2deg)', offset: .6 },
+            { transform: 'translateY(0) rotate(0deg)', offset: .9 },
+            { transform: 'translateY(0) rotate(0deg)', offset: 1 },
+          ];
+        } else if (item.kind === 'step-deliver') {
+          actorFrames = [
+            { transform: 'rotate(0deg)', offset: 0 },
+            { transform: 'rotate(2deg)', offset: .35 },
+            { transform: 'rotate(2deg)', offset: .65 },
+            { transform: 'rotate(0deg)', offset: .9 },
+            { transform: 'rotate(0deg)', offset: 1 },
+          ];
         }
-        if (item.clock && copy instanceof HTMLElement && full instanceof HTMLElement && typed instanceof HTMLElement) {
-          startTyping(item, copy, full, typed, item.clock);
+        item.clock = animate(item, item.actor, actorFrames, duration, { easing: 'linear' });
+        if (FRAME_KINDS.has(item.kind)) {
+          for (const name of ['typing-a', 'typing-b']) {
+            const first = name === 'typing-a' ? 1 : 0;
+            animate(item, part(name), [
+              { opacity: first, offset: 0, easing: 'steps(1,end)' },
+              { opacity: 1 - first, offset: .5, easing: 'steps(1,end)' },
+              { opacity: first, offset: 1 },
+            ], 280, { delay: step ? 120 : 240, iterations: step ? 12 : 9, easing: 'linear' });
+          }
+        }
+        if (item.kind === 'step-deliver') {
+          animate(item, part('approval'), [
+            { opacity: 0, offset: 0 }, { opacity: 0, offset: .75 },
+            { opacity: 1, offset: .9 }, { opacity: 1, offset: 1 },
+          ], duration, { easing: 'linear' });
+        }
+        if (item.clock && copy instanceof HTMLElement && pairs) {
+          startTyping(item, copy, pairs, item.clock, duration, step ? .9 : .88);
         }
       } else {
         const duration = compact ? 2200 : 2400;
@@ -391,11 +448,11 @@ export function initMascotScenes() {
     observer = new IntersectionObserver(entries => entries.forEach(entry => {
       const item = scenes.find(candidate => candidate.scene === entry.target);
       if (!item) return;
-      item.inView = entry.isIntersecting && entry.intersectionRatio >= .3;
+      item.inView = entry.isIntersecting && entry.intersectionRatio >= (STEP_KINDS.has(item.kind) ? .6 : .3);
       if (item.kind === 'flight' && item.animations.size) syncFlight(item);
       else if (!entry.isIntersecting && item.playing) finalize(item, 'finished');
       else if (item.inView && !item.consumed) play(item);
-    }), { threshold: [0, .3] });
+    }), { threshold: [0, .3, .6] });
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('resize', onResize);

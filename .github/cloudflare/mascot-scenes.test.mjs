@@ -7,6 +7,19 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 const moduleURL = new URL('../../scripts/modules/mascot-scenes.js', import.meta.url);
 const projectCopy = 'Sitios publicados y productos en desarrollo. Abre cada proyecto para conocer su diseño y funcionalidad.';
 const processCopy = 'Así convertimos una idea en un sitio claro y útil.';
+const steps = [
+  ['step-define', 'Define', 'Primero aclaramos la idea y acordamos el resultado esperado.'],
+  ['step-build', 'Construye', 'Diseñamos y construimos el sitio con revisiones en cada etapa.'],
+  ['step-deliver', 'Entrega', 'Verificamos el resultado y acompañamos la publicación del sitio.'],
+];
+const stepsFixture = `<ol>${steps.map(([kind, title, copy]) => `<li class="process-item" data-mascot-scene="${kind}" data-mascot-state="idle">
+  <div class="process-character" data-mascot-actor aria-hidden="true">${kind === 'step-build'
+    ? '<span data-mascot-part="typing-a">Laptop A</span><span data-mascot-part="typing-b">Laptop B</span>' : 'Sarin'}${kind === 'step-deliver'
+    ? '<span data-mascot-part="approval"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5 11-11"/></svg></span>' : ''}</div>
+  <div class="process-copy process-bubble" data-mascot-part="window"><span class="process-speaker" aria-hidden="true">↘</span>
+    <h3><span data-mascot-copy-full>${title}</span><span data-mascot-copy-typed aria-hidden="true"></span></h3>
+    <p><span data-mascot-copy-full>${copy}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>
+  </div></li>`).join('')}</ol>`;
 const processFixture = `<section data-mascot-scene="process" data-mascot-state="idle">
   <div data-mascot-actor aria-hidden="true"><span data-mascot-part="typing-a">Laptop A</span><span data-mascot-part="typing-b">Laptop B</span></div>
   <p id="sarin-process-copy" data-mascot-part="window"><span data-mascot-copy-full>${processCopy}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>
@@ -24,6 +37,9 @@ body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fi
 [data-mascot-part="typing-b"]{opacity:0}
 [data-mascot-part="greeting"]{position:absolute;left:50%;top:50%;opacity:1;background:#071a2f;color:white}
 [data-mascot-copy-typed]{position:absolute;inset:0;pointer-events:none}
+.process-bubble h3,.process-bubble p{position:relative;max-width:none;margin:8px 0}
+.process-bubble[data-mascot-part="window"]{width:300px;height:auto;min-height:140px}
+[data-mascot-part="approval"]{opacity:1;display:block;width:24px;height:24px}
 .is-typing [data-mascot-copy-full]{opacity:0}
 [data-mascot-part="window"]{position:absolute;right:115px;top:40px;width:110px;height:100px;background:#d7eeef;opacity:1}
 [data-mascot-part="pointer"]{position:absolute;right:135px;top:80px;opacity:1}
@@ -56,6 +72,12 @@ const server = http.createServer(async (request, response) => {
       ? fixture.replace('<span data-mascot-part="flying">', '<img src="/delayed.svg" alt=""><span data-mascot-part="flying">') : fixture;
     if (request.url.includes('without=toggle')) html = html.replace(/<button type="button" data-mascot-toggle=.*?<\/button>/, '');
     if (request.url.includes('process=1')) html = html.replace('<section data-mascot-scene="contact"', processFixture + '<section data-mascot-scene="contact"');
+    if (request.url.includes('steps=1')) {
+      const cards = request.url.includes('invalidpair=1') ? stepsFixture.replace(
+        `<p><span data-mascot-copy-full>${steps[0][2]}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>`,
+        `<p><span data-mascot-copy-full>${steps[0][2]}</span></p>`) : stepsFixture;
+      html = html.replace('<section data-mascot-scene="contact"', cards + '<section data-mascot-scene="contact"');
+    }
     if (request.url.includes('without=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '');
     if (request.url.includes('invalid=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '<svg data-mascot-part="greeting"></svg>');
     response.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' }).end(html);
@@ -762,4 +784,221 @@ test('control conserva el SVG, usa nombre/title nuevos y data-paused al pausar y
   assert.equal(await toggle(page).locator('svg').evaluate(element => element.outerHTML), svg);
   assert.equal(await toggle(page).textContent(), '');
   await clean(result);
+});
+
+test('tarjetas Proceso escriben título→párrafo, conservan texto/altura y terminan una sola vez', async () => {
+  const result = await pageFor({}, undefined, undefined, '?steps=1');
+  const { page } = result;
+  for (const [kind, title, copy] of steps) {
+    const card = scene(page, kind);
+    const full = card.locator('[data-mascot-copy-full]');
+    const typed = card.locator('[data-mascot-copy-typed]');
+    const height = await card.evaluate(element => element.getBoundingClientRect().height);
+    const speaker = await card.locator('.process-speaker').textContent();
+    await enter(page, kind);
+    assert.equal(await card.getAttribute('aria-hidden'), null);
+    assert.equal(await card.locator('[data-mascot-actor]').getAttribute('aria-hidden'), 'true');
+    assert.deepEqual(await full.allTextContents(), [title, copy]);
+    assert.deepEqual(await full.evaluateAll(elements => elements.map(element => element.getAttribute('aria-hidden'))), [null, null]);
+    assert.deepEqual(await typed.evaluateAll(elements => elements.map(element => element.getAttribute('aria-hidden'))), ['true', 'true']);
+    const duration = await card.evaluate(element => {
+      const animations = element.getAnimations({ subtree: true });
+      animations.forEach(animation => { animation.pause(); animation.currentTime = 3600 * .12; });
+      return element.querySelector('[data-mascot-actor]').getAnimations()[0].effect.getTiming().duration;
+    });
+    assert.equal(duration, 3600);
+    await page.waitForFunction(kind => document.querySelector(`[data-mascot-scene="${kind}"] h3 [data-mascot-copy-typed]`).textContent.length > 0, kind);
+    const beginning = await typed.allTextContents();
+    assert.ok(beginning[0].length < title.length && title.startsWith(beginning[0]));
+    assert.equal(beginning[1], '');
+    await card.evaluate(element => element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 1800; }));
+    await page.waitForFunction(kind => document.querySelector(`[data-mascot-scene="${kind}"] p [data-mascot-copy-typed]`).textContent.length > 0, kind);
+    const middle = await typed.allTextContents();
+    assert.equal(middle[0], title);
+    assert.ok(middle[1].length < copy.length && copy.startsWith(middle[1]));
+    assert.deepEqual(await full.allTextContents(), [title, copy]);
+    assert.equal(await card.evaluate(element => element.getBoundingClientRect().height), height);
+    assert.equal(await card.locator('.process-speaker').textContent(), speaker);
+    await card.evaluate(element => element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 3500; animation.play(); }));
+    await finished(page, kind);
+    assert.deepEqual(await typed.allTextContents(), ['', '']);
+    assert.deepEqual(await full.evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+    const calls = await page.evaluate(() => window.animationCalls.length);
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await card.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.initScenes());
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
+  }
+  await clean(result);
+});
+
+test('tarjetas Proceso esperan el 60% visible y mantienen el umbral anterior de otras escenas', async () => {
+  const result = await pageFor({}, undefined, undefined, '?steps=1');
+  const { page } = result;
+  const card = scene(page, 'step-define');
+  await card.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    scrollTo({ top: scrollY + rect.top - innerHeight + rect.height * .59, behavior: 'instant' });
+  });
+  await page.waitForTimeout(100);
+  assert.equal(await card.getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await card.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  await card.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    scrollTo({ top: scrollY + rect.top - innerHeight + rect.height * .61, behavior: 'instant' });
+  });
+  await state(page, 'step-define', 'playing');
+  await hidden(page, true);
+  await finished(page, 'step-define');
+  await hidden(page, false);
+  await scene(page, 'projects').evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    scrollTo({ top: scrollY + rect.top - innerHeight + rect.height * .4, behavior: 'instant' });
+  });
+  await state(page, 'projects', 'playing');
+  await hidden(page, true);
+  await finished(page, 'projects');
+  await clean(result);
+});
+
+test('gestos de las tarjetas respetan amplitud compacta, cuerpo fijo al teclear y aprobación final', async () => {
+  for (const compact of [false, true]) {
+    const result = await pageFor(compact ? { viewport: { width: 390, height: 844 } } : {}, undefined, undefined, '?steps=1');
+    const { page } = result;
+    for (const [kind] of steps) {
+      await enter(page, kind);
+      const frames = await scene(page, kind).locator('[data-mascot-actor]').evaluate(element => {
+        const effect = element.getAnimations()[0].effect;
+        return { duration: effect.getTiming().duration, iterations: effect.getTiming().iterations,
+          frames: effect.getKeyframes().map(frame => {
+            const matrix = new DOMMatrix(frame.transform);
+            return { y: matrix.m42, angle: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, identity: matrix.isIdentity };
+          }) };
+      });
+      assert.equal(frames.duration, 3600);
+      assert.equal(frames.iterations, 1);
+      if (kind === 'step-define') {
+        assert.ok(frames.frames.every(frame => Math.abs(frame.y) <= (compact ? 1 : 3) && Math.abs(frame.angle) <= 3.01));
+        assert.ok(frames.frames.some(frame => frame.angle < -2.5) && frames.frames.some(frame => frame.angle > 2.5));
+        assert.ok(frames.frames.some(frame => frame.y === (compact ? -1 : -3)));
+      } else if (kind === 'step-build') {
+        assert.ok(frames.frames.every(frame => frame.identity));
+        const calls = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'step-build' && call.part.startsWith('typing-')));
+        assert.equal(calls.length, 2);
+        assert.ok(calls.every(call => call.duration === 280 && call.delay === 120 && call.iterations === 12));
+        const poses = await scene(page, kind).evaluate(element => {
+          const parts = ['typing-a', 'typing-b'].map(name => element.querySelector(`[data-mascot-part="${name}"]`));
+          return [190, 330].map(time => {
+            parts.forEach(part => { const animation = part.getAnimations()[0]; animation.pause(); animation.currentTime = time; });
+            return parts.map(part => getComputedStyle(part).opacity);
+          });
+        });
+        assert.deepEqual(poses, [['1', '0'], ['0', '1']]);
+      } else {
+        assert.ok(frames.frames.every(frame => Math.abs(frame.angle) <= 2.01));
+        assert.ok(frames.frames.some(frame => frame.angle > 1.9));
+        const approval = await scene(page, kind).locator('[data-mascot-part="approval"]').evaluate(element => {
+          const animation = element.getAnimations()[0];
+          animation.pause();
+          return [.74, .825, .9].map(offset => {
+            animation.currentTime = 3600 * offset;
+            return Number(getComputedStyle(element).opacity);
+          });
+        });
+        assert.ok(Math.abs(approval[0]) < 1e-12 && Math.abs(approval[1] - .5) < 1e-6 && Math.abs(approval[2] - 1) < 1e-12);
+      }
+      await hidden(page, true);
+      await finished(page, kind);
+      await hidden(page, false);
+    }
+    await clean(result);
+  }
+});
+
+test('cancelaciones de tarjetas limpian ambos overlays, restauran completos y no repiten', async () => {
+  const triggers = ['viewport', 'hidden', 'resize', 'reduced', 'pagehide'];
+  for (const [index, trigger] of triggers.entries()) {
+    const result = await pageFor({}, undefined, undefined, '?steps=1');
+    const { page } = result;
+    const [kind, title, copy] = steps[index % steps.length];
+    const card = scene(page, kind);
+    await enter(page, kind);
+    await card.locator('[data-mascot-actor]').evaluate(element => {
+      const clock = element.getAnimations()[0];
+      clock.pause(); clock.currentTime = 1800;
+    });
+    await page.waitForFunction(kind => document.querySelector(`[data-mascot-scene="${kind}"] p [data-mascot-copy-typed]`).textContent.length > 0, kind);
+    const calls = await page.evaluate(() => window.animationCalls.length);
+    if (trigger === 'viewport') await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    else if (trigger === 'hidden') await hidden(page, true);
+    else if (trigger === 'resize') await page.setViewportSize({ width: 900, height: 720 });
+    else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'reduce' });
+    else await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await state(page, kind, trigger === 'reduced' ? 'static' : 'finished');
+    assert.equal(await card.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').allTextContents(), [title, copy]);
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+    assert.deepEqual(await card.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+    assert.equal(await card.locator('[data-mascot-part="window"]').evaluate(element => element.classList.contains('is-typing')), false);
+    assert.equal(await page.evaluate(() => window.pendingSceneFrames.size), 0);
+    if (trigger === 'hidden') await hidden(page, false);
+    else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await card.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.initScenes());
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
+    await clean(result);
+  }
+});
+
+test('error en el segundo overlay restaura ambos textos originales y limpia todos los efectos', async () => {
+  const result = await pageFor({}, undefined, undefined, '?steps=1');
+  const { page } = result;
+  const card = scene(page, 'step-build');
+  await enter(page, 'step-build');
+  await card.evaluate(element => {
+    const typed = element.querySelector('p [data-mascot-copy-typed]');
+    const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+    Object.defineProperty(typed, 'textContent', {
+      configurable: true, get() { return descriptor.get.call(this); },
+      set() { delete this.textContent; throw new Error('Segundo overlay interrumpido una vez'); },
+    });
+    const clock = element.querySelector('[data-mascot-actor]').getAnimations()[0];
+    clock.pause(); clock.currentTime = 1800;
+  });
+  await state(page, 'step-build', 'static');
+  assert.deepEqual(await card.locator('[data-mascot-copy-full]').allTextContents(), [steps[1][1], steps[1][2]]);
+  assert.deepEqual(await card.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+  assert.deepEqual(await card.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+  assert.equal(await card.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  await clean(result);
+});
+
+test('fallback de tarjetas sin JS/API o con pareja inválida mantiene textos y poses', async () => {
+  const noJS = await pageFor({ javaScriptEnabled: false }, undefined, undefined, '?steps=1');
+  for (const [kind, title, copy] of steps) {
+    const card = scene(noJS.page, kind);
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').allTextContents(), [title, copy]);
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+    assert.deepEqual(await card.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+    assert.equal(await card.locator('[data-mascot-actor]').evaluate(element => getComputedStyle(element).transform), 'none');
+  }
+  assert.deepEqual(noJS.errors, []);
+  await noJS.context.close();
+  const noRAF = await pageFor({}, () => { window.requestAnimationFrame = undefined; }, undefined, '?steps=1');
+  for (const [kind, title, copy] of steps) {
+    const card = scene(noRAF.page, kind);
+    assert.equal(await card.getAttribute('data-mascot-state'), 'static');
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').allTextContents(), [title, copy]);
+    assert.deepEqual(await card.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+  }
+  assert.equal(await noRAF.page.evaluate(() => window.animationCalls.length), 0);
+  await clean(noRAF);
+  const invalid = await pageFor({}, undefined, undefined, '?steps=1&invalidpair=1');
+  await scene(invalid.page, 'step-define').scrollIntoViewIfNeeded();
+  await state(invalid.page, 'step-define', 'static');
+  assert.deepEqual(await scene(invalid.page, 'step-define').locator('[data-mascot-copy-full]').allTextContents(), [steps[0][1], steps[0][2]]);
+  assert.equal(await scene(invalid.page, 'step-define').evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  await clean(invalid);
 });

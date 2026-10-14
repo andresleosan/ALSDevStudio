@@ -114,3 +114,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ### Saludo en vuelo y tecleo del proceso · 2026-10-13
 - Corrección solicitada sobre las animaciones publicadas: Sarin se detiene a mitad del vuelo, saluda, muestra «¡Hola! Una buena idea puede llegar lejos. ¿Le damos vuelo a la tuya?» y continúa; repite mientras la zona esté visible. Retirar el rótulo «Pausar vuelo», conservando un pequeño control de movimiento por icono.
 - Añadir portátil con dos poses de tecleo al encabezado de «Cómo trabajaremos», con el texto existente apareciendo progresivamente. Conservar las tres tarjetas y sus alturas, el contenido completo accesible y una composición estática con movimiento reducido o sin JavaScript.
+### Tres etapas animadas · 2026-10-13
+- El titular solicita animar las tres tarjetas de «Cómo trabajaremos» y que el texto aparezca junto con cada animación. Definir: saludo; Construir: tecleo del portátil; Entregar: gesto y señal de aprobación. Título seguido de explicación, conservando los textos, la lectura completa y la igualdad de alturas.
+- Reproducción única por tarjeta al quedar suficientemente visible; vista estática con movimiento reducido o sin JavaScript. Extensión de las animaciones del sitio publicadas y autorizadas en la misma sesión.
