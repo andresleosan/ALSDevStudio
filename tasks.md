@@ -1,12 +1,13 @@
 # Tareas — ALS DevStudio
 
 ## SARIN-CATALOG-FLIGHT · Proyecto nuevo y vuelo con cinco mensajes · 2026-10-14
-- Estado: candidato verificado y publicación autorizada expresamente, en progreso. Sarin Bot como proyecto19/Producto/Próximamente en galería y carrusel con captura real y siete formatos locales; orden y navegación de los18 anteriores conservados.
+- Estado: desplegada y verificada en producción. Sarin Bot como proyecto19/Producto/Próximamente en galería y carrusel con captura real y siete formatos locales; orden y navegación de los18 anteriores conservados.
 - Vuelo sin «Hola»: alternar ida/vuelta y cinco textos de servicios ALSDevStudio, confirmados por el titular, con paradas centrales y giro en extremos. Conservar suspensión viewport/hidden, noJS/reducido y ausencia de botones manuales.
 - Verificar módulo, build, carrusel19→1, filtros, captura/imagen, cinco textos/direcciones/giro/pausas y estabilidad320–1440. Reversión por commit normal, base `6ef732f`. Preparar candidato revisable antes de producción; sin migraciones, servicios o gasto nuevo.
 - Cronos repitió módulo60/60, build tests12/12, TSC aislado/sintaxis/diff-checkPASS; build198archivos/5.197.345bytes. Integración10/10/sieteanchos/noJS/reducido/axe, fotogramas18/18 y catálogo6/6PASS. Revisiones independientes sin bloqueantes. Se corrigió expectativa de URL normalizada en harness nuevo, sin cambiar producto. Evidencia/reversión en `docs/SARIN-PROYECTO-Y-VUELO.md`.
 - Candidato `610652e6` de `663503b`: Pages4/4, catálogo6/6 y HTTPfocal8/8 PASS repetidos por Cronos; controlador y7assets exactos a dist. Chrome confirma flightplaying/5textos/selección/giro/0botones/sin overflow; capturas guardadas. Main permanece `6ef732f` hasta confirmación de publicar el conjunto con el nuevo proyecto.
 - El titular confirma «Sí, publicar ambos cambios». Promover el artefacto público revisado de esta tarea y verificar www antes del cierre; SemanControl y movimiento de Proceso continúan por separado.
+- Publicada en main `a19c91e`, despliegue `aeb5c225`: Cronos repitió www Pages4/4, catálogo6/6 y HTTPfocal8/8 PASS. Captura/informes conservados, sitio indexable y consentimiento/cabeceras conservados. Cierre documental sin cambios públicos; nueva tarea SemanControl/estabilidad en continuación.
 
 ## PORT-01 — Ampliación del portafolio — 2026-10-12
 - Estado: aprobada (implementación local; sin desplegar).

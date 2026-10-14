@@ -32,6 +32,8 @@ Candidato `610652e6` de `663503b`: Cronos repitió Pages4/4 y catálogo6/6 PASS 
 
 El titular autoriza expresamente publicar ambos cambios del candidato mediante su respuesta «Sí, publicar ambos cambios». Promoción autorizada del catálogo Sarin Bot y vuelo con cinco mensajes; se conserva el artefacto público verificado. La nueva solicitud de un espacio para SemanControl y el ajuste de la animación de Proceso se trabaja como continuación independiente.
 
+Publicada en main `a19c91e`, despliegue `aeb5c225`. Cronos repitió www Pages4/4, catálogo6/6 y HTTPfocal8/8 PASS: Sarin Bot disponible en la galería/carrusel, siete imágenes y controlador exactos, sitio indexable/canonical/cabeceras y consentimiento conservados. Informe `catalog-qa-catalog-flight-production.json`, `sarin-catalog-flight-http-production.json` y captura `catalog-card-sarin-normal-1440-catalog-flight-production.png`. Cierre documental sin cambios públicos.
+
 ## Reversión
 
 Base conocida `6ef732f`. Revertir el commit funcional mediante commit nuevo y push normal a main; esperar Pages y verificar retorno de18 proyectos y vuelo anterior. Sin migraciones, DNS, planes, correo, secretos o datos nuevos. La lista pública de archivos retira los siete assets nuevos cuando se revierte el código y los archivos del catálogo.
