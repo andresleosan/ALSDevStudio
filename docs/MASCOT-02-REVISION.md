@@ -1,6 +1,7 @@
 # Nueva mascota ALS ilustrada
 
-Fecha: 2026-10-13. Estado: aprobada en local; producción pendiente.
+Fecha: 2026-10-13. Estado: candidata verificada; publicación de producción
+autorizada explícitamente por el titular.
 
 Solicitud: sustituir la mascota pixel art usando la lámina de tres robots que
 proporcionó el titular. Se generaron dos poses del mismo robot blanco/gris, con
@@ -35,6 +36,16 @@ Build Pages PASS: 182 archivos, aproximadamente 4,7 MB; ambos PNG en `dist`.
 `git diff --check` PASS. Revisión de seguridad del cambio sin hallazgos críticos:
 solo assets locales, atributos de imagen, CSS y documentación; sin endpoints,
 datos sensibles o dependencias nuevas.
+
+Preview Cloudflare construido en `3b3a8aecc5e30aa8e82958e617c8dc0f577a01bd`,
+deployment `6a97985c-e460-45b3-94ab-dad8f8983b16`:
+https://6a97985c.alsdevstudio.pages.dev/.
+`MASCOT_QA_BASE=https://6a97985c.alsdevstudio.pages.dev node test-results/mascot-qa.mjs`:
+PASS en los mismos ocho anchos y sin JavaScript. Ambos PNG publicados coinciden
+byte a byte con los archivos locales; preview `noindex` comprobado. Revisión
+independiente sin bloqueantes, proporciones/metadata/alfa y allowlist correctos.
+El titular aprobó expresamente «Sí, publicar la mascota» después de revisar
+el candidato y la captura de contacto.
 
 ## Reversión
 
