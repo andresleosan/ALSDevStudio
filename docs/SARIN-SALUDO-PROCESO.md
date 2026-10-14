@@ -29,6 +29,12 @@ Cronos repitió en el candidato Pages4/4, integración10/10 y fotogramas8/8 PASS
 
 La publicación continúa dentro de las correcciones concretas de las animaciones que el titular autorizó expresamente («Sí, publicar las animaciones») en esta sesión. Esta iteración no cambia proveedor, planes, datos, acceso ni el alcance de la publicación. La promoción conserva los mismos archivos públicos revisados; el registro del candidato es documental.
 
+## Publicación verificada
+
+Promovida por fast-forward a main`2c1e6d5b9b1d641f764bfa3277d373f1d44d6247`; Cloudflare muestra producción`ca074137`. En https://www.alsdevstudio.com/, Cronos repitió Pages4/4, integración10/10 y fotogramas8/8 PASS. Resultados preservados en `test-results/sarin-scenes-production-results.json` y `sarin-motion-production-frames.json`.
+
+Chrome real confirmó el saludo completo durante `flight: playing`, nombre accesible del control «Pausar animación de Sarin», texto visible del control vacío y sin overflow. Captura `test-results/sarin-greeting-live-flight.jpg`. El proceso con portátil y las tres tarjetas se comprobó también en Chrome. Revisión HTTP independiente: siete recursos exactos contra el build, WWW indexable/canonical, CSP y Analytics intactos y cuatro301 desde Pages raíz/8f2ced74 conservando ruta/query. Sin hallazgos críticos abiertos. El cierre documental no cambia archivos públicos.
+
 ## Reversión
 
 Base pública conocida: `69d4b7a9155da18c0609dae1dfe258368a6af602`. Revertir el commit funcional de esta revisión mediante un nuevo commit y push normal a `main`, esperar la construcción de Pages y verificar HTML/CSS/módulo, portátil de Proyectos y vuelo anterior en www. No hay cambios de DNS, correo, analítica, datos ni plan de alojamiento. El archivo de referencia de la entrega anterior es `docs/SARIN-VUELO-TECLEO.md`.
