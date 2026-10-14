@@ -168,3 +168,10 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 
 ### Retirar etiquetas de sección · 2026-10-13
 - Eliminar solo los cinco nodos solicitados del HTML y el wrapper de «Por WhatsApp». Quitar los márgenes superiores de títulos asociados a esas etiquetas. Mantener encabezados semánticos, anclas, controles y el resto de etiquetas de marca; sin cambios de scripts ni assets.
+
+### Escenas breves de Sarin · 2026-10-13
+- Nivel 1, HTML/CSS/JS vanilla. IntersectionObserver y Web Animations API para transform/opacity finitas, 2400–2600 ms en escritorio y 2200 ms con móvil/puntero grueso/ahorro de datos. Una ejecución por escena y documento, sin bucles ni dependencias nuevas.
+- CSS muestra la composición final de base y reserva la geometría. Decoración aria-hidden, imágenes con alt vacío y sin controles/foco. Reutilizar welcome y laptop; generar una única pose transparente flight con imagegen integrado y optimizarla con Sharp disponible, conservando alfa.
+- El módulo propio consume la escena antes de reproducir; finalizar y liberar animaciones al salir de viewport, ocultar documento o activar movimiento reducido. Fallback estático si faltan las APIs; movimiento reducido desactiva desde el inicio. No confundir la entrada suave móvil con lowPowerMotion, que desactiva otros adornos del sitio.
+- Vuelo acotado al hueco anterior a Alcance, con aterrizaje welcome; presentador y ventana decorativa junto a Proyectos; portátil y líneas decorativas en la ubicación actual de Contacto. Se anima el personaje completo, sin simular articulaciones inexistentes en el PNG.
+- Reveal progresivo: el contenido HTML es visible de base, y `.reveal-ready` prepara la aparición solo tras inicializar el observer. Evitar ancestros reveal en las escenas; conservar lectura sin JS y regla de movimiento reducido con la misma especificidad CSS.

@@ -162,6 +162,13 @@
 
     <section class="section global-section" id="alcance">
       <div class="wrap">
+        <div class="mascot-scene mascot-scene--flight" data-mascot-scene="flight" aria-hidden="true">
+          <div class="mascot-scene-actor" data-mascot-actor>
+            <span class="mascot-flight-trail" data-mascot-part="trail"></span>
+            <img class="als-mascot mascot-flight-pose" data-mascot-part="flying" src="assets/brand/mascot-flight.png" width="320" height="383" alt="" loading="eager" decoding="async" fetchpriority="low">
+            <img class="als-mascot mascot-landed-pose" data-mascot-part="landed" src="assets/brand/mascot-welcome.png" width="320" height="480" alt="" loading="lazy" decoding="async" fetchpriority="low">
+          </div>
+        </div>
         <div class="section-heading" data-reveal>
           <div><h2>Tu ubicación no es el límite.</h2></div>
           <p>Ideas que cruzan fronteras, productos que encuentran a las personas correctas.</p>
@@ -204,9 +211,19 @@
 
     <section class="section" id="proyectos">
       <div class="wrap">
-        <div class="section-heading" data-reveal>
-          <div><h2>El trabajo, en pantalla.</h2></div>
-          <p>Sitios publicados y productos en desarrollo. Abre cada proyecto para conocerlo.</p>
+        <div class="section-heading">
+          <div data-reveal><h2>El trabajo, en pantalla.</h2></div>
+          <div class="projects-introduction">
+            <div class="mascot-scene mascot-scene--projects" data-mascot-scene="projects" aria-hidden="true">
+              <div class="mascot-scene-window mascot-project-window" data-mascot-part="window">
+                <span class="mascot-window-chrome"><i></i><i></i><i></i></span>
+                <span class="mascot-project-preview"><i></i><i></i><i></i></span>
+              </div>
+              <div class="mascot-scene-actor" data-mascot-actor><img class="als-mascot" src="assets/brand/mascot-welcome.png" width="320" height="480" alt="" loading="lazy" decoding="async" fetchpriority="low"></div>
+              <svg class="mascot-project-pointer" data-mascot-part="pointer" viewBox="0 0 24 28" fill="none" aria-hidden="true" focusable="false"><path d="m3 2 17 12-8 2-4 8Z" fill="#071a2f" stroke="#65d49d" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            </div>
+            <p data-reveal>Sitios publicados y productos en desarrollo. Abre cada proyecto para conocerlo.</p>
+          </div>
         </div>
         <div class="projects-toolbar" data-reveal>
           <div class="project-filters" role="group" aria-label="Filtrar proyectos">
@@ -264,7 +281,7 @@
     <section class="section contact-section" id="contacto" aria-labelledby="contact-heading">
       <div class="wrap">
         <h2 class="visually-hidden" id="contact-heading">Contacto</h2>
-        <div class="contact-card" data-reveal>
+        <div class="contact-card">
           <div class="contact-playground" role="region" aria-labelledby="contact-question">
             <h3 class="playground-question" id="contact-question">¿Qué tienes en mente?</h3>
             <div class="playground-options" role="group" aria-label="Elegir tipo de proyecto">
@@ -294,7 +311,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </a>
             </div>
-            <img class="als-mascot mascot-contact" src="assets/brand/mascot-laptop.png" width="320" height="332" alt="" loading="lazy" decoding="async" fetchpriority="low">
+            <div class="mascot-scene mascot-scene--contact" data-mascot-scene="contact" aria-hidden="true">
+              <div class="mascot-scene-window mascot-code-window" data-mascot-part="window">
+                <span class="mascot-window-chrome"><i></i><i></i><i></i></span>
+                <span class="mascot-code-lines"><span data-mascot-part="line"></span><span data-mascot-part="line"></span><span data-mascot-part="line"></span></span>
+              </div>
+              <div class="mascot-scene-actor" data-mascot-actor><img class="als-mascot mascot-contact" src="assets/brand/mascot-laptop.png" width="320" height="332" alt="" loading="lazy" decoding="async" fetchpriority="low"></div>
+            </div>
           </div>
         </div>
       </div>

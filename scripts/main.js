@@ -11,6 +11,7 @@ import { initContact } from './modules/contact.js';
 import { initDepth } from './modules/depth.js';
 import { initReveal } from './modules/reveal.js';
 import { initMarquee } from './modules/marquee.js';
+import { initMascotScenes } from './modules/mascot-scenes.js';
 
 /**
  * Aísla errores síncronos de inicialización; no cubre imports ni callbacks posteriores.
@@ -38,6 +39,7 @@ const globalMap = safely('mapa global', initGlobalMap);
 safely('navegación', initNav);
 safely('contacto', initContact);
 safely('capa 3D', initDepth);
+safely('escenas de Sarin', initMascotScenes);
 
 const refreshPerformanceMode = () => {
   space?.sync();

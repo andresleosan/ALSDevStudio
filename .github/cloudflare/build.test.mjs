@@ -12,8 +12,8 @@ const implementation = await import('./build.mjs').catch(error => {
 const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
-    'marquee', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)];
-const brand = ['logo-als.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-welcome.png', 'og-image.jpg', 'world-map.svg'];
+    'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)];
+const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-welcome.png', 'og-image.jpg', 'world-map.svg'];
 
 after(async () => {
   for (const root of temporaryRoots) {

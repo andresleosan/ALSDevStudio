@@ -103,3 +103,7 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Retirar etiquetas de sección · 2026-10-13
 - El titular pide quitar «01 / alcance global», «02 / proyectos», «03 / proceso», «Por WhatsApp» y «04 / contacto». Conservar los títulos principales y ajustar los espacios que dejan.
+
+## Sarin en tres escenas de scroll · 2026-10-13
+- Propuesta aprobada expresamente por el titular: vuelo en el espacio previo a Alcance, presentación de Proyectos y portátil animado en Contacto. Animaciones de dos a tres segundos, una vez al entrar en cada zona.
+- Mantener identidad, contenido y controles actuales. En móvil, entradas más suaves; con movimiento reducido o sin JavaScript, pose estática. No añadir audio, reproducción continua ni nuevos rótulos de sección.

@@ -3,6 +3,8 @@
   "source": "Nueva lámina de tres robots ALS proporcionada por el titular en la conversación, con solicitud de reemplazar la mascota del sitio usando esas referencias.",
   "preparation": "Herramienta integrada imagegen, con transparent_background=true. Primera pose creada a partir de la referencia del titular; segunda pose con la primera como referencia de identidad y la lámina original como referencia de pose. Tercera pose para Sarin bot revisando una lista, con los dos PNG anteriores como referencias de identidad.",
   "localProcessing": "Sharp ya disponible: reducción suave a 320 px de ancho y PNG con paleta de 256 colores, conservando el alfa generado. Sin extracción manual del fondo ni dependencias nuevas en el sitio.",
+  "flightPreparation": "Pose de vuelo generada mediante imagegen integrado, transparent_background=true, usando welcome y laptop locales como referencias de identidad. Archivo original conservado en generated_images; salida pública reducida a 320 px, alfa real 0–255 y esquinas transparentes.",
+  "flightPrompt": "Create ONE production-ready transparent PNG pose of the EXACT SAME Sarin ALS robot mascot in the reference images. Preserve its recognisable white and silver rounded armor, navy dark joints and contours, compact chibi proportions, rounded helmet, headphone-like ear pieces with turquoise rings, glossy nearly black visor with two bright cyan oval eyes, and small ALS lettering on the chest. Smooth polished 2D illustrated rendering and the same friendly brand identity. Full-body robot flying gently toward the RIGHT in a slight diagonal orientation, knees bent slightly with feet swept back, arms in a friendly balanced flight pose. The face and ALS chest remain clearly readable. This is a hovering robot using compact subtle foot thrusters, not a superhero: no cape, no wings, no new helmet, no hoodie, no laptop, no clipboard. Legible at a display height around 130 pixels. A single isolated complete character, centered, modest transparent margins, no cropped limbs. Real transparent alpha outside the robot, opaque white armor inside. NO scenery, background color, floor, cast shadow, clouds, large glow effects, checkerboard texture, extra characters, separate panels or additional text. Match the identity and rendering of the supplied references closely.",
   "assets": [
     {
       "file": "mascot-welcome.png",
@@ -21,6 +23,12 @@
       "width": 320,
       "height": 480,
       "bytes": 47047
+    },
+    {
+      "file": "mascot-flight.png",
+      "width": 320,
+      "height": 383,
+      "bytes": 35431
     }
   ],
   "prompts": [
