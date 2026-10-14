@@ -26,6 +26,8 @@ Candidato `https://027c6235.alsdevstudio.pages.dev/`, commit funcional `08cfe52`
 
 El titular confirma explícitamente el despliegue a producción mediante «Sí, publicar SemanControl y la corrección». Publicar en www el artefacto público ya revisado, sin cambios funcionales posteriores, y verificar la entrega antes de declararla desplegada.
 
+Publicada y verificada en `https://www.alsdevstudio.com/`: main `1c4240a`, despliegue `02feeaf8`. Cronos repitió Pages4/4, placeholder6/6 y registro9/9 PASS en www. Artefacto index/CSS y políticas/cabeceras/consentimiento conservados; SemanControl sin enlace y galería20/carrusel19; tecleo estable a320/390/1440 y lectura/fallback reducido/noJS. Evidencia `test-results/seman-qa-production.json`, `sarin-process-registration-production.json`, `seman-production-card-chrome.jpg` y `seman-production-process-chrome.jpg`. Chrome confirma URL www, transformación aplicada y cero overflow. Revisión independiente de evidencia preview y reversión sin bloqueantes; cierre solo documental, sin modificar el artefacto público.
+
 ## Reversión
 
 Base `76d5a98`. Revertir el commit funcional de esta continuación mediante commit nuevo y push normal a main; esperar Pages y verificar retorno de19 tarjetas/carrusel y CSS anterior. No force push, migraciones, DNS, datos, servicios ni assets nuevos. Sarin Bot y vuelo de cinco mensajes permanecen en la base.
