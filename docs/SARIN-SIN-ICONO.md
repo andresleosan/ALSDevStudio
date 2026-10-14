@@ -24,6 +24,12 @@ Fuente funcional `645a8e13a2fffc7fb125b5b0df6639dc53f8562b`, rama `feat/sarin-si
 
 Promoción dentro de la corrección solicitada sobre las animaciones publicadas y autorizadas expresamente en la sesión, incorporando la aclaración del titular de no añadir pausa manual. Este registro es documental y conserva los archivos públicos del candidato.
 
+## Producción verificada
+
+Publicada en main `8a1c866e99f309e003d6db9ae73e4f1986c90f16`, despliegue `641a174b`, con la misma fuente pública `645a8e1`. Cronos repitió en www Pages 4/4 y QA focal 6/6 PASS, sin errores o solicitudes externas. Chrome real confirma flight playing, cero botones de vuelo, cero vínculo compartido, banner controlando solo services-banner y sin overflow. Captura `test-results/sarin-no-icon-live-chrome.jpg`.
+
+Revisión HTTP independiente: cinco recursos 200 idénticos a dist normalizando CRLF/LF, módulo revisado, WWW indexable/canonical, CSP/analytics intactos y cuatro redirecciones 301 conservadas. Informes `test-results/sarin-no-icon-production.json` y `sarin-no-icon-http-production.json`. El cierre es documental; el diff público contra la fuente funcional permanece vacío.
+
 ## Reversión
 
 Base conocida `933256b`. Revertir el commit funcional mediante commit nuevo y push normal a main, conservar este registro y esperar Pages. Verificar restauración del botón circular, pausa propia del vuelo y control original del banner. Sin cambios de DNS, correo, hosting, analítica, almacenamiento ni plan.
