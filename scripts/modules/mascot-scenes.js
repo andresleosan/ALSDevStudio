@@ -2,8 +2,8 @@
 // Vuelo y saludo controlables; presentaciones, tarjetas y contacto de una sola entrada.
 const initialized = new WeakSet();
 const STEP_KINDS = new Set(['step-define', 'step-build', 'step-deliver']);
-const TYPING_KINDS = new Set(['projects', 'process', 'author', ...STEP_KINDS]);
-const FRAME_KINDS = new Set(['projects', 'process', 'step-build']);
+const TYPING_KINDS = new Set(['projects', 'process', 'global', 'author', ...STEP_KINDS]);
+const FRAME_KINDS = new Set(['projects', 'process', 'global', 'step-build']);
 const KINDS = new Set(['flight', 'contact', ...TYPING_KINDS]);
 
 /** @typedef {'finished' | 'static'} FinalState */

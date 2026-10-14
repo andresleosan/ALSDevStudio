@@ -13,7 +13,8 @@ const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)];
-const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png', 'og-image.jpg', 'world-map.svg'];
+const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
+  'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg'];
 
 after(async () => {
   for (const root of temporaryRoots) {

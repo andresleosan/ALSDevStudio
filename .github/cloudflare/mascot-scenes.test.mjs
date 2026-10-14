@@ -7,6 +7,11 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 const moduleURL = new URL('../../scripts/modules/mascot-scenes.js', import.meta.url);
 const projectCopy = 'Sitios publicados y productos en desarrollo. Abre cada proyecto para conocer su diseño y funcionalidad.';
 const processCopy = 'Así convertimos una idea en un sitio claro y útil.';
+const globalCopy = 'Ideas que cruzan fronteras, productos que encuentran a las personas correctas.';
+const globalFixture = `<section data-mascot-scene="global" data-mascot-state="idle">
+  <div data-mascot-actor aria-hidden="true"><span data-mascot-part="typing-a">Laptop A</span><span data-mascot-part="typing-b">Laptop B</span></div>
+  <p id="sarin-global-copy" data-mascot-part="window"><span data-mascot-copy-full>${globalCopy}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>
+</section>`;
 const authorCopy = ['Andrés Santiago', 'Desarrollo independiente · Trabajo remoto'];
 const authorGreeting = '¡Hola! ¿Qué idea construimos hoy?';
 const authorFixture = `<div class="hero-signature" data-mascot-scene="author" data-mascot-state="idle">
@@ -83,6 +88,10 @@ const server = http.createServer(async (request, response) => {
       ? fixture.replace('<span data-mascot-part="flying">', '<img src="/delayed.svg" alt=""><span data-mascot-part="flying">') : fixture;
     if (request.url.includes('without=toggle')) html = html.replace(/<button type="button" data-mascot-toggle=.*?<\/button>/, '');
     if (request.url.includes('process=1')) html = html.replace('<section data-mascot-scene="contact"', processFixture + '<section data-mascot-scene="contact"');
+    if (request.url.includes('global=1')) {
+      const global = request.url.includes('missingglobal=1') ? globalFixture.replace('<span data-mascot-part="typing-b">Laptop B</span>', '') : globalFixture;
+      html = html.replace('<section data-mascot-scene="contact"', global + '<section data-mascot-scene="contact"');
+    }
     if (request.url.includes('steps=1')) {
       const cards = request.url.includes('invalidpair=1') ? stepsFixture.replace(
         `<p><span data-mascot-copy-full>${steps[0][2]}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>`,
@@ -1296,4 +1305,140 @@ test('author restaura pares, saludo y señal ante un error en bio y libera liste
   await page.waitForTimeout(80);
   assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
   await clean(result);
+});
+
+test('global conserva el original accesible, no consume oculto y escribe una vez en 3000 ms', async () => {
+  const result = await pageFor({}, () => Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }), undefined, '?global=1');
+  const { page } = result;
+  const global = scene(page, 'global');
+  const full = global.locator('[data-mascot-copy-full]');
+  const typed = global.locator('[data-mascot-copy-typed]');
+  await global.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
+  assert.equal(await global.getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await global.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  assert.equal(await full.textContent(), globalCopy);
+  assert.equal(await full.evaluate(element => getComputedStyle(element).opacity), '1');
+  await hidden(page, false);
+  await enter(page, 'global');
+  assert.equal(await global.getAttribute('aria-hidden'), null);
+  assert.equal(await full.getAttribute('aria-hidden'), null);
+  assert.equal(await typed.getAttribute('aria-hidden'), 'true');
+  const timing = await global.locator('[data-mascot-actor]').evaluate(element => {
+    const animation = element.getAnimations()[0]; animation.pause(); animation.currentTime = 1500;
+    return animation.effect.getTiming();
+  });
+  assert.equal(timing.duration, 3000);
+  assert.equal(timing.iterations, 1);
+  await page.waitForFunction(() => document.querySelector('#sarin-global-copy [data-mascot-copy-typed]').textContent.length > 0);
+  const partial = await typed.textContent();
+  assert.ok(partial.length < globalCopy.length && globalCopy.startsWith(partial));
+  assert.equal(await full.textContent(), globalCopy);
+  const frames = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'global' && call.part.startsWith('typing-')));
+  assert.equal(frames.length, 2);
+  assert.ok(frames.every(frame => frame.duration === 280 && frame.iterations === 9 && frame.delay === 240));
+  const poses = await global.evaluate(element => {
+    const parts = ['typing-a', 'typing-b'].map(name => element.querySelector(`[data-mascot-part="${name}"]`));
+    const samples = [310, 450].map(time => {
+      parts.forEach(part => { const animation = part.getAnimations()[0]; animation.pause(); animation.currentTime = time; });
+      return parts.map(part => getComputedStyle(part).opacity);
+    });
+    element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 2800; animation.play(); });
+    return samples;
+  });
+  assert.deepEqual(poses, [['1', '0'], ['0', '1']]);
+  await finished(page, 'global');
+  assert.equal(await typed.textContent(), '');
+  assert.equal(await full.textContent(), globalCopy);
+  assert.equal(await full.evaluate(element => getComputedStyle(element).opacity), '1');
+  const calls = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'global').length);
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await global.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.initScenes());
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'global').length), calls);
+  await clean(result);
+});
+
+test('global restaura el original y limpia escritura ante salida, hidden, resize y reduced', async () => {
+  for (const trigger of ['viewport', 'hidden', 'resize', 'reduced']) {
+    const result = await pageFor({}, undefined, undefined, '?global=1');
+    const { page } = result;
+    const global = scene(page, 'global');
+    await enter(page, 'global');
+    await global.locator('[data-mascot-actor]').evaluate(element => {
+      const clock = element.getAnimations()[0]; clock.pause(); clock.currentTime = 1500;
+    });
+    await page.waitForFunction(() => document.querySelector('#sarin-global-copy [data-mascot-copy-typed]').textContent.length > 0);
+    const calls = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'global').length);
+    if (trigger === 'viewport') await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    else if (trigger === 'hidden') await hidden(page, true);
+    else if (trigger === 'resize') await page.setViewportSize({ width: 390, height: 720 });
+    else await page.emulateMedia({ reducedMotion: 'reduce' });
+    await state(page, 'global', trigger === 'reduced' ? 'static' : 'finished');
+    assert.equal(await global.locator('[data-mascot-copy-full]').textContent(), globalCopy);
+    assert.equal(await global.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+    assert.equal(await global.locator('[data-mascot-copy-typed]').textContent(), '');
+    assert.equal(await global.locator('[data-mascot-part="window"]').evaluate(element => element.classList.contains('is-typing')), false);
+    assert.equal(await global.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+    assert.equal(await page.evaluate(() => window.pendingSceneFrames.size), 0);
+    if (trigger === 'hidden') await hidden(page, false);
+    else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await global.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.initScenes());
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'global').length), calls);
+    await clean(result);
+  }
+});
+
+test('global recupera el original sin efectos ni frames pendientes ante error de escritura', async () => {
+  const result = await pageFor({}, undefined, undefined, '?global=1');
+  const { page } = result;
+  const global = scene(page, 'global');
+  await enter(page, 'global');
+  await global.evaluate(element => {
+    const typed = element.querySelector('[data-mascot-copy-typed]');
+    const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+    Object.defineProperty(typed, 'textContent', {
+      configurable: true, get() { return descriptor.get.call(this); },
+      set() { delete this.textContent; throw new Error('Escritura global interrumpida una vez'); },
+    });
+    const clock = element.querySelector('[data-mascot-actor]').getAnimations()[0];
+    clock.pause(); clock.currentTime = 1500;
+  });
+  await state(page, 'global', 'static');
+  assert.equal(await global.locator('[data-mascot-copy-full]').textContent(), globalCopy);
+  assert.equal(await global.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await global.locator('[data-mascot-copy-typed]').textContent(), '');
+  assert.equal(await global.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  await clean(result);
+});
+
+test('global sin JS/APIs/partes conserva el texto completo y la pose A estática', async () => {
+  const noJS = await pageFor({ javaScriptEnabled: false }, undefined, undefined, '?global=1');
+  const global = scene(noJS.page, 'global');
+  assert.equal(await global.locator('[data-mascot-copy-full]').textContent(), globalCopy);
+  assert.equal(await global.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await global.locator('[data-mascot-copy-typed]').textContent(), '');
+  assert.equal(await global.locator('[data-mascot-part="typing-a"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await global.locator('[data-mascot-part="typing-b"]').evaluate(element => getComputedStyle(element).opacity), '0');
+  assert.deepEqual(noJS.errors, []); await noJS.context.close();
+  for (const [setup, search] of [
+    [() => { Element.prototype.animate = undefined; }, '?global=1'],
+    [() => { window.IntersectionObserver = undefined; }, '?global=1'],
+    [() => { window.requestAnimationFrame = undefined; }, '?global=1'],
+    [undefined, '?global=1&missingglobal=1'],
+  ]) {
+    const result = await pageFor({}, setup, undefined, search);
+    const global = scene(result.page, 'global');
+    await global.scrollIntoViewIfNeeded();
+    await state(result.page, 'global', 'static');
+    assert.equal(await global.locator('[data-mascot-copy-full]').textContent(), globalCopy);
+    assert.equal(await global.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+    assert.equal(await global.locator('[data-mascot-copy-typed]').textContent(), '');
+    assert.equal(await global.locator('[data-mascot-part="typing-a"]').evaluate(element => getComputedStyle(element).opacity), '1');
+    assert.equal(await global.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+    await clean(result);
+  }
 });

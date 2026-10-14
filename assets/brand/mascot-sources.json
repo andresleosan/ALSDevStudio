@@ -1,7 +1,10 @@
 {
-  "updated": "2026-10-13",
+  "updated": "2026-10-14",
   "typingPreparation": "Imagegen integrado, transparent_background=true, referencia de identidad mascot-laptop.png. Dos frames en una lámina; limpieza mediante edición integrada. Exportación Sharp con recorte común [116,33,629,831] en ambas celdas887x887 para conservar alineación, resize contain320x332, PNG256 con alfa. Originales conservados en generated_images.",
-  "typingPrompts": ["Create a transparent two-frame animation strip for the EXACT SAME Sarin ALS robot and laptop shown in the supplied reference. The reference is the identity and pose source. One horizontal strip with exactly TWO equal square cells side by side, no dividers or labels. In EACH cell, the identical full seated cross-legged white/silver ALS robot with glossy black visor, two cyan oval eyes, navy articulated joints, round headphone ear pieces with cyan rings, and dark gray laptop marked ALS in turquoise. Match the reference identity, chibi proportions and smooth 2D comic rendering precisely. The body, head, legs, laptop, camera angle, lighting, size and position must be IDENTICAL in both cells so this is a stable two-frame typing animation. Only the hands/wrists change: LEFT cell shows fingertips just lifted slightly above the keyboard, RIGHT cell shows fingers pressing the keys, alternating wrists naturally in a subtle believable typing gesture. Both hands must be clearly visible at the keyboard. Do not move or redesign the laptop, visor or body. Do not add extra limbs. Keep complete robot, legs and laptop inside each cell with modest consistent margins. Real alpha transparency outside each character; opaque white armor. No scenery, backdrop, floor, cast shadow, checkerboard, speech balloons, UI windows, additional text, hoodie, other characters or decorative effects. Output exactly two aligned full-body typing frames in a clean 2-column by 1-row sprite strip, each centered at the same position in its cell.","Clean up the attached transparent two-frame Sarin typing sprite strip. Preserve the two robot drawings EXACTLY: their positions, size, poses, hands, body, laptop, visor, eyes, colors and ALS lettering must remain unchanged. Preserve the two equal cells and their alignment. Make only this cleanup: remove all tiny stray dark flecks, isolated pixels or floating fragments outside the two robot-and-laptop silhouettes, especially near the outer sides of the helmets and lower left margins. All empty background around and between the two characters must be real alpha=0, completely clean transparency. Do not add a background, glow, shadow, divider, labels, or new illustration. This is a transparent production animation asset; output the same two-frame horizontal strip with crisp clean transparent margins."],
+  "typingPrompts": [
+    "Create a transparent two-frame animation strip for the EXACT SAME Sarin ALS robot and laptop shown in the supplied reference. The reference is the identity and pose source. One horizontal strip with exactly TWO equal square cells side by side, no dividers or labels. In EACH cell, the identical full seated cross-legged white/silver ALS robot with glossy black visor, two cyan oval eyes, navy articulated joints, round headphone ear pieces with cyan rings, and dark gray laptop marked ALS in turquoise. Match the reference identity, chibi proportions and smooth 2D comic rendering precisely. The body, head, legs, laptop, camera angle, lighting, size and position must be IDENTICAL in both cells so this is a stable two-frame typing animation. Only the hands/wrists change: LEFT cell shows fingertips just lifted slightly above the keyboard, RIGHT cell shows fingers pressing the keys, alternating wrists naturally in a subtle believable typing gesture. Both hands must be clearly visible at the keyboard. Do not move or redesign the laptop, visor or body. Do not add extra limbs. Keep complete robot, legs and laptop inside each cell with modest consistent margins. Real alpha transparency outside each character; opaque white armor. No scenery, backdrop, floor, cast shadow, checkerboard, speech balloons, UI windows, additional text, hoodie, other characters or decorative effects. Output exactly two aligned full-body typing frames in a clean 2-column by 1-row sprite strip, each centered at the same position in its cell.",
+    "Clean up the attached transparent two-frame Sarin typing sprite strip. Preserve the two robot drawings EXACTLY: their positions, size, poses, hands, body, laptop, visor, eyes, colors and ALS lettering must remain unchanged. Preserve the two equal cells and their alignment. Make only this cleanup: remove all tiny stray dark flecks, isolated pixels or floating fragments outside the two robot-and-laptop silhouettes, especially near the outer sides of the helmets and lower left margins. All empty background around and between the two characters must be real alpha=0, completely clean transparency. Do not add a background, glow, shadow, divider, labels, or new illustration. This is a transparent production animation asset; output the same two-frame horizontal strip with crisp clean transparent margins."
+  ],
   "source": "Nueva lámina de tres robots ALS proporcionada por el titular en la conversación, con solicitud de reemplazar la mascota del sitio usando esas referencias.",
   "preparation": "Herramienta integrada imagegen, con transparent_background=true. Primera pose creada a partir de la referencia del titular; segunda pose con la primera como referencia de identidad y la lámina original como referencia de pose. Tercera pose para Sarin bot revisando una lista, con los dos PNG anteriores como referencias de identidad.",
   "localProcessing": "Sharp ya disponible: reducción suave a 320 px de ancho y PNG con paleta de 256 colores, conservando el alfa generado. Sin extracción manual del fondo ni dependencias nuevas en el sitio.",
@@ -43,6 +46,30 @@
       "width": 320,
       "height": 383,
       "bytes": 35431
+    },
+    {
+      "file": "mascot-global-typing-a.png",
+      "width": 320,
+      "height": 384,
+      "bytes": 33879
+    },
+    {
+      "file": "mascot-global-typing-b.png",
+      "width": 320,
+      "height": 384,
+      "bytes": 33860
+    },
+    {
+      "file": "mascot-process-typing-a.png",
+      "width": 320,
+      "height": 384,
+      "bytes": 29286
+    },
+    {
+      "file": "mascot-process-typing-b.png",
+      "width": 320,
+      "height": 384,
+      "bytes": 29639
     }
   ],
   "prompts": [
@@ -50,5 +77,96 @@
     "Use case: identity-preserve / pose variation. Asset type: second transparent PNG mascot asset for ALS DevStudio's website contact section. Inputs: the PORTRAIT single standing/waving ALS robot most recently generated is the CHARACTER IDENTITY REFERENCE; the user's WIDE sheet with three robots is a supporting pose/style reference ONLY. Produce ONE character, the EXACT SAME friendly white and gray ALS robot from the portrait, now sitting cross-legged and working on an open laptop on its lap, inspired by the pose of the RIGHTMOST robot on the wide reference sheet. Preserve the portrait character's large glossy black rounded-square visor, two turquoise oval luminous eyes, white/silver armor, dark navy joints and outlines, round silver/navy headphone-like ear pieces with cyan rings, chibi proportions and polished smooth-shaded 2D comic illustration. Do NOT introduce hoodie clothing, a new helmet shape, extra armor detail or a different character. Both hands rest naturally over the laptop keyboard, short folded legs and both feet visible. Laptop is dark gray/navy with restrained silver edge and a small exact turquoise 'ALS' wordmark centered on its lid, A-L-S only. Friendly and focused, three-quarter view facing viewer. Composition is one compact complete seated robot plus laptop with a tight, small even TRANSPARENT margin; clear silhouette at 88–128px website display size. Output actual alpha transparency, alpha=0 outside the robot and laptop; keep white armor solid, not see-through. NO dark or blue backdrop, ambient glow cloud, floor, cast shadow, blueprint, arrows, checkerboard squares, labels, second character or frame. All background is truly transparent. No pixel art. Only this single isolated seated robot and laptop. Do not reproduce the wide reference sheet or the prior standing pose."
   ],
   "reviewPrompt": "Use case: identity-preserve / pose variation. Asset type: transparent mascot PNG for the third step of the ALS DevStudio website process. Reference inputs: the two local PNGs show the SAME existing ALS robot, called Sarin bot. They are the exact identity and style references. Create ONE isolated full-body image of this SAME Sarin robot explaining quality review and handoff. Keep the rounded white/silver helmet with dark navy outlines, silver/navy headphone ear pieces with turquoise rings, large glossy near-black rounded face visor and two bright turquoise oval eyes. Preserve pearl white/gray armor, dark navy articulated joints, compact friendly proportions, crisp smooth 2D comic shading and exact small 'ALS' on chest. Sarin stands in a friendly three-quarter pose holding a slim dark navy clipboard with THREE simple turquoise check marks in one hand, pointing at the completed checklist with the other. The clipboard is an understated prop, not a big sign. No written labels or numbers on clipboard, no extra text, no laptop, no additional character. Both feet and hands fully visible, balanced clear silhouette. Character occupies most of the canvas with only a small even transparent margin. Keep character identity consistent with both references, no redesign, hoodie, face mouth, or pixel art. Truly transparent alpha background with alpha=0 outside robot/clipboard, solid white armor. No backdrop, floor, cast shadow, ambient blue cloud, grids, arrows, checkerboard pattern, page UI or watermark. Only the single isolated full-body Sarin mascot reviewing a checklist. This is a production website asset, legible around 150px height.",
-  "rights": "Referencia suministrada por el titular para este uso. Los nuevos PNG son ilustraciones generadas a partir de ella, no recortes exactos. La integración no acredita la autoría de la referencia original."
+  "rights": "Referencia suministrada por el titular para este uso. Los nuevos PNG son ilustraciones generadas a partir de ella, no recortes exactos. La integración no acredita la autoría de la referencia original.",
+  "distinctTypingPreparation": "Imagegen integrado, transparent_background=true. Dos poses de Sarin con dos frames cada una: portátil flotando y portátil en mesa de pie. Referencias locales de identidad; limpieza/render final con la misma herramienta. Sharp ya instalado, recorte común por pose, resize contain 320×384, PNG256 con alfa, sin eliminación manual del fondo. Originales conservados en generated_images.",
+  "distinctTypingPrompts": [
+    {
+      "kind": "global",
+      "prompt": "Use case: stylized-concept, identity-preserving pose variation. Asset type: transparent two-frame typing animation sprite strip for ALS DevStudio website. Input images: mascot-typing-a.png and mascot-welcome.png are identity/style references for the EXACT SAME Sarin robot, not compositions to copy. Keep pearl white/silver armor, rounded helmet, headphone-like ears with cyan rings, glossy near-black visor with two cyan oval eyes, dark navy joints and contours, compact chibi proportions, polished smooth 2D comic illustration, small exact ALS chest lettering. Landscape sprite strip with exactly TWO equal square cells side by side, no dividers. In both cells the complete character, props, head, torso, legs, camera, scale, lighting and position must be IDENTICAL and aligned at the same cell coordinates. Only fingers and wrists differ subtly: left frame fingers slightly lifted, right frame fingers pressing keyboard. Both hands visible. Opaque white armor, true alpha=0 outside silhouettes, no floor, cast shadow, scenery, colored background, checkerboard, glow cloud, loose flecks, speech balloons, UI, extra limbs, other characters, labels or watermark. Each cell must contain one complete isolated robot and all its props, with a modest identical transparent margin; fill most of each cell, clear at 100-140px display height. Do not reproduce the reference cross-legged seated pose. New pose for Alcance: Sarin hovering gently in mid-air in three-quarter view, knees bent downward and feet separated, torso upright. An open compact dark navy laptop is held comfortably at waist/chest level, both hands typing on the keyboard. No wings or cape; no large rocket flames. Face and laptop remain readable. A buoyant working pose, clearly different from sitting cross-legged and from standing at a desk. Small turquoise ALS on laptop lid, no other text. EXACTLY two aligned frames of this hovering laptop pose on one transparent horizontal strip."
+    },
+    {
+      "kind": "process",
+      "prompt": "Use case: stylized-concept, identity-preserving pose variation. Asset type: transparent two-frame typing animation sprite strip for ALS DevStudio website. Input images: mascot-typing-a.png and mascot-welcome.png are identity/style references for the EXACT SAME Sarin robot, not compositions to copy. Keep pearl white/silver armor, rounded helmet, headphone-like ears with cyan rings, glossy near-black visor with two cyan oval eyes, dark navy joints and contours, compact chibi proportions, polished smooth 2D comic illustration, small exact ALS chest lettering. Landscape sprite strip with exactly TWO equal square cells side by side, no dividers. In both cells the complete character, props, head, torso, legs, camera, scale, lighting and position must be IDENTICAL and aligned at the same cell coordinates. Only fingers and wrists differ subtly: left frame fingers slightly lifted, right frame fingers pressing keyboard. Both hands visible. Opaque white armor, true alpha=0 outside silhouettes, no floor, cast shadow, scenery, colored background, checkerboard, glow cloud, loose flecks, speech balloons, UI, extra limbs, other characters, labels or watermark. Each cell must contain one complete isolated robot and all its props, with a modest identical transparent margin; fill most of each cell, clear at 100-140px display height. Do not reproduce the reference cross-legged seated pose. New pose for Proceso: Sarin standing with both feet planted and slightly apart behind a compact narrow navy work table, leaning forward slightly while both hands type on a laptop resting on the table. The table is a small simple lightweight workstation with two slim supports, not a room, large desk or scenery. Entire robot feet, desk and open laptop visible. Three-quarter view with visor toward viewer. Clearly different silhouette from the hovering laptop pose and the cross-legged reference. Small turquoise ALS on laptop lid, no other text. EXACTLY two aligned frames of this standing workstation pose on one transparent horizontal strip."
+    },
+    {
+      "kind": "common-cleanup",
+      "prompt": "Use case: precise-object-edit / transparent sprite cleanup. The supplied PNG is an existing two-frame horizontal Sarin typing sprite strip with real alpha. Preserve the TWO drawings EXACTLY: character identity, body, props, fingers in each frame, positions, scale, cell alignment, camera, colors, ALS letters, lighting and all silhouette edges. Keep the two equal cells and the entire robot/props inside them. Change ONLY empty pixels OUTSIDE the robot/laptop (and table, if present): remove every floating dark fleck, isolated pixel, fragment or detached mark, especially beside the helmets, at the outer left/right margins and around/below the feet or table. All background between and around the silhouettes must be perfectly clean real alpha=0. Do not remove meaningful robot, laptop or table pixels. Do not add gray haze, glow, shadow, background color, checkerboard, labels or new details. Keep white armor solid. This is production animation artwork; do not redraw, reposition or redesign the poses, and preserve the different hand positions. Output the same two-frame strip with truly transparent clean margins."
+    },
+    {
+      "kind": "process-cleanup",
+      "prompt": "Precise transparent sprite cleanup. Image 1 is LEFT typing frame A, Image 2 is RIGHT typing frame B of the SAME Sarin standing at a small table. Rebuild them into ONE horizontal strip with exactly two equal cells, image 1 in the left cell and image 2 in the right cell. Preserve both robot/table/laptop drawings, the distinct hand positions, their proportions, size, color, white armor, cyan eyes, ALS text and alignment. REMOVE the visible stray black specks and disconnected fragments outside the main silhouette: especially above/right of the head, along outer left/right margins and around the feet/table. Every detached dot not belonging to robot, laptop or table is unwanted noise. There must be absolutely NOTHING outside those foreground silhouettes: no dark vignette, blue haze, grain, shadow, particles or loose fragments. Real clean alpha=0 background everywhere outside, including the gap between cells. Keep foreground opaque and crisp. Do not redraw or reposition the character or change poses, and do not merge the hands into one pose. A clean transparent two-frame production asset only."
+    },
+    {
+      "kind": "process-final-render",
+      "prompt": "Use case: clean production transparent website mascot animation. Create a NEW crisp rendering of the exact Sarin ALS robot from the first attached image, using the second image only as a pose guide. Do not copy its stray pixels or background. Keep the same pearl-white/silver armor, rounded helmet, cyan-ring headphone ears, glossy black visor with two cyan oval eyes, dark navy outlines/joints and ALS lettering. Make a horizontal sprite sheet with exactly TWO equal cells, each showing the full robot standing behind a small navy table and typing on an open ALS laptop. Robot's head, body, desk, laptop and feet must have precisely the same positions and size in both cells. Only fingertips/wrists differ for typing: left frame fingers slightly up, right frame pressing keys. Both feet visible, two thin table legs. Smooth polished 2D comic illustration. Output true transparent alpha, perfectly clean empty margins. There must be ZERO detached dots, ink flecks, fragments, black smears, haze, shadows, floor, glow or texture outside the robot/desk silhouette. Draw the contour edges cleanly like a vector cutout. Opaque white armor. No labels, dividers, speech balloons, checkerboard or backdrop. New clean drawing from the identity reference; do not preserve imperfections from the pose guide. Exactly two aligned complete desk-typing robot frames."
+    }
+  ],
+  "distinctTypingSources": [
+    {
+      "kind": "global",
+      "source": "C:/Users/USER/.codex/generated_images/01a13795-c154-7240-ade5-e598376c8eac/exec-9261cde5-33c8-4f44-901e-96393e3c01f4.png",
+      "cell": [
+        768,
+        1024
+      ],
+      "offsets": [
+        0,
+        768
+      ],
+      "crop": {
+        "left": 0,
+        "top": 30,
+        "width": 768,
+        "height": 994
+      },
+      "maxAlpha": 254,
+      "outputs": [
+        {
+          "file": "assets/brand/mascot-global-typing-a.png",
+          "width": 320,
+          "height": 384,
+          "bytes": 33879
+        },
+        {
+          "file": "assets/brand/mascot-global-typing-b.png",
+          "width": 320,
+          "height": 384,
+          "bytes": 33860
+        }
+      ]
+    },
+    {
+      "kind": "process",
+      "source": "C:/Users/USER/.codex/generated_images/01a13795-c154-7240-ade5-e598376c8eac/exec-9dce1cb4-dbd3-44d1-8c3c-68cd46c0e00b.png",
+      "cell": [
+        887,
+        887
+      ],
+      "offsets": [
+        0,
+        887
+      ],
+      "crop": {
+        "left": 1,
+        "top": 3,
+        "width": 886,
+        "height": 876
+      },
+      "maxAlpha": 255,
+      "outputs": [
+        {
+          "file": "assets/brand/mascot-process-typing-a.png",
+          "width": 320,
+          "height": 384,
+          "bytes": 29286
+        },
+        {
+          "file": "assets/brand/mascot-process-typing-b.png",
+          "width": 320,
+          "height": 384,
+          "bytes": 29639
+        }
+      ]
+    }
+  ]
 }
