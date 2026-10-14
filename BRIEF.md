@@ -107,3 +107,7 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ## Sarin en tres escenas de scroll · 2026-10-13
 - Propuesta aprobada expresamente por el titular: vuelo en el espacio previo a Alcance, presentación de Proyectos y portátil animado en Contacto. Animaciones de dos a tres segundos, una vez al entrar en cada zona.
 - Mantener identidad, contenido y controles actuales. En móvil, entradas más suaves; con movimiento reducido o sin JavaScript, pose estática. No añadir audio, reproducción continua ni nuevos rótulos de sección.
+
+## Vuelo con pausas y Sarin tecleando · 2026-10-13
+- El titular solicita que Sarin se detenga y vuelva a volar; aclara expresamente «Repetir mientras la zona esté visible». Esta revisión sustituye la ejecución única solo para el vuelo. Añadir pausa manual y suspender fuera de pantalla o con la pestaña oculta.
+- En Proyectos, sustituir la pose de saludo y ventana genérica por Sarin con portátil, gesto de escritura y aparición progresiva del texto actual. Mantener el texto completo accesible, lectura sin JS y movimiento reducido estático. Contacto conserva su escena existente.

@@ -12,7 +12,7 @@ const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)]
   .map(name => `scripts/${name}`);
-const BRAND_FILES = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-welcome.png', 'og-image.jpg', 'world-map.svg']
+const BRAND_FILES = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png', 'og-image.jpg', 'world-map.svg']
   .map(name => `assets/brand/${name}`);
 const FIXED_FILES = [...HTML_FILES, 'favicon.svg', 'robots.txt', 'sitemap.xml', '_headers', '_redirects',
   'styles/main.css', ...SCRIPT_FILES, ...BRAND_FILES, 'assets/fonts/fonts.css'];

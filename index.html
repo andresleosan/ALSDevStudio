@@ -162,12 +162,15 @@
 
     <section class="section global-section" id="alcance">
       <div class="wrap">
-        <div class="mascot-scene mascot-scene--flight" data-mascot-scene="flight" aria-hidden="true">
+        <div class="mascot-flight-wrap">
+        <div class="mascot-scene mascot-scene--flight" id="sarin-flight" data-mascot-scene="flight" aria-hidden="true">
           <div class="mascot-scene-actor" data-mascot-actor>
             <span class="mascot-flight-trail" data-mascot-part="trail"></span>
             <img class="als-mascot mascot-flight-pose" data-mascot-part="flying" src="assets/brand/mascot-flight.png" width="320" height="383" alt="" loading="eager" decoding="async" fetchpriority="low">
             <img class="als-mascot mascot-landed-pose" data-mascot-part="landed" src="assets/brand/mascot-welcome.png" width="320" height="480" alt="" loading="lazy" decoding="async" fetchpriority="low">
           </div>
+        </div>
+        <button class="mascot-flight-toggle" type="button" data-mascot-toggle="sarin-flight" aria-controls="sarin-flight" aria-label="Pausar vuelo" hidden>Pausar vuelo</button>
         </div>
         <div class="section-heading" data-reveal>
           <div><h2>Tu ubicación no es el límite.</h2></div>
@@ -214,15 +217,13 @@
         <div class="section-heading">
           <div data-reveal><h2>El trabajo, en pantalla.</h2></div>
           <div class="projects-introduction">
-            <div class="mascot-scene mascot-scene--projects" data-mascot-scene="projects" aria-hidden="true">
-              <div class="mascot-scene-window mascot-project-window" data-mascot-part="window">
-                <span class="mascot-window-chrome"><i></i><i></i><i></i></span>
-                <span class="mascot-project-preview"><i></i><i></i><i></i></span>
+            <div class="mascot-scene mascot-scene--projects" data-mascot-scene="projects">
+              <div class="mascot-scene-actor" data-mascot-actor aria-hidden="true">
+                <img class="als-mascot mascot-typing-frame" data-mascot-part="typing-a" src="assets/brand/mascot-typing-a.png" width="320" height="332" alt="" loading="lazy" decoding="async" fetchpriority="low">
+                <img class="als-mascot mascot-typing-frame mascot-typing-frame--alternate" data-mascot-part="typing-b" src="assets/brand/mascot-typing-b.png" width="320" height="332" alt="" loading="lazy" decoding="async" fetchpriority="low">
               </div>
-              <div class="mascot-scene-actor" data-mascot-actor><img class="als-mascot" src="assets/brand/mascot-welcome.png" width="320" height="480" alt="" loading="lazy" decoding="async" fetchpriority="low"></div>
-              <svg class="mascot-project-pointer" data-mascot-part="pointer" viewBox="0 0 24 28" fill="none" aria-hidden="true" focusable="false"><path d="m3 2 17 12-8 2-4 8Z" fill="#071a2f" stroke="#65d49d" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <p class="mascot-project-copy" id="sarin-project-copy" data-mascot-part="window"><span data-mascot-copy-full>Sitios publicados y productos en desarrollo. Abre cada proyecto para conocerlo.</span><span class="mascot-copy-typed" data-mascot-copy-typed aria-hidden="true"></span></p>
             </div>
-            <p data-reveal>Sitios publicados y productos en desarrollo. Abre cada proyecto para conocerlo.</p>
           </div>
         </div>
         <div class="projects-toolbar" data-reveal>
