@@ -1,0 +1,5 @@
+# Rutas históricas; las páginas y enlaces del build utilizan URLs sin extensión.
+/index.html / 301
+/privacidad.html /privacidad 301
+/terminos.html /terminos 301
+/cookies.html /cookies 301

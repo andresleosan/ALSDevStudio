@@ -1,5 +1,7 @@
 # Verificación privada de Vercel · 13 de octubre de 2026
 
+Nota de vigencia: esta revisión se conserva como evidencia histórica. La migración solicitada a Cloudflare y el cierre del pendiente de alojamiento comercial se registran en [MIGRACION-CLOUDFLARE.md](MIGRACION-CLOUDFLARE.md); este documento no describe la configuración del proveedor nuevo.
+
 **Actualización posterior:** a petición del titular, Web Analytics se habilitó ese mismo día en la modalidad incluida de Hobby. La integración con consentimiento previo, sus pruebas y publicación se registran en [RELEASE-ANALITICA.md](RELEASE-ANALITICA.md). Los resultados de «Analytics desactivado» y «sin banner» que siguen describen la inspección inicial, anterior a esa nueva solicitud. La exclusión de entrenamiento permanece aplicada y no se cambió de plan.
 
 ## Alcance y método

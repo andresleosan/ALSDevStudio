@@ -1,0 +1,14 @@
+# Cabeceras para assets estáticos de Cloudflare Pages; sin Functions.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; frame-src 'none'
+
+# Pages admite un solo splat por URL: el hostname usa un placeholder.
+https://alsdevstudio.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.alsdevstudio.pages.dev/*
+  X-Robots-Tag: noindex

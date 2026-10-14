@@ -77,3 +77,8 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Identificación en el aviso de analítica · 2026-10-13
 - Redacción aprobada por el titular: destacar ALS DevStudio en el párrafo principal y ubicar el nombre completo del responsable en texto secundario junto al contacto, con acceso a la política de privacidad.
+
+## Migración de alojamiento a Cloudflare · 2026-10-13
+- El titular solicita migrar el portafolio comercial desde Vercel Hobby a Cloudflare. Conservar dominio, diseño, proyectos, contacto, correo en Porkbun y despliegues desde GitHub.
+- Preparar Cloudflare Pages con una salida pública dedicada, cabeceras de seguridad y páginas legales actualizadas. Mantener estadísticas opcionales mediante instalación manual de Cloudflare Web Analytics y solicitar una elección nueva para este proveedor.
+- Validar una versión de prueba antes del cambio del dominio. Sin contratación de servicios de pago ni traslado del registro del dominio. La aprobación del corte de producción se solicita con la versión revisable y el plan de reversión preparados.

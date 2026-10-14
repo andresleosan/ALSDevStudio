@@ -32,6 +32,9 @@ build/
 out/
 *.log
 coverage/
+.wrangler/
+.dev.vars
+.dev.vars.*
 
 # Análisis local de arquitectura (artefacto regenerable)
 graphify-out/

@@ -1,9 +1,11 @@
 // @ts-check
 (() => {
-  const KEY = 'als:analytics-consent:v1';
+  // Identificador público del sitio, no una credencial de API.
+  const TOKEN = 'c2385e2589ca41c1887705cd00d06d8f';
+  const KEY = 'als:analytics-consent:cloudflare:v1';
   const MAX_AGE = 180 * 24 * 60 * 60 * 1000;
-  const paths = new Set(['/', '/index.html', '/privacidad.html', '/terminos.html', '/cookies.html']);
-  const production = ['www.alsdevstudio.com', 'alsdevstudio.com'].includes(location.hostname);
+  const paths = new Set(['/', '/index.html', '/privacidad', '/privacidad.html', '/terminos', '/terminos.html', '/cookies', '/cookies.html']);
+  const production = location.hostname === 'www.alsdevstudio.com';
   const controls = document.querySelectorAll('[data-analytics-preferences]');
   if (!controls.length || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
 
@@ -17,16 +19,14 @@
   };
   let choice = readChoice();
   let scriptRequested = false;
-  let scriptLoaded = false;
-  let viewSent = false;
+  let connectionsBlocked = false;
+  let revoking = false;
   let storageAvailable = true;
   let withdrawalNotSaved = false;
   let returnFocus = null;
   let loadFailed = false;
 
-  // Releer antes de cada envío evita depender del orden del evento storage.
-  // Si no podemos conservar la elección, la medición permanece desactivada.
-  const allowed = () => storageAvailable && choice?.choice === 'accepted' && readChoice()?.choice === 'accepted';
+  const allowed = () => storageAvailable && !connectionsBlocked && !revoking && choice?.choice === 'accepted' && readChoice()?.choice === 'accepted';
   const safeReferrer = () => {
     if (!document.referrer) return true;
     try {
@@ -44,9 +44,9 @@
   dialog.innerHTML = `
     <button type="button" class="analytics-dismiss" data-analytics-close aria-label="Cerrar sin activar analítica">×</button>
     <p class="eyebrow">Tu elección · Analítica opcional</p>
-    <h2 id="analytics-title" tabindex="-1" autofocus>Estadísticas de visitas</h2>
-    <p>Si aceptas, ALS DevStudio usará Vercel Web Analytics para conocer las visitas y páginas consultadas y mejorar este sitio.</p>
-    <p>Se enviarán datos técnicos como página, referente, fecha, dispositivo y ubicación aproximada. Puedes rechazar y seguir navegando, o retirar tu elección desde «Preferencias de analítica».</p>
+    <h2 id="analytics-title" tabindex="-1" autofocus>Visitas y rendimiento</h2>
+    <p>Si aceptas, ALS DevStudio usará Cloudflare Web Analytics para conocer las visitas, páginas consultadas y rendimiento real de este sitio.</p>
+    <p>Se enviarán datos de página, procedencia, navegador y rendimiento, como carga, respuesta y estabilidad visual. Puedes rechazar y seguir navegando. Retirar desactiva la medición y actualiza la página; no elimina estadísticas previas.</p>
     <div class="analytics-details"><a href="cookies.html#analitica">Datos y plazos</a><a href="privacidad.html">Privacidad y derechos</a></div>
     <p class="analytics-contact">Responsable: Andrés Leonardo Santiago González, quien opera como ALS DevStudio.<br>Contacto: <a href="mailto:alsdevstudio@alsdevstudio.com">alsdevstudio@alsdevstudio.com</a></p>
     <p class="analytics-state" data-analytics-status role="status"></p>
@@ -65,33 +65,28 @@
     closeButton.setAttribute('aria-label', allowed() ? 'Cerrar preferencias' : 'Cerrar sin activar analítica');
   };
 
-  // API pública de Vercel; la cola nunca contiene eventos previos a la autorización.
-  const va = (...args) => window.va?.(...args);
-  const beforeSend = (event) => {
-    if (!allowed() || !safeReferrer() || event.type !== 'pageview') return null;
-    try {
-      const url = new URL(event.url);
-      if (url.origin !== location.origin || !paths.has(url.pathname)) return null;
-      return { ...event, url: url.origin + url.pathname };
-    } catch { return null; }
-  };
-  const sendView = () => {
-    if (!scriptLoaded || viewSent || !allowed() || !safeReferrer()) return;
-    viewSent = true;
-    va('pageview', { path: location.pathname });
+  // La política se aplica al insertar un meta NUEVO; modificar uno existente
+  // no cambia su CSP. Bloquea también el envío final del SDK al recargar.
+  // No cancela conexiones iniciadas previamente ni desmonta el código del SDK.
+  const blockConnections = () => {
+    if (connectionsBlocked) return;
+    const meta = document.createElement('meta');
+    meta.httpEquiv = 'Content-Security-Policy';
+    meta.content = "connect-src 'none'";
+    document.head.append(meta);
+    connectionsBlocked = true;
   };
   const start = () => {
     if (!allowed() || !production || !paths.has(location.pathname) || !safeReferrer()) return;
-    if (scriptRequested) { sendView(); return; }
+    if (scriptRequested) return;
     scriptRequested = true;
-    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    va('beforeSend', beforeSend);
     const script = document.createElement('script');
-    script.src = '/_vercel/insights/script.js';
-    script.defer = true;
-    script.dataset.disableAutoTrack = '1';
+    script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    script.type = 'module';
+    script.dataset.cfBeacon = JSON.stringify({ token: TOKEN, spa: false });
     script.referrerPolicy = 'no-referrer';
-    script.addEventListener('load', () => { scriptLoaded = true; sendView(); });
+    // El runtime oficial mide automáticamente; no se crean eventos ni callbacks
+    // que transformen su payload. Los recursos LCP del sitio son locales sin query.
     script.addEventListener('error', () => { loadFailed = true; updateStatus(); });
     document.head.append(script);
   };
@@ -100,21 +95,54 @@
     const target = returnFocus || document.querySelector('#contenido');
     target?.focus({ preventScroll: true });
   };
-  const choose = (value) => {
+  // Devuelve si el documento siguiente leerá la elección nueva o ninguna elección.
+  // Ante fallo de escritura y eliminación, una aceptación antigua puede persistir:
+  // conservar el documento bloqueado y explicar el problema, sin recargarlo.
+  const persist = (value) => {
     choice = { choice: value, updatedAt: Date.now() };
     withdrawalNotSaved = false;
-    try { localStorage.setItem(KEY, JSON.stringify(choice)); storageAvailable = true; }
+    try {
+      const serialized = JSON.stringify(choice);
+      localStorage.setItem(KEY, serialized);
+      if (localStorage.getItem(KEY) !== serialized) throw new Error('Elección no conservada');
+      storageAvailable = true;
+      return true;
+    }
     catch {
       storageAvailable = false;
       if (value === 'denied') {
-        try { localStorage.removeItem(KEY); }
+        try {
+          localStorage.removeItem(KEY);
+          if (localStorage.getItem(KEY) !== null) throw new Error('Elección anterior conservada');
+          return true;
+        }
         catch { withdrawalNotSaved = true; }
       }
     }
+    return false;
+  };
+  const withdraw = () => {
+    if (revoking) return;
+    revoking = true;
+    // Sin SDK instalado no hay colectores que detener: conservar los fetch
+    // propios del sitio, por ejemplo la carga del mapa al entrar en su sección.
+    if (scriptRequested) blockConnections();
+    const safeToReload = persist('denied');
     updateStatus();
-    // El error permanece visible; cerrar nunca cuenta como aceptación.
+    if (scriptRequested && safeToReload) { location.reload(); return; }
+    revoking = false;
     if (storageAvailable) close();
-    if (value === 'accepted') start();
+    else if (!dialog.open) dialog.showModal();
+  };
+  const choose = (value) => {
+    if (value === 'denied') { withdraw(); return; }
+    if (value !== 'accepted') return;
+    const persisted = persist('accepted');
+    if (!persisted && scriptRequested) blockConnections();
+    updateStatus();
+    // Una CSP aplicada no se puede relajar en este documento.
+    if (persisted && connectionsBlocked) { location.reload(); return; }
+    if (persisted) { close(); start(); }
   };
   const dismiss = () => {
     if (!choice) choose('denied');
@@ -133,14 +161,20 @@
       if (!dialog.open) dialog.showModal();
     });
   });
-  // Una retirada en otra pestaña o durante el historial bloquea los siguientes envíos.
+  // Registrar antes del SDK: si la aceptación vence o cambia, se aplica la CSP
+  // antes de su listener de ocultación. storage y pageshow cubren otras pestañas
+  // y documentos restaurados desde el historial, sin parchear APIs del navegador.
   const sync = () => {
-    if (storageAvailable) choice = readChoice();
+    const current = readChoice();
+    if (scriptRequested && (!storageAvailable || current?.choice !== 'accepted')) { withdraw(); return; }
+    if (storageAvailable) choice = current;
     updateStatus();
+    if (connectionsBlocked && storageAvailable && current?.choice === 'accepted') { location.reload(); return; }
     start();
   };
   window.addEventListener('storage', event => { if (event.key === KEY || event.key === null) sync(); });
   window.addEventListener('pageshow', event => { if (event.persisted) sync(); });
+  document.addEventListener('visibilitychange', sync, { capture: true });
   updateStatus();
   if (choice) start();
   else if (!document.body.classList.contains('legal-page')) dialog.showModal();
