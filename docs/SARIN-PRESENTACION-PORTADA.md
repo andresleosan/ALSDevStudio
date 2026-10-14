@@ -32,6 +32,22 @@ Cronos repitió Pages4/4, integración10/10 y fotogramas16/16 PASS en línea: re
 
 La promoción continúa las animaciones cuya publicación el titular autorizó expresamente en esta sesión, con esta extensión concreta solicitada a la firma. No cambia el dominio, acceso, datos ni proveedores. El registro del candidato es documental; los archivos públicos promovidos son los revisados.
 
+## Producción · cierre 2026-10-14
+
+Publicada por fast-forward a main `a3fe19a0eb23a3e9f870aaeb9d59169c77432cf5`, despliegue Cloudflare `34d57bd6`. La fuente funcional sigue siendo `f46e181`; el registro del candidato y este cierre son documentales.
+
+Cronos repitió en https://www.alsdevstudio.com/ Pages 4/4 e integración 10/10 PASS. Después de corregir el ensayo descrito abajo, ejecutó `node test-results/sarin-motion-frames.mjs` con las variables `SARIN_QA_BASE=https://www.alsdevstudio.com`, `SARIN_MODULE_DELAY=1200` y `SARIN_QA_LABEL=production-root`: exit 0, 16/16 registros PASS, cero errores. En 390/1440 px el controlador permaneció idle y visible, antes de DCL, a 1724/1578 ms; analytics.js seguía retenido. El aviso abierto tampoco consumió la escena y rechazar activó la entrada. Nombre y descripción parciales/finales conservan sus rectángulos, altura y lectura; ninguna solicitud externa o de medición en author.
+
+Capturas de móvil y escritorio inspeccionadas. Chrome real confirma author finished, originales completos, clones vacíos, globo visible y sin overflow; captura `test-results/sarin-author-live-chrome.jpg`. Informes finales `sarin-author-production-scenes.json` y `sarin-author-production-frames.json`; informe bruto de repetición `sarin-motion-frames-production-root.json`.
+
+Revisión HTTP independiente: ocho recursos 200 iguales al build (solo normalización CRLF/LF en texto), canonical www/indexable, CSP/Analytics intactos y cuatro redirecciones 301 con ruta/query conservadas. Sin bloqueantes. Cronos comprobó que el diff de archivos públicos contra `f46e181` es vacío antes del cierre; no se amplió el alcance de la publicación autorizada.
+
+## Prueba de carga lenta
+
+La primera ejecución de fotogramas en producción falló en la premisa temporal del ensayo: el plazo fijo de 800 ms para retener analytics.js venció antes de inicializar el controlador. No hubo errores de página y author permaneció idle. Se reprodujo la carrera reteniendo mascot-scenes.js 1200 ms; la observación llegó a 1601 ms, con la escena sin consumir y el aviso abierto. Evidencia conservada en `test-results/sarin-author-production-initial-race.json` y `sarin-motion-race.json`.
+
+El ensayo ahora libera analytics.js después de observar el controlador idle, al menos 60% visible, antes de DOMContentLoaded y sin animaciones. La espera se libera también en finally. El módulo se demora 1200 ms para comprobar dependencias lentas; después se observa el aviso abierto durante 700 ms y se rechaza antes de comprobar la reproducción. Esta corrección afecta únicamente a la herramienta de QA; los archivos públicos permanecen idénticos al candidato.
+
 ## Reversión
 
 Base conocida `3a69dec3da7b8da8457db454198a59e055482745`. Revertir el commit funcional mediante commit nuevo y push normal a main; resolver la documentación manteniendo la evidencia, esperar Pages y verificar recuperación de la firma estática y las siete escenas anteriores. Sin cambios de DNS, correo, hosting, analítica ni almacenamiento.
