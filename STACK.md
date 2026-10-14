@@ -144,3 +144,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - Web Analytics manual, con `spa: false`; inserción automática desactivada. Elección propia y específica de Cloudflare por 180 días. No reutilizar aceptación de Vercel. Bloquear nuevas conexiones de medición mediante una CSP adicional antes de recargar al revocar; no cancelar retroactivamente solicitudes iniciadas.
 - Costo previsto: USD 0/mes en Pages Free y Web Analytics, dentro de los límites vigentes (500 builds/mes, 20.000 archivos, 25 MiB por archivo). No se contrata plan ni se habilitan Functions/R2. Dominio y correo conservan sus costos existentes.
 - Motivo de Pages frente a Workers Static Assets: integración GitHub ya disponible y posibilidad de usar `www` con DNS externo; Workers es la recomendación general para proyectos nuevos, pero requeriría trasladar la zona DNS para Custom Domains. Decisión y reversión en `docs/MIGRACION-CLOUDFLARE.md`.
+
+### Nueva mascota ilustrada · 2026-10-13
+- Dos PNG locales transparentes del mismo robot, generados mediante `imagegen` integrado a partir de la referencia del titular. Mantener los nombres `mascot-welcome.png` y `mascot-laptop.png`, ya permitidos por el build de Pages.
+- Renderizado suave (`image-rendering: auto`) para la nueva ilustración. Reservar la proporción real en HTML y conservar los tamaños y posiciones existentes de portada/contacto; sin animación, dependencias de cliente ni conexiones adicionales.

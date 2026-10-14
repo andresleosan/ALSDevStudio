@@ -82,3 +82,7 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 - El titular solicita migrar el portafolio comercial desde Vercel Hobby a Cloudflare. Conservar dominio, diseño, proyectos, contacto, correo en Porkbun y despliegues desde GitHub.
 - Preparar Cloudflare Pages con una salida pública dedicada, cabeceras de seguridad y páginas legales actualizadas. Mantener estadísticas opcionales mediante instalación manual de Cloudflare Web Analytics y solicitar una elección nueva para este proveedor.
 - Validar una versión de prueba antes del cambio del dominio. Sin contratación de servicios de pago ni traslado del registro del dominio. La aprobación del corte de producción se solicita con la versión revisable y el plan de reversión preparados.
+
+## Nueva mascota ilustrada · 2026-10-13
+- El titular solicita reemplazar la mascota pixel art usando su nueva lámina de tres robots como referencia. Robot blanco y gris con visor oscuro, ojos turquesa y marca ALS; ilustración suave, fondo transparente y personalidad cercana.
+- Mantener las dos ubicaciones existentes: bienvenida en portada y robot con portátil en contacto. Conservar el protagonismo del contenido y comprobar tamaños, proporciones y lectura en móvil antes de publicar.

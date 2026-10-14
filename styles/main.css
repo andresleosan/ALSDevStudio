@@ -105,7 +105,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .hero-copy { margin-top:28px; max-width:530px; color:var(--muted); font-size:clamp(17px,2vw,21px); }
 .hero-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:38px; }
 .hero-signature { display:flex; align-items:center; gap:18px; margin-top:32px; }
-.als-mascot { display:block; flex:none; max-width:100%; height:auto; object-fit:contain; image-rendering:pixelated; }
+.als-mascot { display:block; flex:none; max-width:100%; height:auto; object-fit:contain; image-rendering:auto; }
 .mascot-welcome { width:72px; }
 .hero-meta { display:grid; gap:4px; min-width:0; color:var(--muted); font-size:13px; }
 .hero-meta span:first-child { color:var(--paper); font-weight:600; }
