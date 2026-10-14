@@ -32,10 +32,12 @@ La revisión en Chrome del candidato también detectó que el salto al ancla Alc
 
 Tipos: TSC estricto aislado del nuevo módulo PASS con TypeScript ya disponible. TSC global de jsconfig devuelve 11 errores en `scripts/analytics.js`; ese archivo es idéntico a la base cd0536d y no se modifica en esta entrega. La comprobación global de tipos no se reporta como aprobada. Las pruebas de navegador/Pages de consentimiento y contenido sí pasan.
 
-Candidato inicial `633f7b2`: https://17604170.alsdevstudio.pages.dev/. Pages4/4, integración10/10 y fotogramas6/6 PASS en línea; main/módulos normalizados CRLF y PNG binario iguales al build, headers/noindex correctos. Candidato final con el ajuste de ancla y producción: pendientes de completar con URL y evidencia.
+Candidato inicial `633f7b2`: https://17604170.alsdevstudio.pages.dev/. Pages4/4, integración10/10 y fotogramas6/6 PASS en línea; main/módulos normalizados CRLF y PNG binario iguales al build, headers/noindex correctos.
+
+Candidato final `2e24e54`: https://bf38aa53.alsdevstudio.pages.dev/. Pages4/4 y fotogramas/anclas8/8 PASS; HTML/CSS coinciden con el build revisado. Chrome real confirma actorTop117,56 frente a navBottom68,59, sin overflow; vuelo finished y las otras dos zonas idle antes de visitarlas. Captura `test-results/sarin-scenes-preview-chrome.jpg`. Producción pendiente de autorización específica de esta entrega; main conserva cd0536d.
 
 ## Reversión
 
 Base pública conocida: `cd0536ddcc09962cf6e7bea808c8e7809ec57716`.
 
-Revertir el commit funcional de escenas mediante un commit normal y push a main. Pages reconstruirá la versión anterior; no reescribir historia. Restaurar conjuntamente HTML/CSS/main y las allowlists del build, retirando el módulo y el PNG nuevo de la salida pública. No modifica preferencias guardadas, reglas de redirección ni cuenta de Cloudflare. Confirmar en www el HTML/CSS anterior y la navegación/contacto tras el despliegue.
+Revertir conjuntamente los commits funcionales `2e24e54` y `633f7b2` mediante un commit normal y push a main, o revertir el commit único de promoción si la entrega se integra con squash. Pages reconstruirá la versión anterior; no reescribir historia. Restaurar conjuntamente HTML/CSS/main y las allowlists del build, retirando el módulo y el PNG nuevo de la salida pública. No modifica preferencias guardadas, reglas de redirección ni cuenta de Cloudflare. Confirmar en www el HTML/CSS anterior y la navegación/contacto tras el despliegue.
