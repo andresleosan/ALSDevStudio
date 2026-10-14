@@ -24,7 +24,13 @@ Informes locales: `test-results/sarin-steps-local-scenes.json` y `sarin-steps-lo
 
 Seguridad y revisión independiente: guardas de todos los pares antes de ocultar originales, clones decorativos, encabezados/lista conservados y cleanup central. Texto fijo mediante textContent; sin datos, secretos, dependencias, red, permisos, CSP o integraciones nuevas. Sin bloqueantes. QA Chromium no sustituye una evaluación con lector de pantalla.
 
-Pendiente candidato Pages y promoción dentro de la revisión de las animaciones autorizadas en esta sesión.
+## Candidato verificado
+
+Fuente funcional `7ef33d7d2ef77de974599d8ee9b2df48170e735b`, rama `feat/sarin-etapas-animadas`. Cloudflare muestra https://1783acac.alsdevstudio.pages.dev/ asociado a ese commit.
+
+Cronos repitió Pages4/4, integración10/10 y fotogramas14/14 PASS en el candidato: artefactos iguales al build, preview noindex, controles/privacidad/rutas conservados. Chrome real confirma las tres tarjetas `finished`, títulos completos, los tres globos de252,6875px y sin overflow. Captura `test-results/sarin-steps-candidate-chrome.jpg`; informes `sarin-steps-preview-scenes.json` y `sarin-steps-preview-frames.json`.
+
+La promoción continúa la extensión concreta solicitada del componente Sarin y sus animaciones, cuya publicación el titular autorizó expresamente en esta sesión. No cambia el dominio, acceso, proveedores ni datos. El registro del candidato solo modifica documentación; los archivos públicos promovidos son los revisados.
 
 ## Reversión
 
