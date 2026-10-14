@@ -1,7 +1,7 @@
 # Nueva mascota ALS ilustrada
 
-Fecha: 2026-10-13. Estado: candidata verificada; publicación de producción
-autorizada explícitamente por el titular.
+Fecha: 2026-10-13. Estado: publicada y verificada en producción, tras autorización
+explícita del titular.
 
 Solicitud: sustituir la mascota pixel art usando la lámina de tres robots que
 proporcionó el titular. Se generaron dos poses del mismo robot blanco/gris, con
@@ -46,6 +46,21 @@ byte a byte con los archivos locales; preview `noindex` comprobado. Revisión
 independiente sin bloqueantes, proporciones/metadata/alfa y allowlist correctos.
 El titular aprobó expresamente «Sí, publicar la mascota» después de revisar
 el candidato y la captura de contacto.
+
+## Producción
+
+Promoción mediante fast-forward y push normal a `main` en
+`e19cf5795518c6e48f23360e0804866c62e19b1c`. Pages publicó el deployment
+`9cb52863-9760-4940-aaff-4f65d6563f02`, disponible en el dominio canónico
+https://www.alsdevstudio.com/.
+
+`MASCOT_QA_BASE=https://www.alsdevstudio.com node test-results/mascot-qa.mjs`:
+PASS en ocho anchos y sin JavaScript; sin errores, solapamientos o desbordamiento.
+Ambos PNG de producción coinciden byte a byte con los archivos revisados, CSS
+suave confirmado, HTTPS válido y dominio indexable. Capturas de producción
+regeneradas en `test-results/mascot-hero-1440.png`, `mascot-hero-390.png`,
+`mascot-contacto-1440.png` y `mascot-contacto-390.png`.
+Las notas posteriores no modifican el artefacto público.
 
 ## Reversión
 
