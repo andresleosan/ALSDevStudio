@@ -496,18 +496,19 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Lista `als_pages_to_www` y regla `ALS Pages a www` creadas y Enabled. `node test-results/pages-canonical-qa.mjs` PASS: siete 301 (HTTP/HTTPS, documentos, query codificada, asset y 404 final), rutas/queries conservadas, destino www200 sin bucles/indexable y preview por hash200/noindex. Evidencia y reversión en `docs/PAGES-CANONICAL.md`; sin cambios de código cliente, DNS, correo ni regla BPT existente.
 
 ## MAP-ARGENTINA · Argentina y recorrido de dos segundos · 2026-10-13
-- Estado: candidata verificada en Cloudflare; publicación autorizada, pendiente de despliegue. Añadir Argentina después de Brasil en lista/datos/SVG y actualizar las referencias de siete a ocho. Usar geometría local disponible y ubicación ilustrativa coherente.
+- Estado: desplegada y verificada en producción. Añadir Argentina después de Brasil en lista/datos/SVG y actualizar las referencias de siete a ocho. Usar geometría local disponible y ubicación ilustrativa coherente.
 - Cambiar el recorrido a 2000 ms y verificar sincronización, pausa/manual, temporizador único, visibilidad, teclado, movimiento reducido y móvil.
 - QA `map-autoplay-qa.mjs` repetida por Cronos: diez comprobaciones PASS, corte1999/2000, ciclo completo, controles y sincronización. Axe sin violaciones, sin errores ni solicitudes externas. Revisión estática sin hallazgos críticos; límites del emulador y reversión en `docs/ARGENTINA-SARIN.md`.
 
 ## PROCESS-SARIN · Sarin bot explica las etapas · 2026-10-13
-- Estado: candidata verificada en Cloudflare; publicación autorizada, pendiente de despliegue. Sustituir los tres SVG por el robot ALS en poses de bienvenida, construcción con portátil y revisión. Texto de Sarin en globos, conservando los tres títulos y el alcance real del servicio.
+- Estado: desplegada y verificada en producción. Sustituir los tres SVG por el robot ALS en poses de bienvenida, construcción con portátil y revisión. Texto de Sarin en globos, conservando los tres títulos y el alcance real del servicio.
 - Comprobar build público/PNG, dimensiones reservadas, lectura y controles en 320–1440 px, teclado, axe y funcionamiento sin JavaScript. Preparar preview y reversión antes de solicitar la publicación.
 - Operador eligió globos de texto. Build 12/12 PASS y salida 183 archivos; QA del proceso repetida por Cronos, siete anchos, PNG/proporciones, axe320/1440, reduced-motion y sinJS PASS. Sin hallazgos críticos. Evidencia y reversión en `docs/ARGENTINA-SARIN.md`.
 - Preview `https://8f2ced74.alsdevstudio.pages.dev/`, funcional7c981e1: Pages4/4PASS, PNGidénticos/textosnormalizados CRLF/LF, revisión Chrome real de Argentina/Sarin y redirección301preservada. Documentación posterior conserva los archivos públicos.
 
 ## CONTACT-ORDER · WhatsApp a la izquierda, correo a la derecha · 2026-10-13
-- Estado: aprobada en QA local; publicación autorizada. Reordenar bloques HTML, columnas y divisor CSS; WhatsApp primero en móvil y teclado. Mantener selección, mensajes y mailto; jerarquía de encabezados coherente.
+- Estado: desplegada y verificada en producción. Reordenar bloques HTML, columnas y divisor CSS; WhatsApp primero en móvil y teclado. Mantener selección, mensajes y mailto; jerarquía de encabezados coherente.
 - QA proporcional: 320/390/900/901/1440, geometría, Tab/Shift+Tab, tres opciones y mensajes, axe y lectura sin JavaScript. No se envían mensajes de prueba.
 - El operador solicitó el ajuste y autorizó publicar los cambios pendientes. Incorporar a la misma entrega y verificar el candidato antes de promover a main.
 - Build12/12PASS y QA de navegador320/390/900/901/1440: orden y teclado, mensajes, mailto, noJS y axe320/1440PASS. Sin hallazgos críticos ni bloqueo en revisión independiente. Ver `docs/ARGENTINA-SARIN.md` y `test-results/contact-order-results.json`.
+- Preview final123b8648 Pages4/4PASS. Entrega completa promovida a main: fuenteeb484ee, desplieguefuncional4603e875. Producciónwww Pages4/4PASS, PNG/textos de mapa comprobados, redirección301preservada y contacto revisado en Chrome. Evidencia final y reversión en `docs/ARGENTINA-SARIN.md`; commits de cierre no cambian assets públicos.

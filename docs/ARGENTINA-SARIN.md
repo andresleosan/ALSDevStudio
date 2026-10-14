@@ -35,6 +35,13 @@ Rama `design/sarin-argentina`, commit funcional `7c981e10fe1732ce7eb853c7ce4a5e0
 - Chrome del operador: Sarin con tres poses/globos y Argentina seleccionada con coordenadas y silueta correctas. Evidencia: `test-results/sarin-preview-chrome.jpg` y `test-results/argentina-preview-chrome.jpg`.
 - `https://alsdevstudio.pages.dev/?qa=sarin`: 301 a `https://www.alsdevstudio.com/?qa=sarin`, conservado.
 
-Producción autorizada por el operador; ejecutar tras verificar el candidato que incluye contacto. El preview inicial8f2ced74 contiene Argentina/Sarin; el ajuste de contacto requiere un nuevo despliegue de la rama candidata. Los commits exclusivamente de documentación no alteran los archivos públicos revisados.
+El candidato final con contacto, commit `eb484ee4c00a475dac554b2751dc93fd3be980d3`, fue verificado en https://123b8648.alsdevstudio.pages.dev/ (despliegue `123b8648-ae80-4bd5-96ff-13210026df9b`): Pages4/4PASS y revisión visual en Chrome. Captura `test-results/contact-order-preview-chrome.jpg`.
 
-Si falla tras publicar, usar el rollback de Cloudflare Pages al despliegue base `ab94301e-9078-40ed-9912-574a677d7132`, y revertir el commit funcional de este cambio en `main` mediante un nuevo commit normal. No usar force push ni reset remoto. Confirmar que el mapa vuelve a siete países/4200 ms y el proceso a sus tres ilustraciones anteriores. La regla Bulk Redirect del dominio Pages permanece independiente y no requiere reversión.
+Producción autorizada por el operador y aplicada mediante fast-forward normal y push a `main`. Despliegue funcional `4603e875-5d45-4b89-86f0-67bf749fd6e1`, fuente `eb484ee4c00a475dac554b2751dc93fd3be980d3`. URL: https://www.alsdevstudio.com/.
+
+- `PAGES_QA_BASE=https://www.alsdevstudio.com node --test .github/cloudflare/pages.test.mjs`: 4/4 PASS. HTML/CSS y documentos coinciden normalizando CRLF/LF; cabeceras, enlaces/404, consentimiento y navegación/lectura a320/1440 y sinJS correctos.
+- Nueva pose PNG idéntica byte a byte; SVG y módulo del mapa iguales normalizando solo CRLF/LF. Assets de producción sin noindex. Pages301 hacia www con query conservada.
+- Chrome del operador: contacto con WhatsApp izquierda y correo derecha; captura `test-results/contact-order-live-chrome.jpg`. Vista de producción dejada abierta.
+- Los commits posteriores de cierre son exclusivamente documentales y conservan los archivos públicos verificados.
+
+Si falla tras publicar, usar el rollback de Cloudflare Pages al despliegue base `ab94301e-9078-40ed-9912-574a677d7132`, y revertir los commits funcionales en orden inverso (`eb484ee`, después `7c981e1`) en `main` mediante nuevos commits normales. No usar force push ni reset remoto. Confirmar que el mapa vuelve a siete países/4200 ms, el proceso a sus tres ilustraciones anteriores y el contacto a correo izquierda/WhatsApp derecha. La regla Bulk Redirect del dominio Pages permanece independiente y no requiere reversión.
