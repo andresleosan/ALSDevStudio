@@ -1,7 +1,7 @@
 # Migración de ALS DevStudio a Cloudflare
 
-Fecha: 2026-10-13. Estado: candidato público verificado en Cloudflare; dominio
-canónico aún en Vercel, pendiente de aprobación explícita del corte.
+Fecha: 2026-10-13. Estado: candidato público verificado; corte de producción
+autorizado explícitamente por el titular y en ejecución.
 
 ## Alcance y ruta
 
@@ -16,6 +16,7 @@ Proyecto Pages `alsdevstudio`, integración GitHub existente y `NODE_VERSION=22`
 La rama de Pages durante la preparación es `migration/cloudflare`; al promover
 la versión aprobada, cambiarla a `main` después de integrar el código mediante
 push normal. No usar el `main` anterior para construir este candidato.
+Promoción ejecutada mediante fast-forward y push normal a `main` en `e4cdabd`.
 Se copia una lista permitida de archivos públicos, nunca la raíz del repositorio.
 No se publican documentos internos, resultados de QA, configuración de cuentas
 ni herramientas. Cabeceras mediante `_headers` y un 404 propio. El build adapta
