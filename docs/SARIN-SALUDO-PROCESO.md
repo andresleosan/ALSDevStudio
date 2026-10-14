@@ -21,7 +21,13 @@ RED de tres casos nuevos observado antes de implementación. Cronos inspeccionó
 
 Revisión de seguridad: texto fijo escrito con `textContent`, sin datos/secretos, integraciones, endpoints, dependencias ni permisos nuevos; CSP y Analytics intactos. Revisión independiente sin bloqueantes. Ajustes de QA: tolerancia numérica 1e-12 para interpolación WAAPI en límites binarios y fallback del fixture alineado con el saludo estático real.
 
-Pendiente preparar y comprobar candidato Pages antes de promover a producción, dentro de la corrección autorizada de las animaciones.
+## Candidato verificado
+
+Fuente funcional `a92d8437fccaa70b18a9d9cba85f98ea3753e88e`, rama `feat/sarin-saludo-proceso`. Cloudflare muestra despliegue `b861a9ea-b66a-4c9e-be12-207ebf80c344`, https://b861a9ea.alsdevstudio.pages.dev/.
+
+Cronos repitió en el candidato Pages4/4, integración10/10 y fotogramas8/8 PASS. HTML/CSS/módulo y PNG coinciden con `dist`, preview noindex y protección de archivos internos conservada. Chrome real confirma `process: finished`, texto completo, sin overflow y composición de tres globos iguales. Captura `test-results/sarin-greeting-candidate-process.jpg`; reportes de candidato guardados en `sarin-scenes-preview-results.json` y `sarin-motion-preview-frames.json`.
+
+La publicación continúa dentro de las correcciones concretas de las animaciones que el titular autorizó expresamente («Sí, publicar las animaciones») en esta sesión. Esta iteración no cambia proveedor, planes, datos, acceso ni el alcance de la publicación. La promoción conserva los mismos archivos públicos revisados; el registro del candidato es documental.
 
 ## Reversión
 
