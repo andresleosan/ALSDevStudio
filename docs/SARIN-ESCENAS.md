@@ -34,13 +34,15 @@ Tipos: TSC estricto aislado del nuevo módulo PASS con TypeScript ya disponible.
 
 Candidato inicial `633f7b2`: https://17604170.alsdevstudio.pages.dev/. Pages4/4, integración10/10 y fotogramas6/6 PASS en línea; main/módulos normalizados CRLF y PNG binario iguales al build, headers/noindex correctos.
 
-Candidato final `2e24e54`: https://bf38aa53.alsdevstudio.pages.dev/. Pages4/4 y fotogramas/anclas8/8 PASS; HTML/CSS coinciden con el build revisado. Chrome real confirma actorTop117,56 frente a navBottom68,59, sin overflow; vuelo finished y las otras dos zonas idle antes de visitarlas. Captura `test-results/sarin-scenes-preview-chrome.jpg`. Producción pendiente de autorización específica de esta entrega; main conserva cd0536d.
-
-## Reversión
+Candidato final `2e24e54`: https://bf38aa53.alsdevstudio.pages.dev/. Pages4/4 y fotogramas/anclas8/8 PASS; HTML/CSS coinciden con el build revisado. Chrome real confirma actorTop117,56 frente a navBottom68,59, sin overflow; vuelo finished y las otras dos zonas idle antes de visitarlas. Captura `test-results/sarin-scenes-preview-chrome.jpg`. La autorización y publicación se registran abajo.
 
 ## Publicación autorizada
 
-El titular autorizó expresamente el 2026-10-13: «Sí, publicar las animaciones», para las tres escenas verificadas en bf38aa53 y push a main. Promoción por fast-forward de la rama candidata, sin cambios de archivos públicos respecto de 2e24e54. Build público repetido 12/12 PASS antes de promover; seguridad y reversión revisadas. Verificación del despliegue en www pendiente.
+El titular autorizó expresamente el 2026-10-13: «Sí, publicar las animaciones», para las tres escenas verificadas en bf38aa53 y push a main. Promoción por fast-forward de la rama candidata, sin cambios de archivos públicos respecto de 2e24e54. Build público repetido 12/12 PASS antes de promover; seguridad y reversión revisadas.
+
+Publicación funcional en main `2403932faee9e9b8221320e9b9b5ba83a47d0429`, deployment Pages `e977d5b9`; www devuelve200 y es indexable. Cronos repitió sobre https://www.alsdevstudio.com: Pages4/4PASS, integración10/10PASS y fotogramas/anclas8/8PASS. Tres escenas terminan sin bucles; móvil/reducido/sinJS, lectura/controles/18proyectos y contacto conservados. Informes de QA ahora registran el dominio principal; capturas en `test-results/`.
+
+Revisión HTTP independiente: siete recursos coinciden con dist, texto normalizado CRLF y PNG binario exacto; canonical y CSP correctos, analytics idéntico a la base. Seis redirecciones301 desde Pages/8f conservan rutas/query hacia www, sin bucles ni ampliación del alcance. No se añadieron scripts externos ni primitivas de red al módulo. El commit de cierre documental no modifica los archivos públicos.
 
 ## Reversión de producción
 
