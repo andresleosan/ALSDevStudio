@@ -26,7 +26,11 @@ Cronos repitió módulo60/60 PASS, build tests12/12 PASS, TSC aislado/sintaxis/d
 
 QA integrada10/10 en320/390/680/681/900/901/1440, noJS/reducido/axe; fotogramas18/18 con diez trayectos, cinco mensajes, giros y continuidad, geometría estable y otras escenas conservadas. Catálogo6/6 en320/1440 normal/reducido/noJS: orden de18 anteriores, nuevo19, ocho Productos, teclado, navegación19→1, destino externo/noopener y siete imágenes/dimensiones. Se corrigió una expectativa del ensayo nuevo que comparaba la URL inicial del hero sin normalizar la barra final; producto intacto. Capturas de cinco mensajes y ambos giros inspeccionadas.
 
-Informes: `test-results/sarin-catalog-flight-local-scenes.json`, `sarin-motion-frames-catalog-flight-local.json` y `catalog-qa-catalog-flight-local.json`. TSC global conserva su límite previo en Analytics; no se afirma auditoría completa de lectores de pantalla/WCAG. Candidato y aprobación de la publicación del nuevo proyecto pendientes.
+Informes: `test-results/sarin-catalog-flight-local-scenes.json`, `sarin-motion-frames-catalog-flight-local.json` y `catalog-qa-catalog-flight-local.json`. TSC global conserva su límite previo en Analytics; no se afirma auditoría completa de lectores de pantalla/WCAG.
+
+Candidato `610652e6` de `663503b`: Cronos repitió Pages4/4 y catálogo6/6 PASS en línea. HTTP focal8/8 PASS: controlador exacto y siete capturas/variantes idénticas a dist con MIME correcto. El ensayo Pages verifica artefactos, canonical/cabeceras/noindex y ausencia de conexiones al rechazar Analytics. Chrome real confirma flight playing, cinco mensajes, selección que avanza en el ciclo, giro visible, cero controles de vuelo y sin overflow. Captura del proyecto en `catalog-card-sarin-normal-1440-catalog-flight-preview.png` y giro en `sarin-catalog-flight-preview-chrome.jpg`; candidato abierto como entregable. Informes `catalog-qa-catalog-flight-preview.json` y `sarin-catalog-flight-http-preview.json`.
+
+Producción pendiente: la autorización previa cubría las animaciones; esta publicación también añade un nuevo proyecto al portafolio, así que se presenta el candidato concreto antes de pedir confirmación del conjunto. No se promueve main hasta recibirla.
 
 ## Reversión
 
