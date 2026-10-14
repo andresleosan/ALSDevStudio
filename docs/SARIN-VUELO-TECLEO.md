@@ -27,6 +27,8 @@ Informes y capturas en `test-results/sarin-scenes-results.json`, `sarin-motion-f
 
 ## Publicación y reversión
 
-Candidato y producción pendientes de registrar después de la verificación pública. Esta es una corrección del componente cuya publicación se autorizó expresamente en la sesión; no se amplía infraestructura ni contratación.
+Candidato funcional `abe29f5630d1bf0b42956921a4245aae9ccadc72`: https://d4833e50.alsdevstudio.pages.dev/. Pages4/4, integración10/10 y pausa/tecleo/ancla6/6 PASS en línea, incluidos coordenadas/ancho idénticos del overlay. Chrome real confirma pausa nativa, etiqueta Reanudar vuelo, estado paused y sin overflow.
+
+Esta es una corrección del componente cuya publicación se autorizó expresamente en la sesión («Sí, publicar las animaciones»), seguida de la petición de ajustar vuelo/tecleo y de la confirmación de repetición visible. Promoción por fast-forward sin cambios de archivos públicos. No se amplía infraestructura ni contratación. Producción pendiente de verificación tras el push.
 
 Base pública: `8102a6a40a9dc7ec7c931b9452c4746e246ce4e4`. Revertir el commit funcional de esta revisión mediante un nuevo commit normal y push a main, sin reescribir historia. Restaurar módulo, HTML/CSS y allowlist, retirando solo los dos PNG de tecleo de la salida pública. Verificar www, texto/controles y las tres escenas originales después del rebuild; no modificar DNS, correo, analítica ni preferencias guardadas.
