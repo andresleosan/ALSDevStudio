@@ -14,6 +14,14 @@ const globalFixture = `<section data-mascot-scene="global" data-mascot-state="id
 </section>`;
 const authorCopy = ['Andrés Santiago', 'Desarrollo independiente · Trabajo remoto'];
 const authorGreeting = '¡Hola! ¿Qué idea construimos hoy?';
+const flightMessages = [
+  'Una buena idea puede llegar lejos. Le damos forma contigo.',
+  'Tu negocio merece una web clara, útil y fácil de recorrer.',
+  'Tus productos pueden llegar más lejos con una tienda virtual.',
+  'Una aplicación a medida puede hacer más simple tu trabajo.',
+  'Definimos, construimos y revisamos contigo antes de publicar.',
+];
+const flightGreeting = `<div data-mascot-part="greeting">${flightMessages.map(text=>`<span data-mascot-flight-message>${text}</span>`).join('')}</div>`;
 const authorFixture = `<div class="hero-signature" data-mascot-scene="author" data-mascot-state="idle">
   <div class="hero-mascot-stage" data-mascot-actor aria-hidden="true">Sarin<span data-mascot-part="signal"></span></div>
   <div class="hero-signature-message"><p data-mascot-part="greeting" aria-hidden="true">${authorGreeting}</p>
@@ -52,6 +60,9 @@ body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fi
 [data-mascot-part="typing-a"],[data-mascot-part="typing-b"]{position:absolute;inset:0}
 [data-mascot-part="typing-b"]{opacity:0}
 [data-mascot-part="greeting"]{position:absolute;left:50%;top:50%;opacity:1;background:#071a2f;color:white}
+[data-mascot-scene="flight"] [data-mascot-part="greeting"]{display:grid}
+[data-mascot-flight-message]{grid-area:1/1;opacity:0}
+[data-mascot-flight-message]:first-child{opacity:1}
 [data-mascot-copy-typed]{position:absolute;inset:0;pointer-events:none}
 .process-bubble h3,.process-bubble p{position:relative;max-width:none;margin:8px 0}
 .process-bubble[data-mascot-part="window"]{width:300px;height:auto;min-height:140px}
@@ -63,7 +74,7 @@ body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fi
 p{max-width:40%;opacity:1}
 </style><button id="focus-anchor">Referencia de foco</button><main>
 <section id="sarin-flight" data-mascot-scene="flight" data-mascot-state="idle" aria-hidden="true"><p>Contenido permanente</p>
-  <div data-mascot-actor><span data-mascot-part="flying">Vuelo</span><span data-mascot-part="landed">Sarin</span></div><span data-mascot-part="trail">Estela</span><div data-mascot-part="greeting">Hola</div>
+  <div data-mascot-actor><span data-mascot-part="flying">Vuelo</span><span data-mascot-part="landed">Sarin</span></div><span data-mascot-part="trail">Estela</span>${flightGreeting}
 </section>
 <button type="button" data-mascot-toggle="sarin-flight" aria-controls="sarin-flight" aria-label="Pausar animación de Sarin" title="Pausar animación de Sarin" data-paused="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14"/></svg></button>
 <section data-mascot-scene="projects" data-mascot-state="idle">
@@ -98,8 +109,13 @@ const server = http.createServer(async (request, response) => {
         `<p><span data-mascot-copy-full>${steps[0][2]}</span></p>`) : stepsFixture;
       html = html.replace('<section data-mascot-scene="contact"', cards + '<section data-mascot-scene="contact"');
     }
-    if (request.url.includes('without=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '');
-    if (request.url.includes('invalid=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '<svg data-mascot-part="greeting"></svg>');
+    if (request.url.includes('without=greeting')) html = html.replace(flightGreeting, '');
+    if (request.url.includes('invalid=greeting')) html = html.replace(flightGreeting, '<svg data-mascot-part="greeting"></svg>');
+    if (request.url.includes('flightmessages=4')) html = html.replace(`<span data-mascot-flight-message>${flightMessages[4]}</span>`, '');
+    if (request.url.includes('flightmessages=6')) html = html.replace(flightGreeting, flightGreeting.replace('</div>', '<span data-mascot-flight-message>Extra</span></div>'));
+    if (request.url.includes('without=trail')) html = html.replace('<span data-mascot-part="trail">Estela</span>', '');
+    if (request.url.includes('without=flying')) html = html.replace('<span data-mascot-part="flying">Vuelo</span>', '');
+    if (request.url.includes('without=landed')) html = html.replace('<span data-mascot-part="landed">Sarin</span>', '');
     if (request.url.includes('author=1')) {
       html = html.replace('<main>', '<main>' + authorFixture);
       if (request.url.includes('invalidauthor=signal')) html = html.replace('<span data-mascot-part="signal"></span>', '<svg data-mascot-part="signal"></svg>');
@@ -218,8 +234,8 @@ test('vuelo repite un ciclo real con pausa central y conserva contenido y foco',
       x: new DOMMatrix(frame.transform).m41 })) };
   });
   assert.equal(timing.iterations, Infinity);
-  assert.equal(timing.duration, 8800);
-  assert.equal(timing.frames.find(frame => frame.offset === .27).x, timing.frames.find(frame => frame.offset === .72).x);
+  assert.equal(timing.duration, 88000);
+  assert.equal(timing.frames.find(frame => Math.abs(frame.offset-.027)<1e-8).x, timing.frames.find(frame => Math.abs(frame.offset-.072)<1e-8).x);
   const samples = await scene(page, 'flight').evaluate(element => {
     const actor = element.querySelector('[data-mascot-actor]');
     const animations = element.getAnimations({ subtree: true });
@@ -235,7 +251,7 @@ test('vuelo repite un ciclo real con pausa central y conserva contenido y foco',
   assert.ok(Math.abs(samples.x1 - samples.x2) < .1, 'El actor sostiene la posición central durante la pausa del ciclo');
   assert.ok(samples.headClearance >= 0, 'La cabeza cabe en el slot de vuelo');
   assert.deepEqual(samples.pose, ['0', '1']);
-  assert.ok(samples.nextX < samples.x1, 'El segundo ciclo vuelve al lado izquierdo');
+  assert.ok(samples.nextX > samples.x1, 'El segundo trayecto regresa desde el borde derecho');
   assert.equal(await scene(page, 'flight').locator('p').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await toggle(page).isVisible(), true);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'focus-anchor');
@@ -383,15 +399,15 @@ for (const [mode, options, setup] of [
   ['móvil', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }],
   ['puntero grueso', { hasTouch: true }],
   ['ahorro de datos', {}, () => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } })],
-]) test(`${mode}: repite 8000ms con desplazamiento corto de 28px`, async () => {
+]) test(`${mode}: superciclo de 80000ms entre bordes interiores`, async () => {
   const result = await pageFor(options, setup);
   await enter(result.page, 'flight');
   const timing = await scene(result.page, 'flight').locator('[data-mascot-actor]').evaluate(element => {
     const effect = element.getAnimations()[0].effect;
-    return { duration: effect.getTiming().duration, x: new DOMMatrix(effect.getKeyframes()[0].transform).m41 };
+    return { duration: effect.getTiming().duration, left:element.offsetLeft+new DOMMatrix(effect.getKeyframes()[0].transform).m41 };
   });
-  assert.equal(timing.duration, 8000);
-  assert.equal(timing.x, -28);
+  assert.equal(timing.duration, 80000);
+  assert.equal(timing.left, 12);
   await result.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await finished(result.page, 'flight');
   await clean(result);
@@ -545,17 +561,17 @@ test('resize recalcula el vuelo compacto conservando la fase y la pausa del usua
   await toggle(page).click();
   await pausedFlight(page);
   const calls = await page.evaluate(() => window.animationCalls.length);
-  const before = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => element.getAnimations()[0].currentTime / 8800);
+  const before = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => element.getAnimations()[0].currentTime / 88000);
   await page.setViewportSize({ width: 390, height: 720 });
-  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="flight"] [data-mascot-actor]').getAnimations()[0].effect.getTiming().duration === 8000);
+  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="flight"] [data-mascot-actor]').getAnimations()[0].effect.getTiming().duration === 80000);
   const after = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => {
     const animation = element.getAnimations()[0];
-    return { phase: animation.currentTime / 8000, playState: animation.playState,
-      xs: animation.effect.getKeyframes().map(frame => new DOMMatrix(frame.transform).m41) };
+    return { phase: animation.currentTime / 80000, playState: animation.playState,
+      xs: animation.effect.getKeyframes().map(frame => element.offsetLeft+new DOMMatrix(frame.transform).m41),sceneWidth:element.parentElement.clientWidth,actorWidth:element.offsetWidth };
   });
   assert.ok(Math.abs(before - after.phase) < .001);
   assert.equal(after.playState, 'paused');
-  assert.ok(after.xs.every(x => Math.abs(x) <= 28));
+  assert.ok(after.xs.every(x => x>=12&&x+after.actorWidth<=after.sceneWidth-12));
   assert.equal(await toggle(page).getAttribute('aria-label'), 'Reanudar animación de Sarin');
   assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
   await clean(result);
@@ -701,7 +717,7 @@ test('saludo extiende el ciclo, inmoviliza actor y muestra welcome/bubble solo e
     const duration = clock.effect.getTiming().duration;
     animations.forEach(animation => animation.pause());
     const sample = offset => {
-      animations.forEach(animation => { animation.currentTime = offset * duration; });
+      animations.forEach(animation => { animation.currentTime = offset * (duration / 10); });
       const matrix = new DOMMatrix(getComputedStyle(actor).transform);
       return { offset, x: matrix.m41, transform: [matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.m41, matrix.m42],
         parts: ['flying', 'landed', 'greeting', 'trail'].map(name => getComputedStyle(element.querySelector(`[data-mascot-part="${name}"]`)).opacity),
@@ -711,7 +727,7 @@ test('saludo extiende el ciclo, inmoviliza actor y muestra welcome/bubble solo e
     return { duration, iterations: clock.effect.getTiming().iterations, frames: clock.effect.getKeyframes(),
       samples: [0, .26, .27, .285, .29, .35, .43, .6, .699, .7, .701, .72, .74, .85, 1.05].map(sample) };
   });
-  assert.equal(samples.duration, 8800);
+  assert.equal(samples.duration, 88000);
   assert.equal(samples.iterations, Infinity);
   const at = offset => samples.samples.find(sample => sample.offset === offset);
   const hold = [.27, .29, .35, .43, .6, .7, .72].map(offset => at(offset).x);
@@ -733,7 +749,7 @@ test('saludo extiende el ciclo, inmoviliza actor y muestra welcome/bubble solo e
   assert.equal(at(.74).parts[2], '0');
   assert.deepEqual(at(.85).parts.slice(0, 3), ['1', '0', '0']);
   assert.ok(at(.85).x > at(.72).x, 'El vuelo continúa a la derecha después del saludo');
-  assert.ok(at(1.05).x < at(.27).x, 'El siguiente ciclo vuelve a entrar desde la izquierda');
+  assert.ok(at(1.05).x > at(.27).x, 'El siguiente trayecto vuelve desde el borde derecho');
   assert.ok([.35, .43].some(offset => Math.abs(at(offset).angle) > .5));
   assert.ok(samples.samples.every(sample => Math.abs(sample.angle) <= 4.01));
   assert.equal(await scene(page, 'flight').locator('[data-mascot-part="greeting"]').getAttribute('aria-live'), null);
@@ -1441,4 +1457,74 @@ test('global sin JS/APIs/partes conserva el texto completo y la pose A estática
     assert.equal(await global.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
     await clean(result);
   }
+});
+
+test('superciclo: diez trayectos alternos y cinco mensajes sin botón ni frames JS', async () => {
+  const result = await pageFor({}, undefined, undefined, '?without=toggle');
+  await enter(result.page, 'flight');
+  const samples = await scene(result.page, 'flight').evaluate(element => {
+    const actor = element.querySelector('[data-mascot-actor]');
+    const animations = element.getAnimations({subtree:true});
+    animations.forEach(a=>a.pause());
+    const duration = actor.getAnimations()[0].effect.getTiming().duration;
+    const sample = (leg, phase) => {
+      animations.forEach(a=>{a.currentTime=(leg+phase)*8800;});
+      const matrix = new DOMMatrix(getComputedStyle(actor).transform);
+      return {x:matrix.m41,actorBox:{left:actor.getBoundingClientRect().left,right:actor.getBoundingClientRect().right},
+        facing:new DOMMatrix(getComputedStyle(element.querySelector('[data-mascot-part="flying"]')).transform).m11,
+        landed:new DOMMatrix(getComputedStyle(element.querySelector('[data-mascot-part="landed"]')).transform).m11,
+        greeting:getComputedStyle(element.querySelector('[data-mascot-part="greeting"]')).opacity,
+        visible:[...element.querySelectorAll('[data-mascot-flight-message]')].map((n,i)=>Number(getComputedStyle(n).opacity)>.99?i:-1).filter(i=>i>=0)};
+    };
+    return {duration,iterations:actor.getAnimations()[0].effect.getTiming().iterations,
+      messages:[...element.querySelectorAll('[data-mascot-flight-message]')].map(n=>n.textContent),
+      legs:Array.from({length:10},(_,leg)=>({start:sample(leg,.04),hold:sample(leg,.4),end:sample(leg,.88),turn:sample(leg,.95)})),
+      loop:sample(10,.4),box:{left:element.getBoundingClientRect().left,right:element.getBoundingClientRect().right}};
+  });
+  assert.equal(samples.duration,88000);assert.equal(samples.iterations,Infinity);assert.deepEqual(samples.messages,flightMessages);
+  samples.legs.forEach((leg,i)=>{
+    assert.ok(i%2===0?leg.start.x<leg.hold.x&&leg.end.x>leg.hold.x:leg.start.x>leg.hold.x&&leg.end.x<leg.hold.x);
+    assert.ok(Math.abs(leg.hold.x-samples.legs[0].hold.x)<.01);assert.deepEqual(leg.hold.visible,[i%5]);assert.equal(leg.hold.greeting,'1');assert.ok(leg.hold.landed>0,'Pose parada nunca reflejada');
+    assert.ok(Math.abs(leg.turn.facing)<.01,'Giro visible pasa por perfil en el borde');
+    assert.ok([leg.start,leg.hold,leg.end].every(s=>s.actorBox.left>=samples.box.left&&s.actorBox.right<=samples.box.right));
+  });
+  assert.deepEqual(samples.loop.visible,[0]);assert.ok(Math.abs(samples.loop.x-samples.legs[0].hold.x)<.01);
+  assert.equal(await toggle(result.page).count(),0);assert.equal(await result.page.evaluate(()=>window.pendingSceneFrames.size),0);
+  await result.page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await finished(result.page,'flight');
+  assert.deepEqual(await scene(result.page,'flight').locator('[data-mascot-flight-message]').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).opacity)),['1','0','0','0','0']);await clean(result);
+});
+
+test('superciclo: resize conserva fase total, dirección y mensaje después de dos vueltas', async () => {
+  const result=await pageFor({},undefined,undefined,'?without=toggle');await enter(result.page,'flight');
+  await scene(result.page,'flight').evaluate(n=>n.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=88000*2.94;}));
+  await hidden(result.page,true);await pausedFlight(result.page);
+  await result.page.setViewportSize({width:390,height:844});
+  await result.page.waitForFunction(()=>document.querySelector('[data-mascot-scene="flight"] [data-mascot-actor]').getAnimations()[0].effect.getTiming().duration===80000);
+  const actual=await scene(result.page,'flight').evaluate(n=>({phases:n.getAnimations({subtree:true}).map(a=>a.currentTime/80000),visible:[...n.querySelectorAll('[data-mascot-flight-message]')].map((e,i)=>Number(getComputedStyle(e).opacity)>.99?i:-1).filter(i=>i>=0),facing:new DOMMatrix(getComputedStyle(n.querySelector('[data-mascot-part="flying"]')).transform).m11}));
+  assert.ok(actual.phases.every(p=>Math.abs(p-2.94)<.001));assert.deepEqual(actual.visible,[4]);assert.ok(actual.facing<0,'Resize conserva el regreso, sin volver a la dirección de ida');
+  await result.page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await finished(result.page,'flight');await clean(result);
+});
+
+test('superciclo: mensajes o partes inválidos conservan fallback sin efectos', async () => {
+  for(const search of ['flightmessages=4','flightmessages=6','without=flying','without=landed','without=trail']){
+    const result=await pageFor({},undefined,undefined,'?without=toggle&'+search);
+    await scene(result.page,'flight').scrollIntoViewIfNeeded();await state(result.page,'flight','static');
+    assert.equal(await scene(result.page,'flight').evaluate(n=>n.getAnimations({subtree:true}).length),0);await clean(result);
+  }
+});
+
+test('superciclo: reduced y noJS muestran solo el primer mensaje, también tras cancelar otro', async () => {
+  for(const options of [{reducedMotion:'reduce'},{javaScriptEnabled:false}]){
+    const result=await pageFor(options,undefined,undefined,'?without=toggle');
+    const flight=scene(result.page,'flight');
+    assert.deepEqual(await flight.locator('[data-mascot-flight-message]').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).opacity)),['1','0','0','0','0']);
+    assert.equal(await flight.locator('[data-mascot-part="landed"]').evaluate(n=>getComputedStyle(n).opacity),'1');
+    assert.equal(await flight.evaluate(n=>n.getAnimations({subtree:true}).length),0);
+    if(options.javaScriptEnabled===false)await result.context.close();else await clean(result);
+  }
+  const result=await pageFor({},undefined,undefined,'?without=toggle');await enter(result.page,'flight');
+  await scene(result.page,'flight').evaluate(n=>n.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=3.4*8800;}));
+  assert.equal(await scene(result.page,'flight').locator('[data-mascot-flight-message]').nth(3).evaluate(n=>getComputedStyle(n).opacity),'1');
+  await result.page.emulateMedia({reducedMotion:'reduce'});await state(result.page,'flight','static');
+  assert.deepEqual(await scene(result.page,'flight').locator('[data-mascot-flight-message]').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).opacity)),['1','0','0','0','0']);await clean(result);
 });

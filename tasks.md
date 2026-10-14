@@ -1,5 +1,11 @@
 # Tareas — ALS DevStudio
 
+## SARIN-CATALOG-FLIGHT · Proyecto nuevo y vuelo con cinco mensajes · 2026-10-14
+- Estado: implementada y aprobada técnicamente; candidato pendiente. Añadir Sarin Bot como proyecto19/Producto/Próximamente en galería y carrusel con captura real y siete formatos locales; conservar orden y navegación de los18 anteriores.
+- Vuelo sin «Hola»: alternar ida/vuelta y cinco textos de servicios ALSDevStudio, confirmados por el titular, con paradas centrales y giro en extremos. Conservar suspensión viewport/hidden, noJS/reducido y ausencia de botones manuales.
+- Verificar módulo, build, carrusel19→1, filtros, captura/imagen, cinco textos/direcciones/giro/pausas y estabilidad320–1440. Reversión por commit normal, base `6ef732f`. Preparar candidato revisable antes de producción; sin migraciones, servicios o gasto nuevo.
+- Cronos repitió módulo60/60, build tests12/12, TSC aislado/sintaxis/diff-checkPASS; build198archivos/5.197.345bytes. Integración10/10/sieteanchos/noJS/reducido/axe, fotogramas18/18 y catálogo6/6PASS. Revisiones independientes sin bloqueantes. Se corrigió expectativa de URL normalizada en harness nuevo, sin cambiar producto. Evidencia/reversión en `docs/SARIN-PROYECTO-Y-VUELO.md`.
+
 ## PORT-01 — Ampliación del portafolio — 2026-10-12
 - Estado: aprobada (implementación local; sin desplegar).
 - Alcance: corregir la vista previa de BPT; añadir Hampton Estates a su lado; incorporar Dialon y Vigia como proyectos en construcción en galería y carrusel.

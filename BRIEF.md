@@ -1,5 +1,9 @@
 # Brief — ALS DevStudio
 
+## Proyecto Sarin Bot y vuelo con mensajes · 2026-10-14
+- Añadir el enlace proporcionado por el titular `https://sarinbotsaas.pages.dev/` al catálogo y al carrusel, después de los 18 proyectos actuales. Nombre visible Sarin Bot, categoría Producto y estado Próximamente: el sitio público declara que registro, reservas y chats aún no están disponibles. Descripción: «Producto en preparación para organizar las citas y la agenda de un negocio».
+- Cambiar el vuelo existente por ida y vuelta con paradas y cinco textos distintos, sin «Hola». El titular confirma que los mensajes deben hablar de los servicios de ALS DevStudio. Conservar la ausencia de controles manuales y la suspensión por viewport/pestaña/reducido.
+
 ## Objetivo
 Convertir la landing heredada de Santel en el portafolio público de ALS DevStudio, una marca de soluciones de software que muestra capacidad real de diseño, desarrollo web y construcción de productos digitales.
 

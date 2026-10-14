@@ -1,5 +1,5 @@
 ﻿// @ts-check
-// Vuelo y saludo controlables; presentaciones, tarjetas y contacto de una sola entrada.
+// Vuelo de ida y vuelta con cinco mensajes; presentaciones, tarjetas y contacto de una entrada.
 const initialized = new WeakSet();
 const STEP_KINDS = new Set(['step-define', 'step-build', 'step-deliver']);
 const TYPING_KINDS = new Set(['projects', 'process', 'global', 'author', ...STEP_KINDS]);
@@ -180,31 +180,55 @@ export function initMascotScenes() {
     // Eventos poseen el ciclo de vida: no se leen .finished/.ready ni se crean promesas.
     return animation;
   };
+  // Cinco mensajes y dos direcciones cierran juntos tras diez trayectos.
+  /** @param {(leg: number) => Keyframe[]} frames @returns {Keyframe[]} */
+  const flightCycle = frames => Array.from({ length: 10 }, (_, leg) =>
+    frames(leg).map(frame => ({ ...frame, offset: Number(((leg + Number(frame.offset)) / 10).toFixed(6)) }))
+  ).flat();
+  /** @param {Scene} item @returns {HTMLElement[] | null} */
+  const flightMessages = item => {
+    const greeting = item.scene.querySelector('[data-mascot-part="greeting"]');
+    if (!(greeting instanceof HTMLElement)) return null;
+    const messages = Array.from(greeting.querySelectorAll('[data-mascot-flight-message]'));
+    return messages.length === 5 && messages.every(message => message instanceof HTMLElement &&
+      message.tagName === 'SPAN' && Boolean(message.textContent?.trim()))
+      ? /** @type {HTMLElement[]} */ (messages) : null;
+  };
   /** @param {Scene} item @param {boolean} compact @returns {Keyframe[]} */
   const flightFrames = (item, compact) => {
     const actor = item.actor;
     if (!actor) return [];
     const width = item.scene.clientWidth;
-    const left = compact ? -28 : -actor.offsetLeft - actor.offsetWidth;
-    const center = compact ? 0 : (width - actor.offsetWidth) / 2 - actor.offsetLeft;
-    const right = compact ? 28 : width - actor.offsetLeft + actor.offsetWidth;
+    const margin = Math.min(12, Math.max(0, (width - actor.offsetWidth) / 2));
+    const left = margin - actor.offsetLeft;
+    const center = (width - actor.offsetWidth) / 2 - actor.offsetLeft;
+    const right = Math.max(margin, width - margin - actor.offsetWidth) - actor.offsetLeft;
     const crest = compact ? -4 : -8;
-    return [
-      { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 0, offset: 0 },
-      { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 1, offset: .03 },
+    return flightCycle(leg => {
+      const sign = leg % 2 === 0 ? 1 : -1;
+      const start = sign === 1 ? left : right;
+      const end = sign === 1 ? right : left;
+      return [
+      { transform: `translate3d(${start}px,0,0) rotate(0deg)`, opacity: 1, offset: 0 },
+      { transform: `translate3d(${start}px,0,0) rotate(0deg)`, opacity: 1, offset: .03 },
       { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .27 },
       { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .72 },
-      { transform: `translate3d(${right}px,0,0) rotate(2deg)`, opacity: 1, offset: .9 },
-      { transform: `translate3d(${right}px,0,0) rotate(2deg)`, opacity: 0, offset: .97 },
-      { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 0, offset: 1 },
-    ];
+      { transform: `translate3d(${end}px,0,0) rotate(0deg)`, opacity: 1, offset: .9 },
+      { transform: `translate3d(${end}px,0,0) rotate(0deg)`, opacity: 1, offset: 1 },
+      ];
+    });
   };
-  /** @param {boolean} compact @returns {Keyframe[]} */
-  const trailFrames = compact => [
-    { opacity: 0, offset: 0 }, { opacity: compact ? .25 : .6, offset: .16 },
-    { opacity: 0, offset: .27 }, { opacity: 0, offset: .72 },
-    { opacity: compact ? .25 : .6, offset: .8 }, { opacity: 0, offset: .97 }, { opacity: 0, offset: 1 },
-  ];
+  /** @param {Scene} item @param {boolean} compact @returns {Keyframe[]} */
+  const trailFrames = (item, compact) => flightCycle(leg => {
+    const sign = leg % 2 === 0 ? 1 : -1;
+    const transform = `translateX(${sign === 1 ? 0 : (item.actor?.offsetWidth ?? 0) + 28}px) scaleX(${sign})`;
+    return [
+      { opacity: 0, transform, offset: 0 }, { opacity: compact ? .25 : .6, transform, offset: .16 },
+      { opacity: 0, transform, offset: .27 }, { opacity: 0, transform, offset: .72 },
+      { opacity: compact ? .25 : .6, transform, offset: .8 }, { opacity: 0, transform, offset: .9 },
+      { opacity: 0, transform, offset: 1 },
+    ];
+  });
   /** @param {Scene} item */
   const syncFlight = item => {
     if (!item.animations.size) return;
@@ -280,7 +304,8 @@ export function initMascotScenes() {
     const part = name => item.scene.querySelector(`[data-mascot-part="${name}"]`);
     const copy = part('window');
     const pairs = copy instanceof HTMLElement ? copyPairs(copy) : null;
-    if (item.kind === 'flight' && (!part('flying') || !part('landed') || !(part('greeting') instanceof HTMLElement)) ||
+    if (item.kind === 'flight' && (!(part('flying') instanceof HTMLElement) ||
+          !(part('landed') instanceof HTMLElement) || !(part('trail') instanceof HTMLElement) || !flightMessages(item)) ||
         TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !pairs ||
           FRAME_KINDS.has(item.kind) && (!part('typing-a') || !part('typing-b')) ||
           item.kind === 'step-deliver' && !(part('approval') instanceof HTMLElement) ||
@@ -298,15 +323,21 @@ export function initMascotScenes() {
     const compact = isCompact();
     try {
       if (item.kind === 'flight') {
-        const duration = compact ? 8000 : 8800;
+        const duration = (compact ? 8000 : 8800) * 10;
         const options = { iterations: Infinity };
         item.clock = animate(item, item.actor, flightFrames(item, compact), duration, options);
-        animate(item, part('flying'), [
-          { opacity: 1, offset: 0 }, { opacity: 1, offset: .26 },
-          { opacity: 0, offset: .27 }, { opacity: 0, offset: .72 },
-          { opacity: 1, offset: .74 }, { opacity: 1, offset: 1 },
-        ], duration, options);
-        animate(item, part('landed'), [
+        animate(item, part('flying'), flightCycle(leg => {
+          const sign = leg % 2 === 0 ? 1 : -1;
+          const transform = `scaleX(${sign})`;
+          return [
+            { opacity: 1, transform, offset: 0 }, { opacity: 1, transform, offset: .26 },
+            { opacity: 0, transform, offset: .27 }, { opacity: 0, transform, offset: .72 },
+            { opacity: 1, transform, offset: .74 }, { opacity: 1, transform, offset: .9 },
+            { opacity: 1, transform: 'scaleX(0)', offset: .95 },
+            { opacity: 1, transform: `scaleX(${-sign})`, offset: 1 },
+          ];
+        }), duration, options);
+        animate(item, part('landed'), flightCycle(() => [
           { opacity: 0, transform: 'rotate(0deg)', offset: 0 },
           { opacity: 0, transform: 'rotate(0deg)', offset: .26 },
           { opacity: 1, transform: 'rotate(0deg)', offset: .27 },
@@ -318,14 +349,20 @@ export function initMascotScenes() {
           { opacity: 1, transform: 'rotate(0deg)', offset: .72 },
           { opacity: 0, transform: 'rotate(0deg)', offset: .74 },
           { opacity: 0, transform: 'rotate(0deg)', offset: 1 },
-        ], duration, options);
-        animate(item, part('greeting'), [
+        ]), duration, options);
+        animate(item, part('greeting'), flightCycle(() => [
           { opacity: 0, offset: 0, easing: 'steps(1,end)' },
           { opacity: 1, offset: .29 },
           { opacity: 1, offset: .7, easing: 'steps(1,start)' },
           { opacity: 0, offset: .72 }, { opacity: 0, offset: 1 },
-        ], duration, options);
-        animate(item, part('trail'), trailFrames(compact), duration, options);
+        ]), duration, options);
+        flightMessages(item)?.forEach((message, index) => {
+          animate(item, message, flightCycle(leg => [
+            { opacity: leg % 5 === index ? 1 : 0, offset: 0, easing: 'steps(1,end)' },
+            { opacity: leg % 5 === index ? 1 : 0, offset: 1 },
+          ]), duration, options);
+        });
+        animate(item, part('trail'), trailFrames(item, compact), duration, options);
         if (item.toggle) {
           item.toggleHandler = () => { item.userPaused = !item.userPaused; syncFlight(item); };
           item.toggle.addEventListener('click', item.toggleHandler);
@@ -447,7 +484,7 @@ export function initMascotScenes() {
       if (TYPING_KINDS.has(item.kind) && item.playing) finalize(item, 'finished');
       if (item.kind !== 'flight' || !item.clock || !item.animations.size) return;
       const compact = isCompact();
-      const duration = compact ? 8000 : 8800;
+      const duration = (compact ? 8000 : 8800) * 10;
       try {
         const previousDuration = Number(item.clock.effect?.getTiming().duration);
         const time = typeof item.clock.currentTime === 'number' ? item.clock.currentTime : 0;
@@ -457,7 +494,7 @@ export function initMascotScenes() {
           if (!effect) continue;
           if (animation === item.clock) effect.setKeyframes(flightFrames(item, compact));
           else if (effect.target instanceof HTMLElement && effect.target.dataset.mascotPart === 'trail') {
-            effect.setKeyframes(trailFrames(compact));
+            effect.setKeyframes(trailFrames(item, compact));
           }
           effect.updateTiming({ duration });
           animation.currentTime = phase * duration;
@@ -503,8 +540,8 @@ export function initMascotScenes() {
     scenes.forEach(item => {
       const missingTypingApi = TYPING_KINDS.has(item.kind) &&
         (typeof window.requestAnimationFrame !== 'function' || typeof window.cancelAnimationFrame !== 'function');
-      const missingFlightPart = item.kind === 'flight' &&
-        !(item.scene.querySelector('[data-mascot-part="greeting"]') instanceof HTMLElement);
+      const missingFlightPart = item.kind === 'flight' && (!flightMessages(item) ||
+        !['flying', 'landed', 'trail'].every(name => item.scene.querySelector(`[data-mascot-part="${name}"]`) instanceof HTMLElement));
       if (!item.actor || !KINDS.has(item.kind) || missingFlightPart || missingTypingApi) {
         finalize(item, 'static');
       }

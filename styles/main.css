@@ -336,7 +336,9 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .mascot-flight-pose, .mascot-landed-pose { position:absolute; inset:0; }
 .mascot-flight-pose { opacity:0; }
 .mascot-flight-trail { position:absolute; top:70%; left:-40px; width:52px; height:2px; opacity:0; background:linear-gradient(90deg,transparent,var(--mint)); }
-.mascot-flight-greeting { position:absolute; left:calc(50% + 68px); top:28px; width:min(340px,calc(50% - 88px)); margin:0; padding:14px 18px; border:1px solid rgba(101,212,157,.4); border-radius:14px; background:#0b2239; color:var(--paper); font-size:14px; line-height:1.55; }
+.mascot-flight-greeting { position:absolute; display:grid; left:calc(50% + 68px); top:28px; width:min(340px,calc(50% - 88px)); margin:0; padding:14px 18px; border:1px solid rgba(101,212,157,.4); border-radius:14px; background:#0b2239; color:var(--paper); font-size:14px; line-height:1.55; }
+.mascot-flight-greeting [data-mascot-flight-message] { grid-area:1 / 1; opacity:0; }
+.mascot-flight-greeting [data-mascot-flight-message]:first-child { opacity:1; }
 .mascot-flight-greeting::before { content:''; position:absolute; left:-6px; top:26px; width:10px; height:10px; border-left:1px solid rgba(101,212,157,.4); border-bottom:1px solid rgba(101,212,157,.4); background:#0b2239; transform:rotate(45deg); }
 .projects-introduction { flex:none; width:340px; }
 .global-introduction { flex:none; width:430px; max-width:100%; }
@@ -525,8 +527,8 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .contact-title { font-size:clamp(32px,9vw,48px); }
   .contact-intro { padding-right:0; }
   .mascot-contact { width:88px; }
-  .mascot-flight-wrap { height:184px; margin-top:-64px; margin-bottom:16px; }
-  .mascot-scene--flight { height:184px; }
+  .mascot-flight-wrap { height:192px; margin-top:-64px; margin-bottom:16px; }
+  .mascot-scene--flight { height:192px; }
   .mascot-scene--flight .mascot-scene-actor { left:calc(50% - 36px); top:8px; width:72px; height:88px; }
   .mascot-flight-greeting { left:0; top:104px; width:100%; padding:12px 14px; font-size:13px; }
   .mascot-flight-greeting::before { left:calc(50% - 5px); top:-6px; border-left:1px solid rgba(101,212,157,.4); border-top:1px solid rgba(101,212,157,.4); border-bottom:0; }

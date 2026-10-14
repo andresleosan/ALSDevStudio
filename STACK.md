@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Catálogo Sarin Bot y vuelo de ida y vuelta · 2026-10-14
+- Conservar la galería/carrusel estáticos y su diseño existente. Proyecto19, clave `sarinbotsaas`, URL externa HTTPS con noopener/noreferrer, estado Próximamente. Captura real mediante el pipeline existente a1440×900 y variantes AVIF/WebP480/768/1200, sin iframe ni conexiones automáticas nuevas.
+- Vuelo con pose de giro en los extremos y parada central en ambas direcciones; cinco mensajes locales de servicios. Reservar el tamaño del globo para el mensaje más alto, conservar poses y WAAPI con cleanup. No agregar dependencias, datos o cambios de proveedor.
+
 ## Estado actual
 - HTML5 estático en `index.html`.
 - CSS externo en `styles/main.css`, organizado por secciones numeradas.
