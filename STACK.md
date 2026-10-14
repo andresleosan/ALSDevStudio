@@ -158,3 +158,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 - Proceso: mantener lista ordenada y tres etapas. Sarin bot como guía visual, con bienvenida, portátil y pose de revisión; PNG transparentes locales y textos HTML en globos. Usar tipografías/paleta y breakpoints actuales, imágenes decorativas con proporción reservada y lectura completa sin JavaScript.
 - El operador eligió personaje con globos de texto, sin lectura en voz alta. No se añade JavaScript ni servicio externo para las explicaciones.
 - Contacto: reordenar los bloques en HTML y reflejar las columnas/divisor en CSS; mantener el orden visual, DOM y teclado. Encabezado común accesible de contacto y dos subtítulos, sin modificar los enlaces ni la lógica de selección de WhatsApp.
+
+### Vista previa compartida hacia www · 2026-10-13
+- Añadir el origen exacto `8f2ced74.alsdevstudio.pages.dev/` a la lista Bulk Redirect existente `als_pages_to_www`, con destino fijo www, 301 y query/subpath/path suffix activados. Include subdomains desactivado, igual que en la entrada raíz existente.
+- Configuración de cuenta, sin cambios de código/DNS/correo/plan. Reversión: retirar únicamente la entrada de8f2ced74, conservando la entrada raíz y la regla activa. QA HTTP antes/después y otro preview conocido fuera del alcance.

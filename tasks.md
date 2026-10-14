@@ -512,3 +512,8 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - El operador solicitó el ajuste y autorizó publicar los cambios pendientes. Incorporar a la misma entrega y verificar el candidato antes de promover a main.
 - Build12/12PASS y QA de navegador320/390/900/901/1440: orden y teclado, mensajes, mailto, noJS y axe320/1440PASS. Sin hallazgos críticos ni bloqueo en revisión independiente. Ver `docs/ARGENTINA-SARIN.md` y `test-results/contact-order-results.json`.
 - Preview final123b8648 Pages4/4PASS. Entrega completa promovida a main: fuenteeb484ee, desplieguefuncional4603e875. Producciónwww Pages4/4PASS, PNG/textos de mapa comprobados, redirección301preservada y contacto revisado en Chrome. Evidencia final y reversión en `docs/ARGENTINA-SARIN.md`; commits de cierre no cambian assets públicos.
+
+## CF-PREVIEW-CANONICAL · Vista previa8f2ced74 hacia www · 2026-10-13
+- Estado: aplicada y verificada; configuración solicitada y autorizada expresamente por el titular. Añadir origen exacto8f2ced74 a la lista existente,301 con rutas/query conservadas e includesubdomainsOFF.
+- Verificar raíz HTTP/HTTPS, documento/ruta histórica/asset/query/404 final, www sin bucles y previews restantes. Revisión de seguridad: origen/destino fijos, alcance exacto y sin ampliación de acceso. Reversión antes de aplicar: retirar solo la nueva entrada; ver `docs/PAGES-CANONICAL.md`.
+- Entrada añadida y parámetros guardados; raíz anterior íntegra. QA HTTP14/14PASS, otros dos previews200/noindex ywww200sinbucle/indexable. Chrome real terminaenwww al abrir el enlace solicitado. Informe/captura en `test-results/` y registro/reversión en `docs/PAGES-CANONICAL.md`; sin hallazgos críticos ni cambios de código/DNS/correo/plan.

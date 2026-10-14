@@ -30,6 +30,8 @@ La fixture antigua del mapa se adaptó al consentimiento actual, ocho países y 
 
 Rama `design/sarin-argentina`, commit funcional `7c981e10fe1732ce7eb853c7ce4a5e0721b1a5bf`. Preview verificado: https://8f2ced74.alsdevstudio.pages.dev/ (despliegue `8f2ced74-33e9-482f-9dad-947e70bed670`).
 
+Ese hostname fue retirado posteriormente a petición del titular: ahora301haciawww, conservando rutas/query. Las comprobaciones de preview siguientes registran el estado anterior a ese ajuste; ver `PAGES-CANONICAL.md`.
+
 - `PAGES_QA_BASE=https://8f2ced74.alsdevstudio.pages.dev node --test .github/cloudflare/pages.test.mjs`: 4/4 PASS. Artefactos, cabeceras, noindex de preview, enlaces/404, consentimiento, mapa y lectura legal a 320/1440 y sin JavaScript correctos.
 - Los tres PNG publicados coinciden byte a byte con `dist`. SVG y módulo del mapa coinciden como texto normalizando exclusivamente CRLF/LF del checkout Windows/Git; la comparación binaria inicial detectó solo cuatro CR adicionales en el SVG.
 - Chrome del operador: Sarin con tres poses/globos y Argentina seleccionada con coordenadas y silueta correctas. Evidencia: `test-results/sarin-preview-chrome.jpg` y `test-results/argentina-preview-chrome.jpg`.
