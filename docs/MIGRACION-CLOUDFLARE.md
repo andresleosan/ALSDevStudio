@@ -1,7 +1,7 @@
 # Migración de ALS DevStudio a Cloudflare
 
-Fecha: 2026-10-13. Estado: candidato público verificado; corte de producción
-autorizado explícitamente por el titular y en ejecución.
+Fecha: 2026-10-13 (Colombia). Estado: desplegada y verificada en el dominio
+canónico, tras autorización explícita del titular.
 
 ## Alcance y ruta
 
@@ -11,12 +11,12 @@ proyectos, contacto y correo. Sin cambio de registrador, nameservers, servicios 
 correo ni contratación de un plan. Pages permite usar `www` con DNS externo;
 Workers Static Assets requeriría una zona activa para el dominio personalizado.
 
-El comando de build será `node .github/cloudflare/build.mjs`, con salida `dist`.
+El comando de build es `node .github/cloudflare/build.mjs`, con salida `dist`.
 Proyecto Pages `alsdevstudio`, integración GitHub existente y `NODE_VERSION=22`.
-La rama de Pages durante la preparación es `migration/cloudflare`; al promover
-la versión aprobada, cambiarla a `main` después de integrar el código mediante
-push normal. No usar el `main` anterior para construir este candidato.
-Promoción ejecutada mediante fast-forward y push normal a `main` en `e4cdabd`.
+La rama de preparación fue `migration/cloudflare`; la rama de producción actual
+es `main`, con despliegues automáticos habilitados. Promoción ejecutada mediante
+fast-forward y push normal a `main` en `e4cdabd`, seguida de `5cd5576` para registrar
+la autorización. No se reescribió historia.
 Se copia una lista permitida de archivos públicos, nunca la raíz del repositorio.
 No se publican documentos internos, resultados de QA, configuración de cuentas
 ni herramientas. Cabeceras mediante `_headers` y un 404 propio. El build adapta
@@ -84,10 +84,49 @@ la carga del beacon después de aceptar, su recepción por Cloudflare y la retir
 en el dominio canónico. El candidato `pages.dev` no permite acreditar recepción
 porque allí la medición está desactivada por hostname.
 
-Si falla el candidato público, restaurar el CNAME anterior de `www` y el A anterior
-del apex, retirar la redirección nueva de Porkbun si fue creada y verificar Vercel.
+Si falla el sitio público, restaurar el CNAME anterior de `www`, retirar la
+redirección del apex y su ALIAS generado por Porkbun, y restaurar el A anterior
+del apex. Verificar Vercel con HTTPS antes de dar por terminada la reversión.
 No reescribir Git ni eliminar servicios durante la reversión. Los cambios de DNS
 pueden tardar en propagarse; conservar la evidencia del estado previo.
+
+## Corte y verificación de producción
+
+- El titular respondió expresamente «Sí, migrar el dominio a Cloudflare» al corte
+  propuesto con candidato, plan gratuito, correo conservado y promoción de `main`.
+- Pages construyó `main` en `5cd5576f5bd5938a634197ef918111905689b14f`, deployment
+  `79e1c44a-c219-4023-a578-662718b757d6`. Panel del dominio: **Active / SSL enabled**.
+  `https://www.alsdevstudio.com/` responde 200 con TLS validado y servidor Cloudflare;
+  no contiene `X-Robots-Tag: noindex`. Los previews conservan `noindex`.
+- DNS final: `www` CNAME `alsdevstudio.pages.dev`, TTL 600. Porkbun sustituyó
+  únicamente el A anterior del apex por ALIAS `uixie.porkbun.com`, TTL 600, después
+  de mostrar expresamente el registro afectado. El panel final mantiene siete
+  registros; ambos MX, SPF y los dos TXT de validación existentes quedaron intactos.
+- Redirección Porkbun del apex: destino `https://www.alsdevstudio.com`, 301,
+  incluir URI **sí**, wildcard **no**. HTTP y HTTPS de
+  `/privacidad.html?prueba=1` respondieron 301 a la misma ruta y query en `www`.
+  CNAME confirmado en autoritativo, 1.1.1.1 y 8.8.8.8; nameservers/MX/SPF iguales.
+- `PAGES_QA_BASE=https://www.alsdevstudio.com node --test .github/cloudflare/pages.test.mjs`:
+  4/4 PASS. Artefacto, cabeceras, imagen social, canonicals, redirecciones, 404,
+  navegación, 18 proyectos, mapa tras rechazo, 320/1440 px, dos axe del diálogo
+  sin violaciones automáticas y políticas sin JavaScript.
+- `node test-results/cloudflare-live-analytics.mjs`: PASS sobre una visita sintética
+  propia con contexto limpio. Sin SDK ni solicitudes de medición antes de aceptar;
+  SDK único y POST real 2xx de Cloudflare con URL limpia y referente vacío.
+  Retirada guardada, recarga sin SDK ni solicitudes nuevas y cero cookies.
+  No se imprimieron payloads ni se exportaron registros de visitantes.
+  Se corrigió únicamente la espera de la captura de QA para que terminase la
+  transición visual del titular; no cambió el diseño ni el código del sitio.
+  Captura final inspeccionada: `test-results/cloudflare-produccion.png`.
+- Respaldo Vercel conservado: deployment `2rVv5c6ERrR1i59ixUxCVLReaGkX`, commit
+  `c6a64366b742a4e9a184bda5699a5160c664de81`, estado Ready en su panel. Comprobado
+  con `curl --resolve www.alsdevstudio.com:443:216.198.79.1` y TLS normal: script
+  anterior HTTP 200, Vercel Analytics presente y Cloudflare ausente. No hubo nuevos
+  despliegues Vercel de la migración. Es un respaldo transitorio sujeto a la
+  retención del proveedor; el código anterior también permanece en Git.
+- Los siguientes pushes de `main`, incluidos los commits del workflow de capturas,
+  construyen y publican en Pages. Las notas posteriores al corte no alteran `dist`.
+  No se activó ningún servicio pagado ni se modificaron cuentas de correo.
 
 ## Evidencia del candidato
 
@@ -108,9 +147,10 @@ pueden tardar en propagarse; conservar la evidencia del estado previo.
 - Build: 182 archivos públicos, aproximadamente 4,7 MB; ninguno supera 25 MiB.
   Doce pruebas de empaquetado pasan, incluidos límites, referencias, rutas y protección
   del destino. Los documentos internos y herramientas no están en `dist`.
-- El titular confirmó conservar estadísticas de Cloudflare. El sitio está registrado
-  para instalación manual en la cuenta existente; no se ha instalado el script en
-  producción ni cambiado el DNS durante esta preparación.
+- El titular confirmó conservar estadísticas de Cloudflare. Se registró el sitio
+  para instalación manual en la cuenta existente antes del corte; la preparación
+  del candidato no alteró el dominio canónico. La activación posterior y su
+  verificación están registradas arriba.
 - Beacon público inspeccionado: versión `2026.10.0`, 31.679 bytes, SHA-256
   `3e5bc7ca508f5d5aa7255341243840c8d2b70c8aea323800b51610df3f5a8a2c`.
   Para reproducir, descargar `https://static.cloudflareinsights.com/beacon.min.js`
