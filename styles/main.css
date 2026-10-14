@@ -300,9 +300,9 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 
 /* Contacto y footer */
 .contact-section { padding-bottom:104px; }
-.contact-card { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr); gap:clamp(32px,4vw,56px); align-items:start; padding:clamp(30px,5vw,64px); border-radius:var(--radius); background:var(--paper); color:var(--ink); position:relative; }
+.contact-card { display:grid; grid-template-columns:minmax(320px,.95fr) minmax(0,1.05fr); gap:clamp(32px,4vw,56px); align-items:start; padding:clamp(30px,5vw,64px); border-radius:var(--radius); background:var(--paper); color:var(--ink); position:relative; }
 .contact-card .eyebrow { color:var(--blue-strong); }
-.contact-card h2 { max-width:650px; margin-top:24px; font:600 clamp(38px,4.8vw,64px)/1.02 'Space Grotesk',sans-serif; letter-spacing:-.055em; }
+.contact-title { max-width:650px; margin-top:24px; font:600 clamp(38px,4.8vw,64px)/1.02 'Space Grotesk',sans-serif; letter-spacing:-.055em; }
 .contact-card p { max-width:460px; margin-top:22px; color:var(--ink-muted); line-height:1.65; }
 .contact-intro { position:relative; min-width:0; }
 .mascot-contact { width:128px; margin-top:24px; }
@@ -315,7 +315,7 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .contact-email-link:focus-visible { outline:3px solid var(--blue-strong); outline-offset:5px; border-radius:3px; }
 .contact-actions { display:flex; flex-direction:column; align-items:start; gap:12px; position:relative; z-index:1; }
 .contact-actions .button-primary { background:var(--ink); color:var(--paper); }
-.contact-playground { min-width:0; padding-left:clamp(24px,3vw,40px); border-left:1px solid rgba(7,26,47,.18); }
+.contact-playground { min-width:0; padding-right:clamp(24px,3vw,40px); border-right:1px solid rgba(7,26,47,.18); }
 .playground-question { margin-top:24px; font:500 clamp(24px,2.4vw,32px)/1.12 'Space Grotesk',sans-serif; letter-spacing:-.04em; }
 .playground-options { display:grid; gap:8px; margin-top:24px; }
 .playground-option { min-height:76px; padding:14px 44px 14px 16px; border:1px solid #94a1ad; border-radius:8px; color:var(--ink); background:transparent; text-align:left; cursor:pointer; position:relative; transition:background .2s ease,border-color .2s ease; }
@@ -373,7 +373,7 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .hero { min-height:auto; padding-top:148px; }
   .hero-visual { min-height:480px; margin-top:0; perspective:1100px; }
   .orbit { width:min(560px,96vw); }
-  .contact-playground { padding:32px 0 0; border-left:0; border-top:1px solid rgba(7,26,47,.18); }
+  .contact-playground { padding:0 0 32px; border-right:0; border-bottom:1px solid rgba(7,26,47,.18); }
   .contact-actions { align-items:start; }
   .global-stage { grid-template-columns:1fr; }
   .global-intro { padding-right:0; }
@@ -455,7 +455,7 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .process-bubble::before { top:-8px; left:calc(50% - 8px); transform:rotate(45deg); }
   .contact-section { padding-top:72px; }
   .contact-card { gap:32px; padding:30px 22px 34px; border-radius:16px; }
-  .contact-card h2 { font-size:clamp(32px,9vw,48px); }
+  .contact-title { font-size:clamp(32px,9vw,48px); }
   .contact-intro { padding-right:0; }
   .mascot-contact { width:88px; }
   .contact-email { margin-top:28px; }

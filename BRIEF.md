@@ -93,3 +93,4 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ## Argentina y proceso explicado por Sarin bot · 2026-10-13
 - Añadir Argentina a las referencias del mapa y reducir el cambio automático entre países a dos segundos, conservando pausa, selección manual y respeto al movimiento reducido.
 - Reemplazar las tres ilustraciones genéricas del proceso por Sarin bot, el robot ALS existente, explicando definir, construir y entregar mediante poses y globos de texto. Conservar el alcance y los compromisos comerciales actuales.
+- Contacto: WhatsApp en la columna izquierda y presentación/correo en la derecha; WhatsApp primero en móvil y en el recorrido por teclado.

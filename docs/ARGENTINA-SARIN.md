@@ -2,11 +2,14 @@
 
 Fecha: 2026-10-13. Base de producción: `0dc7d74b6a90fb5981ce33fd0f8743f89e4c527a`.
 
+El titular pidió añadir a la entrega WhatsApp a la izquierda y correo a la derecha. Después respondió «Sí, publicar los cambios» a la autorización pendiente. Se incorpora el ajuste solicitado al mismo release, con QA adicional antes de promover a `main`.
+
 ## Cambio
 
 - Argentina se incorpora después de Brasil: ocho ubicaciones ilustrativas, con botón, coordenadas, marcador, ruta y silueta sincronizados. Punto de referencia: 34° S, 64° W.
 - El recorrido del mapa pasa a 2000 ms. Conserva la pausa explícita, la selección manual, la suspensión por hover/visibilidad y la navegación manual en móvil o con movimiento reducido.
 - Sarin bot explica definir, construir y entregar mediante tres poses y globos HTML. El operador eligió texto, sin voz. Los títulos y compromisos del proceso se conservan.
+- Contacto: WhatsApp primero en HTML, izquierda en escritorio y arriba hasta 900 px; correo/presentación a la derecha o debajo. Columnas y divisor reflejados; encabezado común accesible «Contacto» y ambos subtítulos en nivel3. Sin cambios en la lógica, mensajes ni destinos de contacto.
 - Nueva pose `assets/brand/mascot-review.png`: 320×480, 47.047 bytes, alfa real. Generada con la herramienta integrada imagegen a partir de los dos PNG existentes; optimizada con Sharp conservando el alfa. Prompt y procedencia en `assets/brand/mascot-sources.json`, que no se publica.
 
 ## Verificación local
@@ -17,6 +20,7 @@ Fecha: 2026-10-13. Base de producción: `0dc7d74b6a90fb5981ce33fd0f8743f89e4c527
 - `node test-results/map-autoplay-qa.mjs`: PASS, repetido por Cronos. Diez comprobaciones: ocho países, corte fresco Brasil a 1999 ms/Argentina a 2000 ms, ciclo completo y sincronización, pausa/manual/foco, temporizador único, hover, salida/regreso al viewport, móvil y movimiento reducido. Axe sin violaciones; sin errores ni red externa. `document.hidden` y el evento MQL `change` se simulan explícitamente en el emulador; el primer avance a México también se comprueba con tiempo real.
 - `node test-results/process-design-qa.mjs`: PASS, repetido por Cronos. Anchos 320/390/680/681/900/901/1440; tres PNG/globos, proporciones y contenido, sin overflow ni solapamientos. Axe sin violaciones a 320/1440, lectura sin JavaScript y movimiento reducido correctos. Sin errores de consola/página ni solicitudes externas.
 - Revisión estática independiente y de Cronos: sin hallazgos críticos. Imágenes decorativas, lista ordenada, textos accesibles, contenido local y sin nueva lógica/servicios en el proceso.
+- Tras el cambio de contacto: build12/12PASS, 183 archivos/4.756.598 bytes. Verificación de navegador a 320/390/900/901/1440: orden visual y Tab/Shift+Tab correctos; tres selecciones por Espacio sincronizan estado/mensaje/número, mailto íntegro. Axe del contacto sin violaciones a320/1440, sin overflow/errores/red externa y lectura/enlace inicial sinJS. Capturas `test-results/contact-order-*.png` y reporte `test-results/contact-order-results.json`. Revisión estática final independiente sin bloqueantes.
 
 Los reportes y capturas de QA quedan en `test-results/` (ignorado por Git y fuera del build público). El rendimiento se revisa proporcionalmente: se reutilizan dos imágenes y se añade una imagen de 47 KB con carga diferida; no se añade JavaScript para Sarin.
 
@@ -31,6 +35,6 @@ Rama `design/sarin-argentina`, commit funcional `7c981e10fe1732ce7eb853c7ce4a5e0
 - Chrome del operador: Sarin con tres poses/globos y Argentina seleccionada con coordenadas y silueta correctas. Evidencia: `test-results/sarin-preview-chrome.jpg` y `test-results/argentina-preview-chrome.jpg`.
 - `https://alsdevstudio.pages.dev/?qa=sarin`: 301 a `https://www.alsdevstudio.com/?qa=sarin`, conservado.
 
-Producción queda pendiente de confirmación explícita del operador según `.cronos/AGENCY.md` y la skill deploy-checklist. Los commits posteriores de documentación no alteran los archivos públicos revisados.
+Producción autorizada por el operador; ejecutar tras verificar el candidato que incluye contacto. El preview inicial8f2ced74 contiene Argentina/Sarin; el ajuste de contacto requiere un nuevo despliegue de la rama candidata. Los commits exclusivamente de documentación no alteran los archivos públicos revisados.
 
 Si falla tras publicar, usar el rollback de Cloudflare Pages al despliegue base `ab94301e-9078-40ed-9912-574a677d7132`, y revertir el commit funcional de este cambio en `main` mediante un nuevo commit normal. No usar force push ni reset remoto. Confirmar que el mapa vuelve a siete países/4200 ms y el proceso a sus tres ilustraciones anteriores. La regla Bulk Redirect del dominio Pages permanece independiente y no requiere reversión.
