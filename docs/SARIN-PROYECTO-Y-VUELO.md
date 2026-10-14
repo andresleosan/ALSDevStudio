@@ -30,7 +30,7 @@ Informes: `test-results/sarin-catalog-flight-local-scenes.json`, `sarin-motion-f
 
 Candidato `610652e6` de `663503b`: Cronos repitió Pages4/4 y catálogo6/6 PASS en línea. HTTP focal8/8 PASS: controlador exacto y siete capturas/variantes idénticas a dist con MIME correcto. El ensayo Pages verifica artefactos, canonical/cabeceras/noindex y ausencia de conexiones al rechazar Analytics. Chrome real confirma flight playing, cinco mensajes, selección que avanza en el ciclo, giro visible, cero controles de vuelo y sin overflow. Captura del proyecto en `catalog-card-sarin-normal-1440-catalog-flight-preview.png` y giro en `sarin-catalog-flight-preview-chrome.jpg`; candidato abierto como entregable. Informes `catalog-qa-catalog-flight-preview.json` y `sarin-catalog-flight-http-preview.json`.
 
-Producción pendiente: la autorización previa cubría las animaciones; esta publicación también añade un nuevo proyecto al portafolio, así que se presenta el candidato concreto antes de pedir confirmación del conjunto. No se promueve main hasta recibirla.
+El titular autoriza expresamente publicar ambos cambios del candidato mediante su respuesta «Sí, publicar ambos cambios». Promoción autorizada del catálogo Sarin Bot y vuelo con cinco mensajes; se conserva el artefacto público verificado. La nueva solicitud de un espacio para SemanControl y el ajuste de la animación de Proceso se trabaja como continuación independiente.
 
 ## Reversión
 
