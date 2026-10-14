@@ -120,3 +120,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ### Presentación animada de la portada · 2026-10-13
 - El titular solicita animar e innovar también la firma de la portada. Sarin saluda con un destello suave y globo «¡Hola! ¿Qué idea construimos hoy?», mientras aparecen en orden «Andrés Santiago» y «Desarrollo independiente · Trabajo remoto».
 - Conservar los dos textos, el CTA y la columna izquierda. Una entrada al estar visible, después del aviso de analítica; originales completos accesibles y vista estática sin JavaScript o con movimiento reducido. Reutilizar la ilustración actual.
+### Retirar el icono de pausa del vuelo · 2026-10-14
+- El titular señala el botón circular de pausa y solicita quitarlo. Retirar el control visible, conservando vuelo repetido, parada central, saludo y continuación. La animación sigue suspendiéndose fuera de pantalla o con la pestaña oculta; movimiento reducido y sin JavaScript conservan la pose estática.
+- El titular aclara expresamente: «no quiero que aparezca ni ue se pause, debe seguir el ciclo normal». No vincular la pausa de la franja ni añadir otra pausa manual para Sarin. Conservar el ciclo visible solicitado y los modos de suspensión ya existentes.

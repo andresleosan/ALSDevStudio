@@ -280,7 +280,7 @@ export function initMascotScenes() {
     const part = name => item.scene.querySelector(`[data-mascot-part="${name}"]`);
     const copy = part('window');
     const pairs = copy instanceof HTMLElement ? copyPairs(copy) : null;
-    if (item.kind === 'flight' && (!item.toggle || !part('flying') || !part('landed') || !(part('greeting') instanceof HTMLElement)) ||
+    if (item.kind === 'flight' && (!part('flying') || !part('landed') || !(part('greeting') instanceof HTMLElement)) ||
         TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !pairs ||
           FRAME_KINDS.has(item.kind) && (!part('typing-a') || !part('typing-b')) ||
           item.kind === 'step-deliver' && !(part('approval') instanceof HTMLElement) ||
@@ -503,8 +503,8 @@ export function initMascotScenes() {
     scenes.forEach(item => {
       const missingTypingApi = TYPING_KINDS.has(item.kind) &&
         (typeof window.requestAnimationFrame !== 'function' || typeof window.cancelAnimationFrame !== 'function');
-      const missingFlightPart = item.kind === 'flight' && (!item.toggle ||
-        !(item.scene.querySelector('[data-mascot-part="greeting"]') instanceof HTMLElement));
+      const missingFlightPart = item.kind === 'flight' &&
+        !(item.scene.querySelector('[data-mascot-part="greeting"]') instanceof HTMLElement);
       if (!item.actor || !KINDS.has(item.kind) || missingFlightPart || missingTypingApi) {
         finalize(item, 'static');
       }

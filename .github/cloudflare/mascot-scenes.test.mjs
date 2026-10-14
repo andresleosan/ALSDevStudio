@@ -459,12 +459,25 @@ test('hidden pausa el vuelo conservando fase y visible lo reanuda sin crear efec
   await clean(result);
 });
 
-test('sin botón de pausa el vuelo permanece estático y contacto funciona', async () => {
+test('sin botón de pausa el vuelo continúa y respeta visibilidad y movimiento reducido', async () => {
   const result = await pageFor({}, undefined, undefined, '?without=toggle');
-  assert.equal(await scene(result.page, 'flight').getAttribute('data-mascot-state'), 'static');
-  assert.equal(await scene(result.page, 'flight').evaluate(element => element.getAnimations({ subtree: true }).length), 0);
-  await enter(result.page, 'contact');
-  await finished(result.page, 'contact');
+  const { page } = result;
+  assert.equal(await scene(page, 'flight').getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await toggle(page).count(), 0);
+  await enter(page, 'flight');
+  assert.ok(await scene(page, 'flight').evaluate(element => element.getAnimations({ subtree: true }).every(animation => animation.effect.getTiming().iterations === Infinity)));
+  const calls = await page.evaluate(() => window.animationCalls.length);
+  await hidden(page, true);
+  await pausedFlight(page);
+  await hidden(page, false);
+  await state(page, 'flight', 'playing');
+  await enter(page, 'contact');
+  await pausedFlight(page);
+  await enter(page, 'flight');
+  assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'flight').length), calls);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await state(page, 'flight', 'static');
+  assert.equal(await scene(page, 'flight').evaluate(element => element.getAnimations({ subtree: true }).length), 0);
   await clean(result);
 });
 
