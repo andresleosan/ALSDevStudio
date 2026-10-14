@@ -86,3 +86,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ## Nueva mascota ilustrada · 2026-10-13
 - El titular solicita reemplazar la mascota pixel art usando su nueva lámina de tres robots como referencia. Robot blanco y gris con visor oscuro, ojos turquesa y marca ALS; ilustración suave, fondo transparente y personalidad cercana.
 - Mantener las dos ubicaciones existentes: bienvenida en portada y robot con portátil en contacto. Conservar el protagonismo del contenido y comprobar tamaños, proporciones y lectura en móvil antes de publicar.
+
+## Redirección del dominio Pages · 2026-10-13
+- El titular solicita expresamente que `https://alsdevstudio.pages.dev/` redirija a `https://www.alsdevstudio.com/`. Conservar rutas y parámetros de los enlaces; mantener los previews para revisar cambios futuros.

@@ -148,3 +148,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 ### Nueva mascota ilustrada · 2026-10-13
 - Dos PNG locales transparentes del mismo robot, generados mediante `imagegen` integrado a partir de la referencia del titular. Mantener los nombres `mascot-welcome.png` y `mascot-laptop.png`, ya permitidos por el build de Pages.
 - Renderizado suave (`image-rendering: auto`) para la nueva ilustración. Reservar la proporción real en HTML y conservar los tamaños y posiciones existentes de portada/contacto; sin animación, dependencias de cliente ni conexiones adicionales.
+
+### Redirección del dominio Pages · 2026-10-13
+- Bulk Redirect de Cloudflare a nivel de cuenta: origen exacto `alsdevstudio.pages.dev/` sin esquema, destino `https://www.alsdevstudio.com/`, 301. Conservar query, matching de subrutas y sufijo de ruta; no incluir subdominios para conservar los previews.
+- Configuración de plataforma, sin Functions ni cambios de DNS o código cliente. `_redirects` conserva las rutas históricas; no admite este cambio por hostname. Reversión: deshabilitar la regla dedicada, conservando la lista y el proyecto.

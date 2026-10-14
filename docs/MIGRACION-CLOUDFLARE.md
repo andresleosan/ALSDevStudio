@@ -3,6 +3,11 @@
 Fecha: 2026-10-13 (Colombia). Estado: desplegada y verificada en el dominio
 canónico, tras autorización explícita del titular.
 
+Actualización posterior: `alsdevstudio.pages.dev` redirige mediante 301 a `www`
+por solicitud del titular. Los ensayos históricos contra ese hostname documentan
+el candidato anterior al corte. Para repetir QA de un preview, usar una URL
+inmutable por hash; ver `docs/PAGES-CANONICAL.md` para parámetros y reversión.
+
 ## Alcance y ruta
 
 Migrar el sitio comercial estático a Cloudflare Pages Free desde el repositorio
