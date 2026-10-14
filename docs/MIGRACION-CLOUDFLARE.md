@@ -1,6 +1,7 @@
 # Migración de ALS DevStudio a Cloudflare
 
-Fecha: 2026-10-13. Estado: preparación; dominio público aún en Vercel.
+Fecha: 2026-10-13. Estado: candidato público verificado en Cloudflare; dominio
+canónico aún en Vercel, pendiente de aprobación explícita del corte.
 
 ## Alcance y ruta
 
@@ -11,6 +12,10 @@ correo ni contratación de un plan. Pages permite usar `www` con DNS externo;
 Workers Static Assets requeriría una zona activa para el dominio personalizado.
 
 El comando de build será `node .github/cloudflare/build.mjs`, con salida `dist`.
+Proyecto Pages `alsdevstudio`, integración GitHub existente y `NODE_VERSION=22`.
+La rama de Pages durante la preparación es `migration/cloudflare`; al promover
+la versión aprobada, cambiarla a `main` después de integrar el código mediante
+push normal. No usar el `main` anterior para construir este candidato.
 Se copia una lista permitida de archivos públicos, nunca la raíz del repositorio.
 No se publican documentos internos, resultados de QA, configuración de cuentas
 ni herramientas. Cabeceras mediante `_headers` y un 404 propio. El build adapta
@@ -64,18 +69,40 @@ Verificado antes de la migración:
 - `www` CNAME: `9d0c498e4c157bb8.vercel-dns-017.com`.
 - Apex A: `216.198.79.1`.
 - MX: `fwd1.porkbun.com` prioridad 10 y `fwd2.porkbun.com` prioridad 20.
+- TTL observado en Porkbun: 600 segundos para los siete registros existentes.
+  El TXT SPF y los dos TXT `_acme-challenge` existentes se conservan. Sin CAA
+  en el panel antes del corte.
 
 El corte sustituye únicamente la resolución web de `www` y la redirección del apex
 a `https://www.alsdevstudio.com`, conservando URI. Antes de ejecutarlo se registran
 los valores y TTL del panel DNS. Se verifican HTTPS, redirecciones, archivos,
 cabeceras, navegación y MX tras el cambio.
+Registrar primero `www.alsdevstudio.com` en Custom domains de Pages y usar
+la opción de proveedor DNS externo. Tras el corte autorizado, comprobar también
+la carga del beacon después de aceptar, su recepción por Cloudflare y la retirada
+en el dominio canónico. El candidato `pages.dev` no permite acreditar recepción
+porque allí la medición está desactivada por hostname.
 
 Si falla el candidato público, restaurar el CNAME anterior de `www` y el A anterior
 del apex, retirar la redirección nueva de Porkbun si fue creada y verificar Vercel.
 No reescribir Git ni eliminar servicios durante la reversión. Los cambios de DNS
 pueden tardar en propagarse; conservar la evidencia del estado previo.
 
-## Evidencia del candidato local
+## Evidencia del candidato
+
+- Despliegue inicial de Pages completado desde `migration/cloudflare`, commit
+  `98dd61272ed57667b98fae4026982f3f67ea75f2`, deployment
+  `a1a10f4b-212b-44a9-82ad-bc0382d13f2f`.
+  [Candidato](https://alsdevstudio.pages.dev/) y
+  [versión inmutable](https://a1a10f4b.alsdevstudio.pages.dev/).
+- `PAGES_QA_BASE=https://alsdevstudio.pages.dev node --test .github/cloudflare/pages.test.mjs`:
+  4/4 PASS contra Cloudflare real. Archivos publicados coinciden con `dist`;
+  sin inserción automática del beacon, sin conexiones externas antes de consentir,
+  cabeceras y `noindex` de preview comprobados. Incluye 18 proyectos, mapa tras
+  rechazar, redirecciones, 404 de documentos internos, lectura sin JavaScript y
+  dos auditorías axe del diálogo sin violaciones a 320/1440 px.
+  Capturas locales: `test-results/cloudflare-pages-aviso-320.png` y
+  `test-results/cloudflare-pages-aviso-1440.png`; revisión visual completada.
 
 - Build: 182 archivos públicos, aproximadamente 4,7 MB; ninguno supera 25 MiB.
   Doce pruebas de empaquetado pasan, incluidos límites, referencias, rutas y protección

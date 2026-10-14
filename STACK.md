@@ -137,6 +137,7 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 
 ### Migración candidata a Cloudflare · 2026-10-13
 - Se conserva Nivel 1 y HTML/CSS/JS vanilla. Cloudflare Pages con GitHub, comando `node .github/cloudflare/build.mjs` y salida `dist`; sin backend ni dependencias de build del sitio.
+- Proyecto `alsdevstudio`, `NODE_VERSION=22`; rama candidata de Pages `migration/cloudflare`, futura rama de producción `main` al promover la versión aprobada. Candidato público construido y verificado en `98dd612`: https://alsdevstudio.pages.dev/.
 - La salida publica solo HTML, estilos, scripts y assets permitidos. `_headers` traslada CSP, Referrer-Policy, Permissions-Policy, X-Frame-Options y nosniff; `404.html` evita el fallback de una SPA. Pages normaliza las páginas `.html` a rutas sin extensión: el build adapta enlaces, canonicals y sitemap manteniendo las redirecciones del proveedor.
 - DNS y correo continúan en Porkbun: CNAME de `www` hacia Pages y redirección HTTPS del apex a `www`, preservando rutas. El registro del dominio, nameservers, MX y TXT de correo permanecen en su proveedor actual.
 - Web Analytics manual, con `spa: false`; inserción automática desactivada. Elección propia y específica de Cloudflare por 180 días. No reutilizar aceptación de Vercel. Bloquear nuevas conexiones de medición mediante una CSP adicional antes de recargar al revocar; no cancelar retroactivamente solicitudes iniciadas.
