@@ -6,6 +6,12 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 
 const moduleURL = new URL('../../scripts/modules/mascot-scenes.js', import.meta.url);
 const projectCopy = 'Sitios publicados y productos en desarrollo. Abre cada proyecto para conocer su diseño y funcionalidad.';
+const processCopy = 'Así convertimos una idea en un sitio claro y útil.';
+const processFixture = `<section data-mascot-scene="process" data-mascot-state="idle">
+  <div data-mascot-actor aria-hidden="true"><span data-mascot-part="typing-a">Laptop A</span><span data-mascot-part="typing-b">Laptop B</span></div>
+  <p id="sarin-process-copy" data-mascot-part="window"><span data-mascot-copy-full>${processCopy}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>
+  <article id="process-card">Contenido permanente de la tarjeta</article>
+</section>`;
 const fixture = `<!DOCTYPE html><meta charset="utf-8"><link rel="icon" href="data:,">
 <style>
 body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fixed;top:5px;left:5px}
@@ -16,6 +22,7 @@ body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fi
 [data-mascot-part="flying"],[data-mascot-part="trail"]{opacity:0}
 [data-mascot-part="typing-a"],[data-mascot-part="typing-b"]{position:absolute;inset:0}
 [data-mascot-part="typing-b"]{opacity:0}
+[data-mascot-part="greeting"]{position:absolute;left:50%;top:50%;opacity:1;background:#071a2f;color:white}
 [data-mascot-copy-typed]{position:absolute;inset:0;pointer-events:none}
 .is-typing [data-mascot-copy-full]{opacity:0}
 [data-mascot-part="window"]{position:absolute;right:115px;top:40px;width:110px;height:100px;background:#d7eeef;opacity:1}
@@ -24,9 +31,9 @@ body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fi
 p{max-width:40%;opacity:1}
 </style><button id="focus-anchor">Referencia de foco</button><main>
 <section id="sarin-flight" data-mascot-scene="flight" data-mascot-state="idle" aria-hidden="true"><p>Contenido permanente</p>
-  <div data-mascot-actor><span data-mascot-part="flying">Vuelo</span><span data-mascot-part="landed">Sarin</span></div><span data-mascot-part="trail">Estela</span>
+  <div data-mascot-actor><span data-mascot-part="flying">Vuelo</span><span data-mascot-part="landed">Sarin</span></div><span data-mascot-part="trail">Estela</span><div data-mascot-part="greeting">Hola</div>
 </section>
-<button type="button" data-mascot-toggle="sarin-flight" aria-controls="sarin-flight" aria-label="Pausar vuelo" hidden>Pausar vuelo</button>
+<button type="button" data-mascot-toggle="sarin-flight" aria-controls="sarin-flight" aria-label="Pausar animación de Sarin" title="Pausar animación de Sarin" data-paused="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14"/></svg></button>
 <section data-mascot-scene="projects" data-mascot-state="idle">
   <div data-mascot-actor aria-hidden="true"><span data-mascot-part="typing-a">Laptop A</span><span data-mascot-part="typing-b">Laptop B</span></div>
   <p id="sarin-project-copy" data-mascot-part="window"><span data-mascot-copy-full>${projectCopy}</span><span data-mascot-copy-typed aria-hidden="true"></span></p>
@@ -48,6 +55,9 @@ const server = http.createServer(async (request, response) => {
     let html = request.url.includes('image=flight')
       ? fixture.replace('<span data-mascot-part="flying">', '<img src="/delayed.svg" alt=""><span data-mascot-part="flying">') : fixture;
     if (request.url.includes('without=toggle')) html = html.replace(/<button type="button" data-mascot-toggle=.*?<\/button>/, '');
+    if (request.url.includes('process=1')) html = html.replace('<section data-mascot-scene="contact"', processFixture + '<section data-mascot-scene="contact"');
+    if (request.url.includes('without=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '');
+    if (request.url.includes('invalid=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '<svg data-mascot-part="greeting"></svg>');
     response.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' }).end(html);
   }
 });
@@ -155,23 +165,23 @@ test('vuelo repite un ciclo real con pausa central y conserva contenido y foco',
       x: new DOMMatrix(frame.transform).m41 })) };
   });
   assert.equal(timing.iterations, Infinity);
-  assert.equal(timing.duration, 4400);
-  assert.equal(timing.frames.find(frame => frame.offset === .34).x, timing.frames.find(frame => frame.offset === .53).x);
+  assert.equal(timing.duration, 8800);
+  assert.equal(timing.frames.find(frame => frame.offset === .27).x, timing.frames.find(frame => frame.offset === .72).x);
   const samples = await scene(page, 'flight').evaluate(element => {
     const actor = element.querySelector('[data-mascot-actor]');
     const animations = element.getAnimations({ subtree: true });
-    animations.forEach(animation => { animation.pause(); animation.currentTime = 1600; });
+    animations.forEach(animation => { animation.pause(); animation.currentTime = 3100; });
     const x1 = new DOMMatrix(getComputedStyle(actor).transform).m41;
     const headClearance = actor.getBoundingClientRect().top - element.getBoundingClientRect().top;
-    animations.forEach(animation => { animation.currentTime = 2200; });
+    animations.forEach(animation => { animation.currentTime = 6200; });
     const x2 = new DOMMatrix(getComputedStyle(actor).transform).m41;
     const pose = ['flying', 'landed'].map(part => getComputedStyle(element.querySelector(`[data-mascot-part="${part}"]`)).opacity);
-    animations.forEach(animation => { animation.currentTime = 4600; animation.play(); });
+    animations.forEach(animation => { animation.currentTime = 9200; animation.play(); });
     return { x1, x2, headClearance, pose, nextX: new DOMMatrix(getComputedStyle(actor).transform).m41 };
   });
   assert.ok(Math.abs(samples.x1 - samples.x2) < .1, 'El actor sostiene la posición central durante la pausa del ciclo');
   assert.ok(samples.headClearance >= 0, 'La cabeza cabe en el slot de vuelo');
-  assert.deepEqual(samples.pose, ['1', '0']);
+  assert.deepEqual(samples.pose, ['0', '1']);
   assert.ok(samples.nextX < samples.x1, 'El segundo ciclo vuelve al lado izquierdo');
   assert.equal(await scene(page, 'flight').locator('p').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await toggle(page).isVisible(), true);
@@ -306,6 +316,7 @@ test('movimiento reducido inicial y dinámico conserva el final estático', asyn
   await enter(dynamic.page, 'flight');
   await dynamic.page.emulateMedia({ reducedMotion: 'reduce' });
   await state(dynamic.page, 'flight', 'static');
+  assert.equal(await scene(dynamic.page, 'flight').locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await toggle(dynamic.page).isVisible(), false);
   assert.equal(await dynamic.page.evaluate(() => document.getAnimations().length), 0);
   const calls = await dynamic.page.evaluate(() => window.animationCalls.length);
@@ -319,14 +330,14 @@ for (const [mode, options, setup] of [
   ['móvil', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }],
   ['puntero grueso', { hasTouch: true }],
   ['ahorro de datos', {}, () => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } })],
-]) test(`${mode}: repite 3600ms con desplazamiento corto de 28px`, async () => {
+]) test(`${mode}: repite 8000ms con desplazamiento corto de 28px`, async () => {
   const result = await pageFor(options, setup);
   await enter(result.page, 'flight');
   const timing = await scene(result.page, 'flight').locator('[data-mascot-actor]').evaluate(element => {
     const effect = element.getAnimations()[0].effect;
     return { duration: effect.getTiming().duration, x: new DOMMatrix(effect.getKeyframes()[0].transform).m41 };
   });
-  assert.equal(timing.duration, 3600);
+  assert.equal(timing.duration, 8000);
   assert.equal(timing.x, -28);
   await result.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await finished(result.page, 'flight');
@@ -349,6 +360,7 @@ test('sin JavaScript las escenas y la pose final siguen visibles', async () => {
   const result = await pageFor({ javaScriptEnabled: false });
   assert.equal(await scene(result.page, 'flight').locator('[data-mascot-part="landed"]').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await scene(result.page, 'flight').locator('[data-mascot-actor]').evaluate(element => getComputedStyle(element).transform), 'none');
+  assert.equal(await scene(result.page, 'flight').locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await result.page.locator('[data-mascot-scene]').count(), 3);
   assert.equal(await result.page.locator('[data-mascot-copy-full]').textContent(), projectCopy);
   assert.equal(await result.page.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
@@ -365,8 +377,8 @@ test('pausa manual conserva fase y foco, sobrevive hidden/viewport y reanuda por
   await toggle(page).focus();
   await page.keyboard.press('Space');
   await pausedFlight(page);
-  assert.equal(await toggle(page).textContent(), 'Reanudar vuelo');
-  assert.equal(await toggle(page).getAttribute('aria-label'), 'Reanudar vuelo');
+  assert.equal(await toggle(page).textContent(), '');
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Reanudar animación de Sarin');
   assert.equal(await toggle(page).evaluate(element => document.activeElement === element), true);
   const phase = await flightTimes(page);
   await page.waitForTimeout(120);
@@ -380,8 +392,8 @@ test('pausa manual conserva fase y foco, sobrevive hidden/viewport y reanuda por
   assert.deepEqual(await flightTimes(page), phase);
   await toggle(page).focus(); await page.keyboard.press('Enter');
   await state(page, 'flight', 'playing');
-  assert.equal(await toggle(page).textContent(), 'Pausar vuelo');
-  assert.equal(await toggle(page).getAttribute('aria-label'), 'Pausar vuelo');
+  assert.equal(await toggle(page).textContent(), '');
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Pausar animación de Sarin');
   assert.equal(await toggle(page).evaluate(element => document.activeElement === element), true);
   await clean(result);
 });
@@ -467,18 +479,18 @@ test('resize recalcula el vuelo compacto conservando la fase y la pausa del usua
   await toggle(page).click();
   await pausedFlight(page);
   const calls = await page.evaluate(() => window.animationCalls.length);
-  const before = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => element.getAnimations()[0].currentTime / 4400);
+  const before = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => element.getAnimations()[0].currentTime / 8800);
   await page.setViewportSize({ width: 390, height: 720 });
-  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="flight"] [data-mascot-actor]').getAnimations()[0].effect.getTiming().duration === 3600);
+  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="flight"] [data-mascot-actor]').getAnimations()[0].effect.getTiming().duration === 8000);
   const after = await scene(page, 'flight').locator('[data-mascot-actor]').evaluate(element => {
     const animation = element.getAnimations()[0];
-    return { phase: animation.currentTime / 3600, playState: animation.playState,
+    return { phase: animation.currentTime / 8000, playState: animation.playState,
       xs: animation.effect.getKeyframes().map(frame => new DOMMatrix(frame.transform).m41) };
   });
   assert.ok(Math.abs(before - after.phase) < .001);
   assert.equal(after.playState, 'paused');
   assert.ok(after.xs.every(x => Math.abs(x) <= 28));
-  assert.equal(await toggle(page).textContent(), 'Reanudar vuelo');
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Reanudar animación de Sarin');
   assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
   await clean(result);
 });
@@ -570,5 +582,184 @@ test('un error del callback de escritura restaura full y no deja excepción ni r
   assert.equal(await result.page.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
   assert.equal(await result.page.locator('[data-mascot-copy-typed]').textContent(), '');
   assert.equal(await result.page.evaluate(() => document.getAnimations().length), 0);
+  await clean(result);
+});
+
+test('proceso reutiliza tecleo finito, conserva copia accesible y no toca la tarjeta', async () => {
+  const result = await pageFor({}, undefined, undefined, '?process=1');
+  const { page } = result;
+  const process = scene(page, 'process');
+  const full = process.locator('[data-mascot-copy-full]');
+  const typed = process.locator('[data-mascot-copy-typed]');
+  await enter(page, 'process');
+  assert.equal(await process.getAttribute('aria-hidden'), null);
+  assert.equal(await full.textContent(), processCopy);
+  assert.equal(await full.getAttribute('aria-hidden'), null);
+  assert.equal(await typed.getAttribute('aria-hidden'), 'true');
+  const clock = await process.locator('[data-mascot-actor]').evaluate(element => {
+    const animation = element.getAnimations()[0];
+    animation.pause(); animation.currentTime = 1500;
+    return animation.effect.getTiming();
+  });
+  assert.equal(clock.duration, 3000);
+  assert.equal(clock.iterations, 1);
+  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="process"] [data-mascot-copy-typed]').textContent.length > 0);
+  const copy = await typed.textContent();
+  assert.ok(copy.length < processCopy.length && processCopy.startsWith(copy));
+  assert.equal(await full.textContent(), processCopy);
+  const frames = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'process' && call.part.startsWith('typing-')));
+  assert.equal(frames.length, 2);
+  assert.ok(frames.every(frame => frame.duration === 280 && frame.iterations === 9));
+  await process.evaluate(element => element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 2800; animation.play(); }));
+  await finished(page, 'process');
+  assert.equal(await full.evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await typed.textContent(), '');
+  assert.equal(await page.locator('#process-card').textContent(), 'Contenido permanente de la tarjeta');
+  assert.equal(await page.locator('#process-card').evaluate(element => element.getAnimations().length), 0);
+  const calls = await page.evaluate(() => window.animationCalls.length);
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await process.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
+  await clean(result);
+});
+
+test('saludo extiende el ciclo, inmoviliza actor y muestra welcome/bubble solo en la parada', async () => {
+  const result = await pageFor();
+  const { page } = result;
+  await enter(page, 'flight');
+  const samples = await scene(page, 'flight').evaluate(element => {
+    const actor = element.querySelector('[data-mascot-actor]');
+    const animations = element.getAnimations({ subtree: true });
+    const clock = actor.getAnimations()[0];
+    const duration = clock.effect.getTiming().duration;
+    animations.forEach(animation => animation.pause());
+    const sample = offset => {
+      animations.forEach(animation => { animation.currentTime = offset * duration; });
+      const matrix = new DOMMatrix(getComputedStyle(actor).transform);
+      return { offset, x: matrix.m41, transform: [matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.m41, matrix.m42],
+        parts: ['flying', 'landed', 'greeting', 'trail'].map(name => getComputedStyle(element.querySelector(`[data-mascot-part="${name}"]`)).opacity),
+        angle: Math.atan2(new DOMMatrix(getComputedStyle(element.querySelector('[data-mascot-part="landed"]')).transform).b,
+          new DOMMatrix(getComputedStyle(element.querySelector('[data-mascot-part="landed"]')).transform).a) * 180 / Math.PI };
+    };
+    return { duration, iterations: clock.effect.getTiming().iterations, frames: clock.effect.getKeyframes(),
+      samples: [0, .26, .27, .285, .29, .35, .43, .6, .699, .7, .701, .72, .74, .85, 1.05].map(sample) };
+  });
+  assert.equal(samples.duration, 8800);
+  assert.equal(samples.iterations, Infinity);
+  const at = offset => samples.samples.find(sample => sample.offset === offset);
+  const hold = [.27, .29, .35, .43, .6, .7, .72].map(offset => at(offset).x);
+  assert.ok(hold.every(x => Math.abs(x - hold[0]) < .01));
+  assert.ok([.29, .35, .43, .6, .7, .72].every(offset => at(offset).transform
+    .every((value, index) => Math.abs(value - at(.27).transform[index]) < .01)), 'El actor no se traslada ni inclina durante el saludo');
+  // WAAPI interpola offsets binarios: en el límite puede devolver 5e-15 en lugar de cero.
+  for (const offset of [.27, .72]) assert.ok(at(offset).parts.slice(0, 2)
+    .every((value, index) => Math.abs(Number(value) - index) < 1e-12));
+  assert.deepEqual(at(.35).parts, ['0', '1', '1', '0']);
+  assert.deepEqual(at(.6).parts, ['0', '1', '1', '0']);
+  assert.equal(at(0).parts[2], '0');
+  assert.equal(at(.26).parts[2], '0');
+  assert.equal(at(.285).parts[2], '0');
+  assert.equal(at(.29).parts[2], '1');
+  assert.equal(at(.699).parts[2], '1');
+  assert.equal(at(.7).parts[2], '0');
+  assert.equal(at(.701).parts[2], '0');
+  assert.equal(at(.74).parts[2], '0');
+  assert.deepEqual(at(.85).parts.slice(0, 3), ['1', '0', '0']);
+  assert.ok(at(.85).x > at(.72).x, 'El vuelo continúa a la derecha después del saludo');
+  assert.ok(at(1.05).x < at(.27).x, 'El siguiente ciclo vuelve a entrar desde la izquierda');
+  assert.ok([.35, .43].some(offset => Math.abs(at(offset).angle) > .5));
+  assert.ok(samples.samples.every(sample => Math.abs(sample.angle) <= 4.01));
+  assert.equal(await scene(page, 'flight').locator('[data-mascot-part="greeting"]').getAttribute('aria-live'), null);
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await finished(page, 'flight');
+  assert.equal(await scene(page, 'flight').locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await scene(page, 'flight').locator('[data-mascot-part="landed"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  await clean(result);
+});
+
+for (const trigger of ['viewport', 'hidden', 'resize', 'reduced']) test(`proceso: ${trigger} restaura la copia completa, limpia y no repite`, async () => {
+  const result = await pageFor({}, undefined, undefined, '?process=1');
+  const { page } = result;
+  const process = scene(page, 'process');
+  const full = process.locator('[data-mascot-copy-full]');
+  const typed = process.locator('[data-mascot-copy-typed]');
+  await enter(page, 'process');
+  await process.locator('[data-mascot-actor]').evaluate(element => {
+    const clock = element.getAnimations()[0];
+    clock.pause(); clock.currentTime = 1500;
+  });
+  await page.waitForFunction(() => document.querySelector('[data-mascot-scene="process"] [data-mascot-copy-typed]').textContent.length > 0);
+  const calls = await page.evaluate(() => window.animationCalls.length);
+  if (trigger === 'viewport') await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  else if (trigger === 'hidden') await hidden(page, true);
+  else if (trigger === 'resize') await page.setViewportSize({ width: 900, height: 720 });
+  else await page.emulateMedia({ reducedMotion: 'reduce' });
+  await state(page, 'process', trigger === 'reduced' ? 'static' : 'finished');
+  assert.equal(await process.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  assert.equal(await typed.textContent(), '');
+  assert.equal(await full.textContent(), processCopy);
+  assert.equal(await full.evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await process.locator('[data-mascot-part="window"]').evaluate(element => element.classList.contains('is-typing')), false);
+  assert.equal(await page.evaluate(() => window.pendingSceneFrames.size), 0);
+  if (trigger === 'hidden') await hidden(page, false);
+  else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await process.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.initScenes());
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
+  assert.equal(await page.locator('#process-card').textContent(), 'Contenido permanente de la tarjeta');
+  await clean(result);
+});
+
+for (const invalid of ['without=greeting', 'invalid=greeting']) test(`${invalid}: vuelo queda estático y el control oculto`, async () => {
+  const result = await pageFor({}, undefined, undefined, `?${invalid}`);
+  assert.equal(await scene(result.page, 'flight').getAttribute('data-mascot-state'), 'static');
+  assert.equal(await scene(result.page, 'flight').evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  assert.equal(await toggle(result.page).isVisible(), false);
+  assert.equal(await toggle(result.page).locator('svg').count(), 1);
+  assert.equal(await scene(result.page, 'flight').locator('[data-mascot-part="landed"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  await clean(result);
+});
+
+test('proceso sin JavaScript o sin rAF conserva texto accesible y frame A visibles', async () => {
+  const noJS = await pageFor({ javaScriptEnabled: false }, undefined, undefined, '?process=1');
+  const process = scene(noJS.page, 'process');
+  assert.equal(await process.locator('[data-mascot-copy-full]').textContent(), processCopy);
+  assert.equal(await process.locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await process.locator('[data-mascot-copy-typed]').textContent(), '');
+  assert.equal(await process.locator('[data-mascot-part="typing-a"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await process.locator('[data-mascot-part="typing-b"]').evaluate(element => getComputedStyle(element).opacity), '0');
+  assert.deepEqual(noJS.errors, []);
+  await noJS.context.close();
+  const noRAF = await pageFor({}, () => { window.requestAnimationFrame = undefined; }, undefined, '?process=1');
+  assert.equal(await scene(noRAF.page, 'process').getAttribute('data-mascot-state'), 'static');
+  assert.equal(await scene(noRAF.page, 'process').locator('[data-mascot-copy-full]').textContent(), processCopy);
+  assert.equal(await scene(noRAF.page, 'process').locator('[data-mascot-copy-full]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await noRAF.page.evaluate(() => window.animationCalls.length), 0);
+  await clean(noRAF);
+});
+
+test('control conserva el SVG, usa nombre/title nuevos y data-paused al pausar y reanudar', async () => {
+  const result = await pageFor();
+  const { page } = result;
+  const svg = await toggle(page).locator('svg').evaluate(element => element.outerHTML);
+  await enter(page, 'flight');
+  assert.equal(await toggle(page).locator('svg').count(), 1);
+  assert.equal(await toggle(page).textContent(), '');
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Pausar animación de Sarin');
+  assert.equal(await toggle(page).getAttribute('title'), 'Pausar animación de Sarin');
+  assert.equal(await toggle(page).getAttribute('data-paused'), 'false');
+  await toggle(page).click();
+  await pausedFlight(page);
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Reanudar animación de Sarin');
+  assert.equal(await toggle(page).getAttribute('title'), 'Reanudar animación de Sarin');
+  assert.equal(await toggle(page).getAttribute('data-paused'), 'true');
+  await toggle(page).click();
+  await state(page, 'flight', 'playing');
+  assert.equal(await toggle(page).getAttribute('aria-label'), 'Pausar animación de Sarin');
+  assert.equal(await toggle(page).getAttribute('data-paused'), 'false');
+  assert.equal(await toggle(page).locator('svg').evaluate(element => element.outerHTML), svg);
+  assert.equal(await toggle(page).textContent(), '');
   await clean(result);
 });

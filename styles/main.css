@@ -311,19 +311,25 @@ nav .wrap { width:auto; padding:9px 10px 9px 14px; display:flex; align-items:cen
 .mascot-scene { position:relative; isolation:isolate; pointer-events:none; contain:layout; }
 .mascot-scene-actor { position:absolute; z-index:2; transform-origin:50% 90%; }
 .mascot-scene-actor img { width:100%; height:100%; object-fit:contain; }
-.mascot-flight-wrap { position:relative; height:128px; margin-top:-104px; margin-bottom:20px; }
-.mascot-scene--flight { width:calc(100% - 132px); height:128px; overflow:hidden; }
-.mascot-flight-toggle { position:absolute; right:0; bottom:12px; width:116px; min-height:44px; padding:8px; border:1px solid rgba(101,212,157,.5); border-radius:8px; background:var(--ink); color:var(--mint); font:500 10px 'IBM Plex Mono',monospace; cursor:pointer; }
+.mascot-flight-wrap { position:relative; height:172px; margin-top:-104px; margin-bottom:20px; }
+.mascot-scene--flight { width:100%; height:172px; overflow:hidden; }
+.mascot-flight-toggle { position:absolute; right:0; top:8px; display:grid; place-items:center; width:44px; height:44px; padding:0; border:1px solid rgba(101,212,157,.2); border-radius:50%; background:transparent; color:var(--mint); cursor:pointer; }
 .mascot-flight-toggle[hidden] { display:none; }
 .mascot-flight-toggle:hover { background:#12302e; }
 .mascot-flight-toggle:focus-visible { outline:2px solid var(--mint); outline-offset:4px; }
-.mascot-scene--flight .mascot-scene-actor { right:12%; bottom:0; width:106px; height:118px; }
+.mascot-play-icon { display:none; }
+.mascot-flight-toggle[data-paused="true"] .mascot-pause-icon { display:none; }
+.mascot-flight-toggle[data-paused="true"] .mascot-play-icon { display:block; }
+.mascot-scene--flight .mascot-scene-actor { left:calc(50% - 53px); top:12px; width:106px; height:118px; }
 .mascot-flight-pose, .mascot-landed-pose { position:absolute; inset:0; }
 .mascot-flight-pose { opacity:0; }
 .mascot-flight-trail { position:absolute; top:70%; left:-40px; width:52px; height:2px; opacity:0; background:linear-gradient(90deg,transparent,var(--mint)); }
+.mascot-flight-greeting { position:absolute; left:calc(50% + 68px); top:28px; width:min(340px,calc(50% - 88px)); margin:0; padding:14px 18px; border:1px solid rgba(101,212,157,.4); border-radius:14px; background:#0b2239; color:var(--paper); font-size:14px; line-height:1.55; }
+.mascot-flight-greeting::before { content:''; position:absolute; left:-6px; top:26px; width:10px; height:10px; border-left:1px solid rgba(101,212,157,.4); border-bottom:1px solid rgba(101,212,157,.4); background:#0b2239; transform:rotate(45deg); }
 .projects-introduction { flex:none; width:340px; }
-.mascot-scene--projects { display:grid; grid-template-columns:112px minmax(0,1fr); align-items:center; gap:12px; width:100%; min-height:128px; }
-.mascot-scene--projects .mascot-scene-actor { position:relative; width:112px; height:116px; }
+.process-introduction { flex:none; width:400px; max-width:100%; }
+.mascot-scene--typing { display:grid; grid-template-columns:112px minmax(0,1fr); align-items:center; gap:12px; width:100%; min-height:128px; }
+.mascot-scene--typing .mascot-scene-actor { position:relative; width:112px; height:116px; }
 .mascot-typing-frame { position:absolute; inset:0; }
 .mascot-typing-frame--alternate { opacity:0; }
 .section-heading .mascot-project-copy { position:relative; min-width:0; max-width:none; margin:0; padding:14px; border:1px solid rgba(101,212,157,.35); border-radius:12px; background:#0b2239; color:var(--muted); font-size:13px; line-height:1.55; }
@@ -398,6 +404,8 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
 
 /* Responsive */
 @media (max-width:900px) {
+  .process-section .section-heading { display:block; }
+  .process-introduction { margin-top:24px; }
   .process-grid { grid-template-columns:1fr; grid-auto-rows:1fr; }
   .process-item { grid-template-columns:180px minmax(0,1fr); grid-template-rows:auto 1fr; column-gap:28px; padding:28px; border-top:1px solid transparent; }
   .process-item + .process-item { border-left:0; border-top:1px solid var(--line); }
@@ -496,13 +504,17 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .contact-title { font-size:clamp(32px,9vw,48px); }
   .contact-intro { padding-right:0; }
   .mascot-contact { width:88px; }
-  .mascot-flight-wrap { height:96px; margin-top:-64px; margin-bottom:16px; }
-  .mascot-scene--flight { height:96px; }
-  .mascot-scene--flight .mascot-scene-actor { right:8%; width:72px; height:88px; }
+  .mascot-flight-wrap { height:184px; margin-top:-64px; margin-bottom:16px; }
+  .mascot-scene--flight { height:184px; }
+  .mascot-scene--flight .mascot-scene-actor { left:calc(50% - 36px); top:8px; width:72px; height:88px; }
+  .mascot-flight-greeting { left:0; top:104px; width:100%; padding:12px 14px; font-size:13px; }
+  .mascot-flight-greeting::before { left:calc(50% - 5px); top:-6px; border-left:1px solid rgba(101,212,157,.4); border-top:1px solid rgba(101,212,157,.4); border-bottom:0; }
   .projects-introduction { width:100%; margin-top:22px; }
   .projects-introduction p { margin-top:0; }
-  .mascot-scene--projects { grid-template-columns:88px minmax(0,1fr); gap:10px; min-height:112px; }
-  .mascot-scene--projects .mascot-scene-actor { width:88px; height:92px; }
+  .process-introduction { width:100%; }
+  .process-introduction p { margin-top:0; }
+  .mascot-scene--typing { grid-template-columns:88px minmax(0,1fr); gap:10px; min-height:112px; }
+  .mascot-scene--typing .mascot-scene-actor { width:88px; height:92px; }
   .mascot-scene--contact { width:208px; height:100px; }
   .mascot-scene--contact .mascot-scene-actor { width:88px; height:92px; }
   .mascot-code-window { top:10px; width:114px; height:72px; }

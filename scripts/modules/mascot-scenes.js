@@ -1,7 +1,8 @@
 ﻿// @ts-check
-// Vuelo controlable mientras permanece visible; presentación y contacto de una sola entrada.
+// Vuelo y saludo controlables; tecleo en proyectos/proceso y contacto de una sola entrada.
 const initialized = new WeakSet();
-const KINDS = new Set(['flight', 'projects', 'contact']);
+const KINDS = new Set(['flight', 'projects', 'process', 'contact']);
+const TYPING_KINDS = new Set(['projects', 'process']);
 
 /** @typedef {'finished' | 'static'} FinalState */
 /** @typedef {{scene: HTMLElement, actor: HTMLElement | null, kind: string, consumed: boolean,
@@ -165,8 +166,8 @@ export function initMascotScenes() {
     return [
       { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 0, offset: 0 },
       { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 1, offset: .03 },
-      { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .34 },
-      { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .53 },
+      { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .27 },
+      { transform: `translate3d(${center}px,${crest}px,0) rotate(0deg)`, opacity: 1, offset: .72 },
       { transform: `translate3d(${right}px,0,0) rotate(2deg)`, opacity: 1, offset: .9 },
       { transform: `translate3d(${right}px,0,0) rotate(2deg)`, opacity: 0, offset: .97 },
       { transform: `translate3d(${left}px,0,0) rotate(-2deg)`, opacity: 0, offset: 1 },
@@ -175,7 +176,8 @@ export function initMascotScenes() {
   /** @param {boolean} compact @returns {Keyframe[]} */
   const trailFrames = compact => [
     { opacity: 0, offset: 0 }, { opacity: compact ? .25 : .6, offset: .16 },
-    { opacity: compact ? .25 : .6, offset: .7 }, { opacity: 0, offset: .97 }, { opacity: 0, offset: 1 },
+    { opacity: 0, offset: .27 }, { opacity: 0, offset: .72 },
+    { opacity: compact ? .25 : .6, offset: .8 }, { opacity: 0, offset: .97 }, { opacity: 0, offset: 1 },
   ];
   /** @param {Scene} item */
   const syncFlight = item => {
@@ -190,9 +192,10 @@ export function initMascotScenes() {
       item.scene.classList.toggle('is-playing', active);
       item.scene.dataset.mascotState = active ? 'playing' : 'paused';
       if (item.toggle) {
-        const label = item.userPaused ? 'Reanudar vuelo' : 'Pausar vuelo';
-        item.toggle.textContent = label;
+        const label = item.userPaused ? 'Reanudar animación de Sarin' : 'Pausar animación de Sarin';
         item.toggle.setAttribute('aria-label', label);
+        item.toggle.setAttribute('title', label);
+        item.toggle.dataset.paused = String(item.userPaused);
       }
     } catch {
       finalize(item, 'static');
@@ -246,8 +249,8 @@ export function initMascotScenes() {
     const copy = part('window');
     const full = copy?.querySelector('[data-mascot-copy-full]');
     const typed = copy?.querySelector('[data-mascot-copy-typed]');
-    if (item.kind === 'flight' && (!item.toggle || !part('flying') || !part('landed')) ||
-        item.kind === 'projects' && (!(copy instanceof HTMLElement) || !(full instanceof HTMLElement) ||
+    if (item.kind === 'flight' && (!item.toggle || !part('flying') || !part('landed') || !(part('greeting') instanceof HTMLElement)) ||
+        TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !(full instanceof HTMLElement) ||
           !(typed instanceof HTMLElement) || typed.getAttribute('aria-hidden') !== 'true' ||
           !part('typing-a') || !part('typing-b') || typeof window.requestAnimationFrame !== 'function' ||
           typeof window.cancelAnimationFrame !== 'function')) {
@@ -263,11 +266,33 @@ export function initMascotScenes() {
     const compact = isCompact();
     try {
       if (item.kind === 'flight') {
-        const duration = compact ? 3600 : 4400;
+        const duration = compact ? 8000 : 8800;
         const options = { iterations: Infinity };
         item.clock = animate(item, item.actor, flightFrames(item, compact), duration, options);
-        animate(item, part('flying'), [{ opacity: 1 }, { opacity: 1 }], duration, options);
-        animate(item, part('landed'), [{ opacity: 0 }, { opacity: 0 }], duration, options);
+        animate(item, part('flying'), [
+          { opacity: 1, offset: 0 }, { opacity: 1, offset: .26 },
+          { opacity: 0, offset: .27 }, { opacity: 0, offset: .72 },
+          { opacity: 1, offset: .74 }, { opacity: 1, offset: 1 },
+        ], duration, options);
+        animate(item, part('landed'), [
+          { opacity: 0, transform: 'rotate(0deg)', offset: 0 },
+          { opacity: 0, transform: 'rotate(0deg)', offset: .26 },
+          { opacity: 1, transform: 'rotate(0deg)', offset: .27 },
+          { opacity: 1, transform: 'rotate(-4deg)', offset: .35 },
+          { opacity: 1, transform: 'rotate(4deg)', offset: .43 },
+          { opacity: 1, transform: 'rotate(-4deg)', offset: .51 },
+          { opacity: 1, transform: 'rotate(4deg)', offset: .59 },
+          { opacity: 1, transform: 'rotate(0deg)', offset: .67 },
+          { opacity: 1, transform: 'rotate(0deg)', offset: .72 },
+          { opacity: 0, transform: 'rotate(0deg)', offset: .74 },
+          { opacity: 0, transform: 'rotate(0deg)', offset: 1 },
+        ], duration, options);
+        animate(item, part('greeting'), [
+          { opacity: 0, offset: 0, easing: 'steps(1,end)' },
+          { opacity: 1, offset: .29 },
+          { opacity: 1, offset: .7, easing: 'steps(1,start)' },
+          { opacity: 0, offset: .72 }, { opacity: 0, offset: 1 },
+        ], duration, options);
         animate(item, part('trail'), trailFrames(compact), duration, options);
         if (item.toggle) {
           item.toggleHandler = () => { item.userPaused = !item.userPaused; syncFlight(item); };
@@ -275,7 +300,7 @@ export function initMascotScenes() {
           item.toggle.hidden = false;
         }
         syncFlight(item);
-      } else if (item.kind === 'projects') {
+      } else if (TYPING_KINDS.has(item.kind)) {
         item.clock = animate(item, item.actor, [
           { transform: 'rotate(0deg)', offset: 0 },
           { transform: 'rotate(0deg)', offset: 1 },
@@ -328,22 +353,23 @@ export function initMascotScenes() {
   }
   function onResize() {
     scenes.forEach(item => {
-      if (item.kind === 'projects' && item.playing) finalize(item, 'finished');
+      if (TYPING_KINDS.has(item.kind) && item.playing) finalize(item, 'finished');
       if (item.kind !== 'flight' || !item.clock || !item.animations.size) return;
       const compact = isCompact();
-      const duration = compact ? 3600 : 4400;
+      const duration = compact ? 8000 : 8800;
       try {
+        const previousDuration = Number(item.clock.effect?.getTiming().duration);
+        const time = typeof item.clock.currentTime === 'number' ? item.clock.currentTime : 0;
+        const phase = previousDuration > 0 ? time / previousDuration : 0;
         for (const animation of item.animations.keys()) {
           const effect = /** @type {KeyframeEffect | null} */ (animation.effect);
           if (!effect) continue;
-          const previousDuration = Number(effect.getTiming().duration);
-          const time = typeof animation.currentTime === 'number' ? animation.currentTime : 0;
           if (animation === item.clock) effect.setKeyframes(flightFrames(item, compact));
           else if (effect.target instanceof HTMLElement && effect.target.dataset.mascotPart === 'trail') {
             effect.setKeyframes(trailFrames(compact));
           }
           effect.updateTiming({ duration });
-          animation.currentTime = previousDuration > 0 ? time / previousDuration * duration : 0;
+          animation.currentTime = phase * duration;
         }
         syncFlight(item);
       } catch {
@@ -377,9 +403,11 @@ export function initMascotScenes() {
     else reduced.addListener?.(onReducedMotion);
     listening = true;
     scenes.forEach(item => {
-      const missingTypingApi = item.kind === 'projects' &&
+      const missingTypingApi = TYPING_KINDS.has(item.kind) &&
         (typeof window.requestAnimationFrame !== 'function' || typeof window.cancelAnimationFrame !== 'function');
-      if (!item.actor || !KINDS.has(item.kind) || item.kind === 'flight' && !item.toggle || missingTypingApi) {
+      const missingFlightPart = item.kind === 'flight' && (!item.toggle ||
+        !(item.scene.querySelector('[data-mascot-part="greeting"]') instanceof HTMLElement));
+      if (!item.actor || !KINDS.has(item.kind) || missingFlightPart || missingTypingApi) {
         finalize(item, 'static');
       }
       else observer?.observe(item.scene);

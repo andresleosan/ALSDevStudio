@@ -111,3 +111,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ## Vuelo con pausas y Sarin tecleando · 2026-10-13
 - El titular solicita que Sarin se detenga y vuelva a volar; aclara expresamente «Repetir mientras la zona esté visible». Esta revisión sustituye la ejecución única solo para el vuelo. Añadir pausa manual y suspender fuera de pantalla o con la pestaña oculta.
 - En Proyectos, sustituir la pose de saludo y ventana genérica por Sarin con portátil, gesto de escritura y aparición progresiva del texto actual. Mantener el texto completo accesible, lectura sin JS y movimiento reducido estático. Contacto conserva su escena existente.
+### Saludo en vuelo y tecleo del proceso · 2026-10-13
+- Corrección solicitada sobre las animaciones publicadas: Sarin se detiene a mitad del vuelo, saluda, muestra «¡Hola! Una buena idea puede llegar lejos. ¿Le damos vuelo a la tuya?» y continúa; repite mientras la zona esté visible. Retirar el rótulo «Pausar vuelo», conservando un pequeño control de movimiento por icono.
+- Añadir portátil con dos poses de tecleo al encabezado de «Cómo trabajaremos», con el texto existente apareciendo progresivamente. Conservar las tres tarjetas y sus alturas, el contenido completo accesible y una composición estática con movimiento reducido o sin JavaScript.
