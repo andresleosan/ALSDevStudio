@@ -79,7 +79,8 @@
   <main id="contenido" tabindex="-1">
     <section class='hero' id='inicio'>
       <div class='wrap hero-grid'>
-        <div data-reveal>
+        <div class="hero-intro">
+          <div data-reveal>
           <div class='eyebrow'>Diseño y desarrollo · Medellín, Colombia</div>
           <h1>Ideas que se vuelven <em>producto.</em></h1>
           <p class='hero-copy'>Sitios web, tiendas y aplicaciones a medida. Trabajo contigo desde la primera conversación hasta la entrega.</p>
@@ -87,11 +88,18 @@
             <a class='button button-primary' href='#proyectos'>Ver proyectos <span aria-hidden='true'>↓</span></a>
 
           </div>
-          <div class='hero-signature'>
-            <img class='als-mascot mascot-welcome' src='assets/brand/mascot-welcome.png' width='320' height='480' alt='' decoding='async' fetchpriority='low'>
-            <div class='hero-meta'>
-              <span>Andrés Santiago</span>
-              <span>Desarrollo independiente · Trabajo remoto</span>
+          </div>
+          <div class="hero-signature" data-mascot-scene="author">
+            <div class="hero-mascot-stage" data-mascot-actor aria-hidden="true">
+              <span class="hero-signature-signal" data-mascot-part="signal"></span>
+              <img class="als-mascot mascot-welcome" src="assets/brand/mascot-welcome.png" width="320" height="480" alt="" decoding="async" fetchpriority="low">
+            </div>
+            <div class="hero-signature-message">
+              <p class="hero-greeting" data-mascot-part="greeting" aria-hidden="true">¡Hola! ¿Qué idea construimos hoy?</p>
+              <div class="hero-meta" data-mascot-part="window">
+                <span class="hero-meta-name"><span data-mascot-copy-full>Andrés Santiago</span><span class="mascot-copy-typed" data-mascot-copy-typed aria-hidden="true"></span></span>
+                <span class="hero-meta-role"><span data-mascot-copy-full>Desarrollo independiente · Trabajo remoto</span><span class="mascot-copy-typed" data-mascot-copy-typed aria-hidden="true"></span></span>
+              </div>
             </div>
           </div>
         </div>

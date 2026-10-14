@@ -2,7 +2,7 @@
 // Vuelo y saludo controlables; presentaciones, tarjetas y contacto de una sola entrada.
 const initialized = new WeakSet();
 const STEP_KINDS = new Set(['step-define', 'step-build', 'step-deliver']);
-const TYPING_KINDS = new Set(['projects', 'process', ...STEP_KINDS]);
+const TYPING_KINDS = new Set(['projects', 'process', 'author', ...STEP_KINDS]);
 const FRAME_KINDS = new Set(['projects', 'process', 'step-build']);
 const KINDS = new Set(['flight', 'contact', ...TYPING_KINDS]);
 
@@ -41,11 +41,15 @@ export function initMascotScenes() {
   /** @type {IntersectionObserver | null} */
   let observer = null;
   let listening = false;
+  let documentReady = document.readyState === 'complete';
 
   const removeListeners = () => {
     observer?.disconnect();
     if (!listening) return;
     document.removeEventListener('visibilitychange', onVisibility);
+    document.removeEventListener('close', onDialogClose, true);
+    document.removeEventListener('DOMContentLoaded', onDocumentReady, true);
+    window.removeEventListener('load', onDocumentReady, true);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('resize', onResize);
     reduced?.removeEventListener?.('change', onReducedMotion);
@@ -267,6 +271,7 @@ export function initMascotScenes() {
   /** @param {Scene} item */
   const play = item => {
     if (item.consumed || document.hidden || !item.inView) return;
+    if (item.kind === 'author' && (!documentReady || document.querySelector('dialog[open]'))) return;
     if (reduced?.matches || !item.actor || !KINDS.has(item.kind)) {
       finalize(item, 'static');
       return;
@@ -279,6 +284,7 @@ export function initMascotScenes() {
         TYPING_KINDS.has(item.kind) && (!(copy instanceof HTMLElement) || !pairs ||
           FRAME_KINDS.has(item.kind) && (!part('typing-a') || !part('typing-b')) ||
           item.kind === 'step-deliver' && !(part('approval') instanceof HTMLElement) ||
+          item.kind === 'author' && (!(part('signal') instanceof HTMLElement) || !(part('greeting') instanceof HTMLElement)) ||
           typeof window.requestAnimationFrame !== 'function' || typeof window.cancelAnimationFrame !== 'function')) {
       finalize(item, 'static');
       return;
@@ -328,13 +334,14 @@ export function initMascotScenes() {
         syncFlight(item);
       } else if (TYPING_KINDS.has(item.kind)) {
         const step = STEP_KINDS.has(item.kind);
-        const duration = step ? 3600 : 3000;
+        const author = item.kind === 'author';
+        const duration = step || author ? 3600 : 3000;
         /** @type {Keyframe[]} */
         let actorFrames = [
           { transform: 'rotate(0deg)', offset: 0 },
           { transform: 'rotate(0deg)', offset: 1 },
         ];
-        if (item.kind === 'step-define') {
+        if (item.kind === 'step-define' || author) {
           const rise = compact ? 1 : 3;
           actorFrames = [
             { transform: 'translateY(0) rotate(0deg)', offset: 0 },
@@ -370,8 +377,21 @@ export function initMascotScenes() {
             { opacity: 1, offset: .9 }, { opacity: 1, offset: 1 },
           ], duration, { easing: 'linear' });
         }
+        if (author) {
+          animate(item, part('signal'), [
+            { opacity: 0, transform: `translate(-50%,-50%) scale(${compact ? .95 : .85})`, offset: 0 },
+            { opacity: .5, transform: `translate(-50%,-50%) scale(${compact ? 1.08 : 1.2})`, offset: .45 },
+            { opacity: .2, transform: 'translate(-50%,-50%) scale(1)', offset: 1 },
+          ], duration, { easing: 'linear' });
+          animate(item, part('greeting'), [
+            { opacity: 0, transform: 'translateY(4px)', offset: 0 },
+            { opacity: 0, transform: 'translateY(4px)', offset: .25 },
+            { opacity: 1, transform: 'translateY(0)', offset: .4 },
+            { opacity: 1, transform: 'translateY(0)', offset: 1 },
+          ], duration, { easing: 'linear' });
+        }
         if (item.clock && copy instanceof HTMLElement && pairs) {
-          startTyping(item, copy, pairs, item.clock, duration, step ? .9 : .88);
+          startTyping(item, copy, pairs, item.clock, duration, step || author ? .9 : .88);
         }
       } else {
         const duration = compact ? 2200 : 2400;
@@ -407,6 +427,20 @@ export function initMascotScenes() {
       else if (document.hidden && item.playing) finalize(item, 'finished');
       else if (!document.hidden && item.inView && !item.consumed) play(item);
     });
+  }
+  function onDialogClose() {
+    scenes.forEach(item => {
+      if (item.kind === 'author' && !item.consumed && item.inView && !document.hidden) play(item);
+    });
+  }
+  /** Las cargas de recursos también atraviesan window en capture; solo cuenta el documento.
+   * @param {Event} event */
+  function onDocumentReady(event) {
+    if (event.type === 'load' && event.target !== document && event.target !== window) return;
+    documentReady = true;
+    document.removeEventListener('DOMContentLoaded', onDocumentReady, true);
+    window.removeEventListener('load', onDocumentReady, true);
+    onDialogClose();
   }
   function onResize() {
     scenes.forEach(item => {
@@ -448,12 +482,19 @@ export function initMascotScenes() {
     observer = new IntersectionObserver(entries => entries.forEach(entry => {
       const item = scenes.find(candidate => candidate.scene === entry.target);
       if (!item) return;
-      item.inView = entry.isIntersecting && entry.intersectionRatio >= (STEP_KINDS.has(item.kind) ? .6 : .3);
+      item.inView = entry.isIntersecting && entry.intersectionRatio >= (STEP_KINDS.has(item.kind) || item.kind === 'author' ? .6 : .3);
       if (item.kind === 'flight' && item.animations.size) syncFlight(item);
       else if (!entry.isIntersecting && item.playing) finalize(item, 'finished');
       else if (item.inView && !item.consumed) play(item);
     }), { threshold: [0, .3, .6] });
     document.addEventListener('visibilitychange', onVisibility);
+    if (scenes.some(item => item.kind === 'author')) {
+      document.addEventListener('close', onDialogClose, true);
+      if (!documentReady) {
+        document.addEventListener('DOMContentLoaded', onDocumentReady, true);
+        window.addEventListener('load', onDocumentReady, true);
+      }
+    }
     window.addEventListener('pagehide', onPageHide);
     window.addEventListener('resize', onResize);
     if (typeof reduced.addEventListener === 'function') reduced.addEventListener('change', onReducedMotion);

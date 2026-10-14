@@ -7,6 +7,14 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 const moduleURL = new URL('../../scripts/modules/mascot-scenes.js', import.meta.url);
 const projectCopy = 'Sitios publicados y productos en desarrollo. Abre cada proyecto para conocer su diseño y funcionalidad.';
 const processCopy = 'Así convertimos una idea en un sitio claro y útil.';
+const authorCopy = ['Andrés Santiago', 'Desarrollo independiente · Trabajo remoto'];
+const authorGreeting = '¡Hola! ¿Qué idea construimos hoy?';
+const authorFixture = `<div class="hero-signature" data-mascot-scene="author" data-mascot-state="idle">
+  <div class="hero-mascot-stage" data-mascot-actor aria-hidden="true">Sarin<span data-mascot-part="signal"></span></div>
+  <div class="hero-signature-message"><p data-mascot-part="greeting" aria-hidden="true">${authorGreeting}</p>
+    <div class="hero-meta" data-mascot-part="window"><span class="hero-meta-name"><span data-mascot-copy-full>${authorCopy[0]}</span><span data-mascot-copy-typed aria-hidden="true"></span></span>
+      <span class="hero-meta-role"><span data-mascot-copy-full>${authorCopy[1]}</span><span data-mascot-copy-typed aria-hidden="true"></span></span></div>
+  </div></div>`;
 const steps = [
   ['step-define', 'Define', 'Primero aclaramos la idea y acordamos el resultado esperado.'],
   ['step-build', 'Construye', 'Diseñamos y construimos el sitio con revisiones en cada etapa.'],
@@ -30,6 +38,9 @@ const fixture = `<!DOCTYPE html><meta charset="utf-8"><link rel="icon" href="dat
 body{margin:0;font-family:sans-serif}main{padding:20px}#focus-anchor{position:fixed;top:5px;left:5px}
 [data-mascot-toggle]{position:fixed;top:5px;right:5px}
 [data-mascot-scene]{height:210px;margin-top:900px;position:relative;overflow:hidden;border:1px solid #555}
+.hero-signature[data-mascot-scene]{margin-top:0;height:170px}
+.hero-meta-name,.hero-meta-role{display:block;position:relative}
+[data-mascot-part="signal"]{position:absolute;left:50%;top:50%;width:40px;height:40px;transform:translate(-50%,-50%) scale(1);opacity:.2}
 [data-mascot-actor]{position:absolute;right:20px;top:30px;width:80px;height:100px;background:#18455b;opacity:1;transform:none}
 [data-mascot-part="flying"],[data-mascot-part="landed"]{position:absolute;inset:0;opacity:1}
 [data-mascot-part="flying"],[data-mascot-part="trail"]{opacity:0}
@@ -80,6 +91,17 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.url.includes('without=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '');
     if (request.url.includes('invalid=greeting')) html = html.replace('<div data-mascot-part="greeting">Hola</div>', '<svg data-mascot-part="greeting"></svg>');
+    if (request.url.includes('author=1')) {
+      html = html.replace('<main>', '<main>' + authorFixture);
+      if (request.url.includes('invalidauthor=signal')) html = html.replace('<span data-mascot-part="signal"></span>', '<svg data-mascot-part="signal"></svg>');
+      if (request.url.includes('invalidauthor=greeting')) html = html.replace(`<p data-mascot-part="greeting" aria-hidden="true">${authorGreeting}</p>`, '');
+      if (request.url.includes('lateinit=1')) html = html.replace('window.initScenes?.();', '');
+      if (request.url.includes('modal=')) {
+        const openDialog = `const dialog=document.createElement('dialog');dialog.id='analytics-fixture';dialog.textContent='Preferencias de analítica';document.body.append(dialog);dialog.showModal();`;
+        const init = request.url.includes('modal=before') ? `${openDialog}window.initScenes?.();` : `window.initScenes?.();${openDialog}`;
+        html = html.replace('window.initScenes?.();', init);
+      }
+    }
     response.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' }).end(html);
   }
 });
@@ -1001,4 +1023,264 @@ test('fallback de tarjetas sin JS/API o con pareja inválida mantiene textos y p
   assert.deepEqual(await scene(invalid.page, 'step-define').locator('[data-mascot-copy-full]').allTextContents(), [steps[0][1], steps[0][2]]);
   assert.equal(await scene(invalid.page, 'step-define').evaluate(element => element.getAnimations({ subtree: true }).length), 0);
   await clean(invalid);
+});
+
+test('author escribe nombre→bio con originales accesibles, saludo finito y sin cambiar foco', async () => {
+  const result = await pageFor({}, undefined, undefined, '?author=1');
+  const { page } = result;
+  const author = scene(page, 'author');
+  const full = author.locator('[data-mascot-copy-full]');
+  const typed = author.locator('[data-mascot-copy-typed]');
+  await page.locator('#focus-anchor').focus();
+  await enter(page, 'author');
+  assert.equal(await author.getAttribute('aria-hidden'), null);
+  assert.equal(await author.locator('[data-mascot-actor]').getAttribute('aria-hidden'), 'true');
+  assert.equal(await author.locator('[data-mascot-part="greeting"]').getAttribute('aria-hidden'), 'true');
+  assert.deepEqual(await full.allTextContents(), authorCopy);
+  assert.deepEqual(await full.evaluateAll(elements => elements.map(element => element.getAttribute('aria-hidden'))), [null, null]);
+  assert.deepEqual(await typed.evaluateAll(elements => elements.map(element => element.getAttribute('aria-hidden'))), ['true', 'true']);
+  const timing = await author.evaluate(element => {
+    element.getAnimations({ subtree: true }).forEach(animation => { animation.pause(); animation.currentTime = 3600 * .12; });
+    return element.querySelector('[data-mascot-actor]').getAnimations()[0].effect.getTiming();
+  });
+  assert.equal(timing.duration, 3600);
+  assert.equal(timing.iterations, 1);
+  await page.waitForFunction(() => document.querySelector('.hero-meta-name [data-mascot-copy-typed]').textContent.length > 0);
+  const first = await typed.allTextContents();
+  assert.ok(first[0].length < authorCopy[0].length && authorCopy[0].startsWith(first[0]));
+  assert.equal(first[1], '');
+  await author.evaluate(element => element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 1800; }));
+  await page.waitForFunction(() => document.querySelector('.hero-meta-role [data-mascot-copy-typed]').textContent.length > 0);
+  const middle = await typed.allTextContents();
+  assert.equal(middle[0], authorCopy[0]);
+  assert.ok(middle[1].length < authorCopy[1].length && authorCopy[1].startsWith(middle[1]));
+  assert.deepEqual(await full.allTextContents(), authorCopy);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'focus-anchor');
+  await author.evaluate(element => element.getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 3500; animation.play(); }));
+  await finished(page, 'author');
+  assert.deepEqual(await typed.allTextContents(), ['', '']);
+  assert.deepEqual(await full.evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+  assert.equal(await author.locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  const calls = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length);
+  await page.evaluate(() => scrollTo({ top: 800, behavior: 'instant' }));
+  await author.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.initScenes());
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length), calls);
+  await clean(result);
+});
+
+for (const moment of ['before', 'after']) test(`author espera el diálogo abierto ${moment} de init y empieza al cierre nativo`, async () => {
+  const result = await pageFor({}, undefined, undefined, `?author=1&modal=${moment}`);
+  const { page } = result;
+  const author = scene(page, 'author');
+  await page.waitForTimeout(120);
+  assert.equal(await page.locator('dialog[open]').count(), 1);
+  assert.equal(await author.getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await author.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  assert.deepEqual(await author.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+  assert.deepEqual(await author.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+  await page.locator('dialog').evaluate(element => element.close());
+  await state(page, 'author', 'playing');
+  assert.equal(await page.locator('dialog[open]').count(), 0);
+  await hidden(page, true);
+  await finished(page, 'author');
+  await clean(result);
+});
+
+for (const milestone of ['DOMContentLoaded', 'load']) test(`author espera documentReady y reintenta con ${milestone}`, async () => {
+  const result = await pageFor({}, () => {
+    Object.defineProperty(document, 'readyState', { configurable: true, get: () => 'interactive' });
+    window.blockedReadyEvents = [];
+    document.addEventListener('DOMContentLoaded', event => {
+      window.blockedReadyEvents.push('DOMContentLoaded'); event.stopImmediatePropagation();
+    }, { capture: true, once: true });
+    window.addEventListener('load', event => {
+      window.blockedReadyEvents.push('load'); event.stopImmediatePropagation();
+    }, { capture: true, once: true });
+  }, undefined, milestone === 'load' ? '?author=1&lateinit=1' : '?author=1');
+  const { page } = result;
+  await page.waitForFunction(() => window.blockedReadyEvents.length === 2);
+  if (milestone === 'load') await page.evaluate(() => window.initScenes());
+  await page.waitForTimeout(120);
+  assert.equal(await scene(page, 'author').getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length), 0);
+  await page.evaluate(() => {
+    const image = document.createElement('img'); document.body.append(image); image.dispatchEvent(new Event('load'));
+  });
+  await page.waitForTimeout(50);
+  assert.equal(await scene(page, 'author').getAttribute('data-mascot-state'), 'idle', 'La carga de una imagen no equivale a documentReady');
+  if (milestone === 'DOMContentLoaded') {
+    await page.evaluate(() => {
+      const dialog = document.createElement('dialog'); document.body.append(dialog); dialog.showModal();
+      document.dispatchEvent(new Event('DOMContentLoaded'));
+    });
+    await page.waitForTimeout(80);
+    assert.equal(await scene(page, 'author').getAttribute('data-mascot-state'), 'idle');
+    assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length), 0);
+    await page.locator('dialog').evaluate(element => element.close());
+  } else await page.evaluate(() => window.dispatchEvent(new Event('load')));
+  await state(page, 'author', 'playing');
+  await hidden(page, true);
+  await finished(page, 'author');
+  await clean(result);
+});
+
+test('author saluda con amplitud reducida en compacto, señal centrada y greeting desde .25', async () => {
+  for (const compact of [false, true]) {
+    const result = await pageFor(compact ? { viewport: { width: 390, height: 844 } } : {}, undefined, undefined, '?author=1');
+    const { page } = result;
+    const author = scene(page, 'author');
+    await enter(page, 'author');
+    const samples = await author.evaluate(element => {
+      const actor = element.querySelector('[data-mascot-actor]');
+      const signal = element.querySelector('[data-mascot-part="signal"]');
+      const greeting = element.querySelector('[data-mascot-part="greeting"]');
+      const animations = element.getAnimations({ subtree: true });
+      animations.forEach(animation => animation.pause());
+      const sample = offset => {
+        animations.forEach(animation => { animation.currentTime = 3600 * offset; });
+        const signalStyle = getComputedStyle(signal);
+        const greetingStyle = getComputedStyle(greeting);
+        const signalMatrix = new DOMMatrix(signalStyle.transform);
+        return { offset, scale: signalMatrix.a, x: signalMatrix.m41, y: signalMatrix.m42,
+          opacity: Number(signalStyle.opacity), greeting: Number(greetingStyle.opacity), greetingY: new DOMMatrix(greetingStyle.transform).m42 };
+      };
+      return { samples: [0, .2, .25, .325, .45, .95].map(sample),
+        frames: actor.getAnimations()[0].effect.getKeyframes().map(frame => {
+          const matrix = new DOMMatrix(frame.transform);
+          return { y: matrix.m42, angle: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI };
+        }), timing: signal.getAnimations()[0].effect.getTiming() };
+    });
+    const at = offset => samples.samples.find(sample => sample.offset === offset);
+    assert.equal(samples.timing.duration, 3600);
+    assert.equal(samples.timing.iterations, 1);
+    assert.ok(samples.frames.every(frame => Math.abs(frame.y) <= (compact ? 1 : 3) && Math.abs(frame.angle) <= 3.01));
+    assert.ok(samples.frames.some(frame => frame.angle < -2.5) && samples.frames.some(frame => frame.angle > 2.5));
+    assert.ok(Math.abs(at(0).scale - (compact ? .95 : .85)) < 1e-6);
+    assert.ok(Math.abs(at(.45).scale - (compact ? 1.08 : 1.2)) < 1e-6);
+    assert.ok(Math.abs(at(.45).opacity - .5) < 1e-12);
+    assert.equal(at(0).opacity, 0);
+    assert.ok(samples.samples.every(sample => Math.abs(sample.x + 20) < 1e-6 && Math.abs(sample.y + 20) < 1e-6));
+    assert.equal(at(.2).greeting, 0);
+    assert.ok(Math.abs(at(.325).greeting - .5) < 1e-6 && Math.abs(at(.325).greetingY - 2) < 1e-6);
+    assert.equal(at(.45).greeting, 1);
+    assert.equal(at(.95).greeting, 1);
+    assert.equal(at(.95).greetingY, 0);
+    await hidden(page, true);
+    await finished(page, 'author');
+    assert.equal(await author.locator('[data-mascot-part="greeting"]').textContent(), authorGreeting);
+    await clean(result);
+  }
+});
+
+test('author al cerrar diálogo fuera de viewport u oculto espera una entrada visible', async () => {
+  const result = await pageFor({}, undefined, undefined, '?author=1&modal=after');
+  const { page } = result;
+  await page.waitForTimeout(100);
+  await page.evaluate(() => scrollTo({ top: 700, behavior: 'instant' }));
+  await hidden(page, true);
+  await page.waitForTimeout(80);
+  await page.locator('dialog').evaluate(element => element.close());
+  await page.waitForTimeout(80);
+  assert.equal(await scene(page, 'author').getAttribute('data-mascot-state'), 'idle');
+  assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length), 0);
+  await hidden(page, false);
+  await page.waitForTimeout(80);
+  assert.equal(await scene(page, 'author').getAttribute('data-mascot-state'), 'idle');
+  await enter(page, 'author');
+  await hidden(page, true);
+  await finished(page, 'author');
+  await clean(result);
+});
+
+test('author limpia ambos textos al salir, ocultarse, redimensionar, reduced o pagehide', async () => {
+  for (const trigger of ['viewport', 'hidden', 'resize', 'reduced', 'pagehide']) {
+    const result = await pageFor({}, undefined, undefined, '?author=1');
+    const { page } = result;
+    const author = scene(page, 'author');
+    await enter(page, 'author');
+    await author.locator('[data-mascot-actor]').evaluate(element => {
+      const clock = element.getAnimations()[0]; clock.pause(); clock.currentTime = 1800;
+    });
+    await page.waitForFunction(() => document.querySelector('.hero-meta-role [data-mascot-copy-typed]').textContent.length > 0);
+    const calls = await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length);
+    if (trigger === 'viewport') await page.evaluate(() => scrollTo({ top: 700, behavior: 'instant' }));
+    else if (trigger === 'hidden') await hidden(page, true);
+    else if (trigger === 'resize') await page.setViewportSize({ width: 900, height: 720 });
+    else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'reduce' });
+    else await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await state(page, 'author', trigger === 'reduced' ? 'static' : 'finished');
+    assert.deepEqual(await author.locator('[data-mascot-copy-full]').allTextContents(), authorCopy);
+    assert.deepEqual(await author.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+    assert.deepEqual(await author.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+    assert.equal(await author.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+    assert.equal(await page.evaluate(() => window.pendingSceneFrames.size), 0);
+    if (trigger === 'hidden') await hidden(page, false);
+    else if (trigger === 'reduced') await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await author.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.initScenes());
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(() => window.animationCalls.filter(call => call.scene === 'author').length), calls);
+    await clean(result);
+  }
+});
+
+test('author sin JS/reduced/API o partes inválidas conserva nombre, bio y bienvenida estáticos', async () => {
+  const noJS = await pageFor({ javaScriptEnabled: false }, undefined, undefined, '?author=1');
+  const noJSAuthor = scene(noJS.page, 'author');
+  assert.deepEqual(await noJSAuthor.locator('[data-mascot-copy-full]').allTextContents(), authorCopy);
+  assert.deepEqual(await noJSAuthor.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+  assert.equal(await noJSAuthor.locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await noJSAuthor.locator('[data-mascot-actor]').evaluate(element => getComputedStyle(element).transform), 'none');
+  assert.deepEqual(noJS.errors, []); await noJS.context.close();
+  for (const [options, setup, search] of [
+    [{ reducedMotion: 'reduce' }, undefined, '?author=1'],
+    [{}, () => { Element.prototype.animate = undefined; }, '?author=1'],
+    [{}, () => { window.requestAnimationFrame = undefined; }, '?author=1'],
+    [{}, undefined, '?author=1&invalidauthor=signal'],
+    [{}, undefined, '?author=1&invalidauthor=greeting'],
+  ]) {
+    const result = await pageFor(options, setup, undefined, search);
+    const author = scene(result.page, 'author');
+    await state(result.page, 'author', 'static');
+    assert.deepEqual(await author.locator('[data-mascot-copy-full]').allTextContents(), authorCopy);
+    assert.deepEqual(await author.locator('[data-mascot-copy-full]').evaluateAll(elements => elements.map(element => getComputedStyle(element).opacity)), ['1', '1']);
+    assert.deepEqual(await author.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+    assert.equal(await author.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+    await clean(result);
+  }
+});
+
+test('author restaura pares, saludo y señal ante un error en bio y libera listeners al pagehide', async () => {
+  const result = await pageFor({}, undefined, undefined, '?author=1');
+  const { page } = result;
+  const author = scene(page, 'author');
+  await enter(page, 'author');
+  await author.evaluate(element => {
+    const typed = element.querySelector('.hero-meta-role [data-mascot-copy-typed]');
+    const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+    Object.defineProperty(typed, 'textContent', {
+      configurable: true, get() { return descriptor.get.call(this); },
+      set() { delete this.textContent; throw new Error('Bio interrumpida una vez'); },
+    });
+    const clock = element.querySelector('[data-mascot-actor]').getAnimations()[0];
+    clock.pause(); clock.currentTime = 1800;
+  });
+  await state(page, 'author', 'static');
+  assert.deepEqual(await author.locator('[data-mascot-copy-full]').allTextContents(), authorCopy);
+  assert.deepEqual(await author.locator('[data-mascot-copy-typed]').allTextContents(), ['', '']);
+  assert.equal(await author.locator('[data-mascot-part="greeting"]').evaluate(element => getComputedStyle(element).opacity), '1');
+  assert.equal(await author.locator('[data-mascot-part="signal"]').evaluate(element => getComputedStyle(element).opacity), '0.2');
+  assert.equal(await author.evaluate(element => element.getAnimations({ subtree: true }).length), 0);
+  const calls = await page.evaluate(() => window.animationCalls.length);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('pagehide'));
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    window.dispatchEvent(new Event('load'));
+    const dialog = document.createElement('dialog'); document.body.append(dialog); dialog.showModal(); dialog.close();
+  });
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.animationCalls.length), calls);
+  await clean(result);
 });

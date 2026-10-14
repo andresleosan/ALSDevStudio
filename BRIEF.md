@@ -117,3 +117,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 ### Tres etapas animadas · 2026-10-13
 - El titular solicita animar las tres tarjetas de «Cómo trabajaremos» y que el texto aparezca junto con cada animación. Definir: saludo; Construir: tecleo del portátil; Entregar: gesto y señal de aprobación. Título seguido de explicación, conservando los textos, la lectura completa y la igualdad de alturas.
 - Reproducción única por tarjeta al quedar suficientemente visible; vista estática con movimiento reducido o sin JavaScript. Extensión de las animaciones del sitio publicadas y autorizadas en la misma sesión.
+### Presentación animada de la portada · 2026-10-13
+- El titular solicita animar e innovar también la firma de la portada. Sarin saluda con un destello suave y globo «¡Hola! ¿Qué idea construimos hoy?», mientras aparecen en orden «Andrés Santiago» y «Desarrollo independiente · Trabajo remoto».
+- Conservar los dos textos, el CTA y la columna izquierda. Una entrada al estar visible, después del aviso de analítica; originales completos accesibles y vista estática sin JavaScript o con movimiento reducido. Reutilizar la ilustración actual.
