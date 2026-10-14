@@ -74,7 +74,15 @@ test('portafolio, mapa y aviso conservan lectura y controles a 320 y 1440 px', a
       await page.screenshot({ path: path.join(root, `test-results/cloudflare-pages-aviso-${width}.png`) });
       await page.locator('[data-analytics-choice="denied"]').click();
       assert.equal(await dialog.isVisible(), false);
-      assert.equal(await page.locator('.project-card').count(), 19);
+      assert.equal(await page.locator('.project-card').count(), 20);
+      assert.equal(await page.locator('a.project-card').count(), 19);
+      assert.equal(await page.locator('.hero-slide').count(), 19);
+      const pending = page.locator('article.project-card.project-card--pending[data-project-key="semancontrol"]');
+      assert.equal(await pending.count(), 1);
+      assert.equal(await pending.getAttribute('href'), null);
+      assert.equal(await pending.getAttribute('tabindex'), null);
+      assert.equal(await pending.getAttribute('role'), null);
+      assert.equal(await pending.locator('a, button, [tabindex], [role="button"], [role="link"]').count(), 0);
       await page.locator('.global-map-host').scrollIntoViewIfNeeded();
       await page.locator('.global-map-host svg').waitFor();
       assert.equal(await page.evaluate(async () => (await fetch('/assets/brand/world-map.svg')).status), 200, 'rechazo conserva fetch propio');

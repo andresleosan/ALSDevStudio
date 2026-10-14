@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Placeholder SemanControl y registro de fotogramas · 2026-10-14
+- Tarjeta20 mediante article.project-card--pending, categoríaProducto y estadoEn construcción. Visual HTML/CSS local con proporción16:10 y textos honestos; sin href/foco/CTA. Galería20; carrusel/capturas conservan19 proyectos con demos disponibles. Excluir article de flecha, subrayado y tilt mediante selectores de enlaces.
+- Corrección localizada de registro: translateX(12.5%) del fotograma B de Proceso, equivalente a40/320 del canvas. No editar PNG ni modificar temporización/controlador; bbox alfa del contenido permanece dentro del actor. Verificar cabeza/patas de ambos estados, noJS/reducido y texto, en320/390/1440.
+
 ### Catálogo Sarin Bot y vuelo de ida y vuelta · 2026-10-14
 - Conservar la galería/carrusel estáticos y su diseño existente. Proyecto19, clave `sarinbotsaas`, URL externa HTTPS con noopener/noreferrer, estado Próximamente. Captura real mediante el pipeline existente a1440×900 y variantes AVIF/WebP480/768/1200, sin iframe ni conexiones automáticas nuevas.
 - Vuelo con pose de giro en los extremos y parada central en ambas direcciones; cinco mensajes locales de servicios. Reservar el tamaño del globo para el mensaje más alto, conservar poses y WAAPI con cleanup. No agregar dependencias, datos o cambios de proveedor.

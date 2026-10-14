@@ -1,5 +1,9 @@
 # Brief — ALS DevStudio
 
+## Espacio SemanControl y tecleo estable · 2026-10-14
+- El titular está construyendo SemanControl; aún no ha hecho push ni está publicado. Añadir su espacio en la galería como tarjeta no clicable «En construcción», sin inventar captura/funcionalidades y sin reutilizar el enlace de Sarin Bot que figura en el Markdown recibido.
+- Corregir el movimiento extraño de la pose de Sarin ante la mesa en Proceso. Diagnóstico: el PNG B está desplazado40px frente a A, causando un salto de14px/11px en pantalla; el controlador mantiene neutral el actor. Alinear el segundo fotograma conservando tecleo y texto progresivo.
+
 ## Proyecto Sarin Bot y vuelo con mensajes · 2026-10-14
 - Añadir el enlace proporcionado por el titular `https://sarinbotsaas.pages.dev/` al catálogo y al carrusel, después de los 18 proyectos actuales. Nombre visible Sarin Bot, categoría Producto y estado Próximamente: el sitio público declara que registro, reservas y chats aún no están disponibles. Descripción: «Producto en preparación para organizar las citas y la agenda de un negocio».
 - Cambiar el vuelo existente por ida y vuelta con paradas y cinco textos distintos, sin «Hola». El titular confirma que los mensajes deben hablar de los servicios de ALS DevStudio. Conservar la ausencia de controles manuales y la suspensión por viewport/pestaña/reducido.

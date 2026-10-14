@@ -67,7 +67,7 @@ export function initDepth() {
       queryAll(String(selector), HTMLElement).map(element => ({ element, max: Number(max) })),
     );
     if (mode === 'pointer' && projectHoverQuery.matches) {
-      targets.push(...queryAll('.project-card', HTMLElement).map(element => ({ element, max: 7 })));
+      targets.push(...queryAll('a.project-card', HTMLAnchorElement).map(element => ({ element, max: 7 })));
     }
     targets.forEach(({ element }) => element.classList.add('tilt-3d'));
 
