@@ -22,7 +22,15 @@ RED inicial0/3 y RED de documentReady0/2 observados antes de los cambios respect
 
 Informes locales `test-results/sarin-author-local-scenes.json` y `sarin-author-local-frames.json`. La carrera inicial de defer/DCL y el selector de spans fueron señalados en revisión independiente y corregidos antes del candidato. Un diálogo futuro abierto tras consumir la escena no reinicia una entrada ya vista; la espera cubre el aviso inicial de analítica. QA Chromium no sustituye lector de pantalla.
 
-Seguridad: contenido fijo con textContent, originales accesibles y efectos decorativos; sin dependencias, secretos, datos o redes nuevas. Cleanup de DCL/load/close en captura, rAF y efectos; CSP/Analytics/canonical conservados. Sin bloqueantes en revisión independiente. Pendiente comprobar candidato Pages antes de continuar la publicación autorizada.
+Seguridad: contenido fijo con textContent, originales accesibles y efectos decorativos; sin dependencias, secretos, datos o redes nuevas. Cleanup de DCL/load/close en captura, rAF y efectos; CSP/Analytics/canonical conservados. Sin bloqueantes en revisión independiente.
+
+## Candidato verificado
+
+Fuente funcional `f46e181a1a1568436a089c3b13415f7e02d6cf23`, rama `feat/sarin-presentacion-portada`. Cloudflare muestra https://7e452ba7.alsdevstudio.pages.dev/ asociado al commit.
+
+Cronos repitió Pages4/4, integración10/10 y fotogramas16/16 PASS en línea: recursos iguales al build, preview noindex, privacidad/rutas/controles conservados. Chrome real confirma author idle y diálogo abierto; tras rechazar y bajar hasta la firma, author finished con clones vacíos, textos/globo completos y sin overflow. Captura `test-results/sarin-author-candidate-chrome.jpg`; reportes `sarin-author-preview-scenes.json` y `sarin-author-preview-frames.json`.
+
+La promoción continúa las animaciones cuya publicación el titular autorizó expresamente en esta sesión, con esta extensión concreta solicitada a la firma. No cambia el dominio, acceso, datos ni proveedores. El registro del candidato es documental; los archivos públicos promovidos son los revisados.
 
 ## Reversión
 
