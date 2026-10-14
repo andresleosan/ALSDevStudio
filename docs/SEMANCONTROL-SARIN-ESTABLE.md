@@ -24,6 +24,8 @@ Evidencia local ignorada por Git: `test-results/sarin-process-registration-red-r
 
 Candidato `https://027c6235.alsdevstudio.pages.dev/`, commit funcional `08cfe52`: Cronos repitió Pages4/4 (artefacto/index/CSS/cabeceras/consentimiento), placeholder6/6 y registro9/9 PASS. Reportes `seman-qa-preview.json` y `sarin-process-registration-preview.json`; capturas desktop/móvil/fotogramas conservadas. Chrome real confirma artículo no enlazado, transform solo en el fotograma alternativo de Proceso, estado final y ausencia de overflow. Evidencia visual `seman-preview-card-chrome.jpg` y `seman-preview-process-chrome.jpg`. Revisión independiente final de los cuatro archivos sin bloqueantes. Main conserva `76d5a98` hasta autorización para esta continuación.
 
+El titular confirma explícitamente el despliegue a producción mediante «Sí, publicar SemanControl y la corrección». Publicar en www el artefacto público ya revisado, sin cambios funcionales posteriores, y verificar la entrega antes de declararla desplegada.
+
 ## Reversión
 
-Base `76d5a98`. Revertir el commit funcional de esta continuación mediante commit nuevo y push normal a main; esperar Pages y verificar retorno de19 tarjetas/carrusel y CSS anterior. No force push, migraciones, DNS, datos, servicios ni assets nuevos. Sarin Bot y vuelo de cinco mensajes permanecen en la base. Publicación de esta continuación pendiente de candidato revisado y confirmación explícita del titular.
+Base `76d5a98`. Revertir el commit funcional de esta continuación mediante commit nuevo y push normal a main; esperar Pages y verificar retorno de19 tarjetas/carrusel y CSS anterior. No force push, migraciones, DNS, datos, servicios ni assets nuevos. Sarin Bot y vuelo de cinco mensajes permanecen en la base.

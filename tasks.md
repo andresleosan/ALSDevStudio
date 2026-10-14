@@ -1,11 +1,12 @@
 # Tareas — ALS DevStudio
 
 ## SEMAN-PROCESS · Espacio en construcción y corregir salto de Sarin · 2026-10-14
-- Estado: aprobada técnicamente y candidato verificado; pendiente confirmación de producción. Placeholder SemanControl no clicable en galería20; conservar19 capturas/carrusel, enlaces/orden/filtros. Marca En construcción, sin capturas ficticias, URL errónea o funcionalidades no verificadas.
+- Estado: aprobada técnicamente y publicación autorizada; pendiente comprobación en producción. Placeholder SemanControl no clicable en galería20; conservar19 capturas/carrusel, enlaces/orden/filtros. Marca En construcción, sin capturas ficticias, URL errónea o funcionalidades no verificadas.
 - Alinear frameB Proceso+12.5% tras diagnosticar desalineación40px; mantener pose/tecleo/texto y otros assets/animaciones. Regression de registro de cabeza/patas, imágenes reales, noJS/reducido y finales estables.
 - Repetir QA focal de placeholder/filtros/carrusel y geometría320/390/1440; build/revisión de seguridad y candidato. Reversión normal a la base anterior a esta tarea, sin migraciones, publicación de SemanControl ni servicios/dependencias nuevos.
 - Cronos repitió registro RED (salto11–13.96px) y GREEN9/9 (máximo0.042px), placeholder6/6 e integración10/10/sieteanchos/noJS/reducido/axe PASS. TSC aislado de depth, sintaxis y diff-check PASS; build198archivos/5.198.797bytes. Inspección visual desktop/móvil y A/B estable, sin nuevos hallazgos críticos. Evidencia y reversión en `docs/SEMANCONTROL-SARIN-ESTABLE.md`.
 - Candidato `https://027c6235.alsdevstudio.pages.dev/` de `08cfe52`: Cronos repitió Pages4/4, placeholder6/6 y registro9/9 PASS. Chrome confirma article/transform aplicado/sin overflow y conserva capturas del catálogo y Proceso. Revisión independiente final sin bloqueantes; main conserva la entrega anterior hasta confirmar esta continuación.
+- El titular autoriza explícitamente: «Sí, publicar SemanControl y la corrección». Promover el artefacto público del candidato revisado mediante push normal a main y comprobar www antes del cierre.
 
 ## SARIN-CATALOG-FLIGHT · Proyecto nuevo y vuelo con cinco mensajes · 2026-10-14
 - Estado: desplegada y verificada en producción. Sarin Bot como proyecto19/Producto/Próximamente en galería y carrusel con captura real y siete formatos locales; orden y navegación de los18 anteriores conservados.
