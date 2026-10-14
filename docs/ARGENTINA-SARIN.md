@@ -54,4 +54,8 @@ El titular solicita retirar «Te cuento cómo cerramos:» e igualar los tres rec
 
 Verificación por Cronos: build12/12PASS y183archivos/4.756.905bytes; `node test-results/process-design-qa.mjs` PASS en los siete anchos320/390/680/681/900/901/1440, con alturas de globo idénticas por ancho (252,6875px en1440;233,1875px en390), contenido restante, poses/proporciones, sin overflow/solapamiento ni errores/red externa. Axe320/1440sinviolaciones, reduced-motion y lectura sinJS correctos. Revisión estática independiente y de Cronos sin hallazgos críticos; no hay cambios de scripts, dependencias ni estilos de contacto/mapa. Reporte y capturas en `test-results/`.
 
-Reversión de esta corrección: revertir únicamente su nuevo commit funcional mediante otro commit normal. Base previa `3de42d6`; no revertir Argentina/Sarin/contacto ni las redirecciones de cuenta. Verificar que regresa la frase y el comportamiento anterior de altura. Sin datos, dependencias, servicios ni gasto nuevos.
+Candidato https://39699e3a.alsdevstudio.pages.dev/ verificado200/noindex, HTML/CSS idénticos al build normalizando únicamente CRLF/LF. Fuente funcional `775512013b575d3bede713e99656918a51478ab9`, promovida a main y publicada en el despliegue `3649cae6-66ce-4338-b0d3-0b7e89071952`.
+
+Producción https://www.alsdevstudio.com/#proceso:200/indexable, HTML/CSS iguales al build revisado. Chrome del operador, viewport1780px: frase retirada, tres globos252,6875px, sinoverflow. Captura `test-results/process-equal-live-chrome.jpg`; vista principal dejada abierta. Los commits de cierre documental no modifican el contenido público.
+
+Reversión de esta corrección: revertir únicamente `7755120` mediante otro commit normal. Base previa `3de42d6`; no revertir Argentina/Sarin/contacto ni las redirecciones de cuenta. Verificar que regresa la frase y el comportamiento anterior de altura. Sin datos, dependencias, servicios ni gasto nuevos.
