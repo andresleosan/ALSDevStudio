@@ -97,3 +97,6 @@ El usuario proporcionó `https://github.com/andresleosanayudame`, pero esa URL d
 
 ## Redirección de la vista previa compartida · 2026-10-13
 - El titular pide que `https://8f2ced74.alsdevstudio.pages.dev/`, accesible en línea, también redirija a `https://www.alsdevstudio.com/`. Aplicar al hostname exacto compartido y conservar rutas/parámetros.
+
+## Globos de proceso del mismo tamaño · 2026-10-13
+- Quitar la frase «Te cuento cómo cerramos:» del tercer globo y hacer que los tres recuadros tengan igual altura, manteniendo el contenido restante y las poses de Sarin.

@@ -162,3 +162,6 @@ Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las prueba
 ### Vista previa compartida hacia www · 2026-10-13
 - Añadir el origen exacto `8f2ced74.alsdevstudio.pages.dev/` a la lista Bulk Redirect existente `als_pages_to_www`, con destino fijo www, 301 y query/subpath/path suffix activados. Include subdomains desactivado, igual que en la entrada raíz existente.
 - Configuración de cuenta, sin cambios de código/DNS/correo/plan. Reversión: retirar únicamente la entrada de8f2ced74, conservando la entrada raíz y la regla activa. QA HTTP antes/después y otro preview conocido fuera del alcance.
+
+### Globos de proceso iguales · 2026-10-13
+- CSS Grid con filas adaptativas para alinear los globos por su contenido más alto. Mantener tres columnas en escritorio, personaje/texto a dos columnas hasta900 y apilado hasta680. Igualar alturas sin JavaScript ni altura fija, con texto íntegro y proporción reservada de las poses.

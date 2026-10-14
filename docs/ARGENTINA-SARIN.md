@@ -47,3 +47,11 @@ Producción autorizada por el operador y aplicada mediante fast-forward normal y
 - Los commits posteriores de cierre son exclusivamente documentales y conservan los archivos públicos verificados.
 
 Si falla tras publicar, usar el rollback de Cloudflare Pages al despliegue base `ab94301e-9078-40ed-9912-574a677d7132`, y revertir los commits funcionales en orden inverso (`eb484ee`, después `7c981e1`) en `main` mediante nuevos commits normales. No usar force push ni reset remoto. Confirmar que el mapa vuelve a siete países/4200 ms, el proceso a sus tres ilustraciones anteriores y el contacto a correo izquierda/WhatsApp derecha. La regla Bulk Redirect del dominio Pages permanece independiente y no requiere reversión.
+
+## Corrección de altura de los globos · 2026-10-13
+
+El titular solicita retirar «Te cuento cómo cerramos:» e igualar los tres recuadros del componente Sarin ya autorizado para publicación en la sesión. Ajuste acotado en HTML/CSS: el párrafo inicia «Comprobamos», se conserva el resto y se usan filas adaptativas de Grid, manteniendo poses, lectura y breakpoints. En el apilado se reserva el mismo borde de1px en cada etapa para conservar la igualdad exacta.
+
+Verificación por Cronos: build12/12PASS y183archivos/4.756.905bytes; `node test-results/process-design-qa.mjs` PASS en los siete anchos320/390/680/681/900/901/1440, con alturas de globo idénticas por ancho (252,6875px en1440;233,1875px en390), contenido restante, poses/proporciones, sin overflow/solapamiento ni errores/red externa. Axe320/1440sinviolaciones, reduced-motion y lectura sinJS correctos. Revisión estática independiente y de Cronos sin hallazgos críticos; no hay cambios de scripts, dependencias ni estilos de contacto/mapa. Reporte y capturas en `test-results/`.
+
+Reversión de esta corrección: revertir únicamente su nuevo commit funcional mediante otro commit normal. Base previa `3de42d6`; no revertir Argentina/Sarin/contacto ni las redirecciones de cuenta. Verificar que regresa la frase y el comportamiento anterior de altura. Sin datos, dependencias, servicios ni gasto nuevos.
