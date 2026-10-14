@@ -66,4 +66,8 @@ El titular solicita quitar «01 / alcance global», «02 / proyectos», «03 / p
 
 QA local de Cronos: build12/12PASS,183archivos/4.756.627bytes. Navegador320/390/900/901/1440PASS: títulos íntegros, ausencia de cinco etiquetas, márgenes0, globos iguales, sin overflow. MapaArgentina y opción WhatsApp porEspacio/Tab con número/mensaje correctos; mailto intacto. Axe main320/1440sinviolaciones, sin errores ni solicitudes externas. SinJS: encabezados HTML y enlaces nativos conservados. Reporte `test-results/section-labels-qa.json` y capturas `labels-*.png`. La comparación inline inicial de títulos se corrigió por la codificación del pipe Windows usando escapes Unicode; el contenido del sitio conservó sus acentos. Revisión estática independiente y de Cronos sin hallazgos críticos; sin cambios de scripts/assets/dependencias.
 
-Reversión: revertir únicamente el nuevo commit funcional de esta retirada mediante commit normal; basef8d12e4. Confirmar que regresan las cinco etiquetas y sus márgenes. No revertir otros cambios del sitio ni redirecciones de cuenta.
+Candidato https://c422d312.alsdevstudio.pages.dev/ verificado200/noindex con HTML/CSS iguales al build normalizando CRLF/LF. Fuente funcional `ab1e2759422d9b005e507c8f1216755857933b05`, promovida a main mediante fast-forward y push normales.
+
+Producción https://www.alsdevstudio.com/:200/indexable, HTML/CSS iguales al build revisado. Chrome real confirma las cinco etiquetas retiradas, cinco márgenes superiores0 y sinoverflow. Vista principal abierta enalcance y captura `test-results/section-labels-live-chrome.jpg`. Los commits de cierre documental no modifican el contenido público.
+
+Reversión: revertir únicamente `ab1e275` mediante commit normal; basef8d12e4. Confirmar que regresan las cinco etiquetas y sus márgenes. No revertir otros cambios del sitio ni redirecciones de cuenta.
