@@ -127,6 +127,9 @@ pueden tardar en propagarse; conservar la evidencia del estado previo.
 - Los siguientes pushes de `main`, incluidos los commits del workflow de capturas,
   construyen y publican en Pages. Las notas posteriores al corte no alteran `dist`.
   No se activó ningún servicio pagado ni se modificaron cuentas de correo.
+  El push de notas `b552773` generó el deployment exitoso
+  `e540cb29-a070-4e52-81b8-95c71b7b52ee`, con 0 archivos nuevos por subir:
+  los 180 assets ya estaban publicados (más `_headers` y `_redirects`).
 
 ## Evidencia del candidato
 
@@ -136,7 +139,8 @@ pueden tardar en propagarse; conservar la evidencia del estado previo.
   [Candidato](https://alsdevstudio.pages.dev/) y
   [versión inmutable](https://a1a10f4b.alsdevstudio.pages.dev/).
 - `PAGES_QA_BASE=https://alsdevstudio.pages.dev node --test .github/cloudflare/pages.test.mjs`:
-  4/4 PASS contra Cloudflare real. Archivos publicados coinciden con `dist`;
+  4/4 PASS contra Cloudflare real. HTML, scripts y CSS coinciden con `dist`
+  normalizando los saltos CRLF/LF; la imagen social coincide byte a byte.
   sin inserción automática del beacon, sin conexiones externas antes de consentir,
   cabeceras y `noindex` de preview comprobados. Incluye 18 proyectos, mapa tras
   rechazar, redirecciones, 404 de documentos internos, lectura sin JavaScript y
