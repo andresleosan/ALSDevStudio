@@ -28,6 +28,7 @@ export function initGlobalMap() {
   const toggle = query('[data-map-toggle]', HTMLButtonElement);
   const statusText = query('#global-status strong', HTMLElement);
   const selection = query('#global-map-selection', HTMLElement);
+  const detail = query('#global-map-detail', HTMLElement);
   const latitude = query('#global-latitude', HTMLElement);
   const longitude = query('#global-longitude', HTMLElement);
   const mapHost = query('.global-map-host', HTMLElement);
@@ -85,6 +86,7 @@ export function initGlobalMap() {
     markers.forEach(marker => marker.classList.toggle('is-active', marker.dataset.location === key));
     highlights.forEach(area => area.classList.toggle('is-active', area.dataset.location === key));
     if (selection) selection.textContent = item.label;
+    if (detail) detail.textContent = item.detail.charAt(0).toUpperCase() + item.detail.slice(1);
     if (latitude) latitude.textContent = item.coords[0];
     if (longitude) longitude.textContent = item.coords[1];
     if (announce && statusText) statusText.textContent = `${item.label} · ${item.detail}`;

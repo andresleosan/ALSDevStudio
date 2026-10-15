@@ -1,5 +1,11 @@
 # Tareas — ALS DevStudio
 
+## GLOBAL-CONSOLE · Mejorar la ficha de ubicación · 2026-10-15
+- [x] Unificar los dos recuadros inferiores en una tarjeta: país destacado, mensaje propio de la ubicación y coordenadas con etiquetas Latitud/Longitud. Retirar antetítulos y barra decorativa.
+- [x] Sincronizar el mensaje mediante `textContent`, conservando IDs, selección, pausa y anuncios exclusivamente manuales. QA RED/GREEN del detalle automático/manual; recorrido existente 10 comprobaciones, axe 0 y sin errores.
+- [x] Nueve anchos entre 320 y 1440 px, incluyendo ambos lados de los breakpoints: altura estable al recorrer los ocho países y sin overflow. Capturas revisadas; build 12/12, 206 archivos / 4.908.382 bytes.
+- Publicación por `main`; reversión de los tres archivos públicos mediante commit nuevo hacia `e7eaee3`.
+
 ## GLOBAL-LABELS · Retirar rótulos del mapa · 2026-10-15
 - [x] Quitar los tres grupos señalados: trabajo remoto/colaboración a distancia, mapa ilustrativo/ALS 2026 y pie del mapa. Retirar su CSS y recomponer márgenes; conservar países, métricas y controles.
 - [x] Build 12/12, 206 archivos / 4.909.393 bytes; QA del mapa 10 comprobaciones, axe 0, sin errores ni red externa, móvil/reducido/no-JS y capturas revisadas. El harness local se actualizó para no buscar el control del hero retirado anteriormente.

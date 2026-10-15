@@ -1,5 +1,10 @@
 # Stack — ALS DevStudio
 
+### Ficha de ubicación del mapa · 2026-10-15
+
+- Banda unificada con país, mensaje sincronizado desde `LOCATIONS` y coordenadas en un `dl` semántico. Jerarquía más legible y disposición vertical en móvil, con espacio reservado para evitar saltos. Conserva el anuncio manual y el recorrido existentes.
+- Build 12/12 y QA del mapa 10 comprobaciones, axe 0; nueve anchos 320–1440 y ocho ubicaciones sin variación de altura ni desbordamiento. Reversión pública a `e7eaee3` mediante commit nuevo.
+
 ### Limpieza de rótulos del mapa · 2026-10-15
 
 - Alcance empieza directamente por su título y mapa: retirados los tres grupos de textos señalados y sus estilos exclusivos, con márgenes recompuestos. Selección de países y recorrido intactos. Build 12/12 y QA del mapa 10 comprobaciones aprobadas, axe 0, móvil/reducido/no-JS verificados; reversión pública a `ef214fb` mediante commit nuevo.
