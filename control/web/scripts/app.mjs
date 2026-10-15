@@ -7,6 +7,7 @@ const workspace = /** @type {HTMLElement} */ ($('#workspace'));
 const workDialog = /** @type {HTMLDialogElement} */ ($('#work-dialog'));
 const discardDialog = /** @type {HTMLDialogElement} */ ($('#discard-dialog'));
 const labels = { resumen: 'Resumen', productos: 'Productos', suscripciones: 'Suscripciones', pagos: 'Pagos', actividad: 'Actividad' };
+const productIcons = { dialon: 'dialon.ico', laparada: 'laparada.png', sarinbotsaas: 'sarinbotsaas.png', semancontrol: 'semancontrol.svg' };
 const actionLabels = {
   'subject.create': 'Sujeto creado', 'product.plan.save': 'Plan configurado',
   'subscription.create': 'Suscripción creada', 'subscription.trial.start': 'Prueba iniciada',
@@ -172,8 +173,15 @@ function renderProducts() {
     const count = snapshot.subscriptions.filter(subscription => subscription.productId === product.id).length;
     const trialDays = product.plan?.trialDays ?? product.trialDays ?? 0;
     const initials = { laparada: 'LP', sarinbotsaas: 'SB', dialon: 'Di', semancontrol: 'SC' }[product.id] || product.name.slice(0, 2);
+    const mark = el('span', { class: 'product-mark', 'aria-hidden': 'true', text: initials });
+    if (Object.hasOwn(productIcons, product.id)) {
+      mark.replaceChildren(el('picture', {}, [el('img', {
+        src: `./assets/products/${productIcons[product.id]}`, width: 32, height: 32, alt: '', decoding: 'async',
+        onerror: () => { mark.textContent = initials; },
+      })]));
+    }
     return el('article', { class: 'product-card', 'data-product': product.id }, [
-      el('div', { class: 'product-top' }, [el('span', { class: 'product-mark', 'aria-hidden': 'true', text: initials }), el('div', {}, [el('h2', { text: product.name }), el('p', { text: product.subjectKind === 'person' ? 'Suscripción individual' : 'Suscripción por negocio' })])]),
+      el('div', { class: 'product-top' }, [mark, el('div', {}, [el('h2', { text: product.name }), el('p', { text: product.subjectKind === 'person' ? 'Suscripción individual' : 'Suscripción por negocio' })])]),
       el('div', { class: 'product-state' }, [badge(product.connectionStatus || 'disconnected'), badge(product.plan ? 'active' : 'pending', product.plan ? 'Plan configurado' : 'Plan borrador')]),
       el('p', { class: `product-price${product.plan ? '' : ' is-draft'}`, text: product.plan ? money(product.plan.amountMinor, product.plan.currency) : 'Precio por definir' }),
       el('p', { class: 'product-period', text: product.plan ? `${product.plan.name} · ${periodLabel(product.plan)}` : 'Configura un plan para crear suscripciones.' }),

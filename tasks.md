@@ -1,5 +1,10 @@
 # Tareas — ALS DevStudio
 
+## CONTROL-FAVICONS · Iconos reales de los productos · 2026-10-14
+- [x] Sustituir Di/LP/SB/SC por los favicons oficiales de Dialon, La Parada, Sarin Bot y SemanControl en las tarjetas, usando copias locales y fallback a iniciales.
+- [x] Validación de los cuatro assets, allowlist exacta y recursos obligatorios en el guard. Pruebas build/guard 37/37, smoke UI completo, imágenes cargadas y axe 0 en 320/390/768/1440; capturas revisadas.
+- [x] Hosting publicado: 44 archivos; los cuatro iconos y JS/CSS responden 200 e iguales al build. [Registro y reversión](docs/CONTROL-FAVICONS.md).
+
 ## CONTROL-FIREBASE · Conexión real del centro · 2026-10-14
 - Autorización: conectar el panel a `alsdevstudio`, habilitar Blaze y vincular «Pago de Firebase», con alerta mensual de COP 25.000; no es un límite automático de gasto.
 - [x] App web real, identidad administrativa precreada sin contraseña y claim administrativo; Firestore `(default)` con protección de borrado y reglas denegando clientes directos.

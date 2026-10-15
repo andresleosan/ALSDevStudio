@@ -1,5 +1,10 @@
 # Stack — ALS DevStudio
 
+### Favicons de las tarjetas administrativas · 2026-10-14
+
+- Productos usa copias locales de los cuatro favicons oficiales en los recuadros existentes, a 32 px, con reserva de espacio y fallback a iniciales. Mapa estático y recursos incluidos en la allowlist obligatoria; Hosting pasa de 40 a 44 archivos.
+- Publicado y verificado por HTTP con igualdad de los seis recursos modificados; 37/37 build/guard, smoke UI completo y cuatro anchos con imágenes cargadas, axe 0 y sin overflow. [Orígenes, evidencia y reversión](docs/CONTROL-FAVICONS.md).
+
 ### Conexión Firebase real · 2026-10-14
 
 - Centro publicado en `https://alsdevstudio.firebaseapp.com/`, independiente del portafolio Cloudflare. Hosting reenvía `/api/**` a `controlApi` Gen2, Node 22, `us-central1`. `/admin` y `/admin/` redirigen con 302 al centro, comprobados en producción tras `a21b3de`. Recorrido real footer → Firebase en 390/1440 px, axe 0 y sin errores. El titular confirmó el ingreso; Auth y respuestas `200` de la API lo corroboran.

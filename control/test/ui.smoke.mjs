@@ -23,7 +23,7 @@ export function createPlatform() {
  async function request(path, body) { const response = await fetch(path, body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {}); const data = await response.json(); if(!response.ok) { if(response.status===401){session=null;sessionStorage.removeItem('test-session');notify();} throw Object.assign(new Error(data.error.message),data.error); } return data; }
  return { mode:'demo', onSession(cb) { callbacks.add(cb); cb(session); return () => callbacks.delete(cb); }, async signIn(){session=${JSON.stringify(admin)};sessionStorage.setItem('test-session','1');notify();}, async signOut(){session=null;sessionStorage.removeItem('test-session');notify();}, getState:()=>request('/test-state'), command:(action,payload,requestId)=>request('/test-command',{action,payload,requestId}) };
 }`;
-const types = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png' };
+const types = { '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
@@ -48,7 +48,8 @@ const server = createServer(async (request, response) => {
       }
       response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(result)); return;
     }
-    const file = url.pathname.startsWith('/assets/') ? resolve(root, `.${url.pathname}`) : resolve(root, 'control/web', `.${url.pathname === '/' ? '/index.html' : url.pathname}`);
+    const sharedAsset = url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/assets/products/');
+    const file = sharedAsset ? resolve(root, `.${url.pathname}`) : resolve(root, 'control/web', `.${url.pathname === '/' ? '/index.html' : url.pathname}`);
     if (!file.startsWith(root)) throw new Error('Ruta inválida');
     response.setHeader('Content-Type', types[extname(file)] || 'text/plain'); response.end(await readFile(file));
   } catch (error) {
@@ -69,6 +70,7 @@ try {
   assert.equal(await page.locator('.metric strong').first().textContent(), '0');
   await page.screenshot({ path: resolve(screenshots, 'resumen-1440.png'), fullPage: true });
   await page.getByRole('link', { name: 'Productos', exact: true }).click();
+  await page.locator('.product-card').first().waitFor({ state: 'visible' });
   assert.equal(await page.locator('.product-card').count(), 4);
   await page.locator('[data-product="laparada"]').getByRole('button', { name: 'Configurar plan' }).click();
   await page.getByLabel('Nombre del plan').fill('Plan local');

@@ -26,7 +26,9 @@ async function fixture() {
     await writeFile(target, value);
   }
   for (const path of ['index.html', 'styles/control.css', 'assets/brand/logo-als.png',
-    'assets/fonts/fonts.css', 'scripts/app.mjs', 'scripts/render.mjs', 'scripts/vendor/firebase.mjs']) await put(path);
+    'assets/fonts/fonts.css', 'scripts/app.mjs', 'scripts/render.mjs', 'scripts/vendor/firebase.mjs',
+    'assets/products/dialon.ico', 'assets/products/laparada.png', 'assets/products/sarinbotsaas.png',
+    'assets/products/semancontrol.svg']) await put(path);
   await put('scripts/platform.mjs', 'export function createPlatform() {}');
   await put('scripts/public-config.mjs', `export default ${JSON.stringify(production)};\n`);
   return {
