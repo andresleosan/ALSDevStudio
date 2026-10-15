@@ -1,6 +1,8 @@
 # Control de suscripciones · ALS DevStudio
 
-Panel administrativo independiente del portafolio. Este hito funciona con Firebase Auth, Firestore y Functions **emulados**, bajo `demo-alsdevstudio`. Los cuatro productos siguen desconectados de sus plataformas; registrar un pago crea una orden pendiente y no activa sistemas externos.
+Panel administrativo independiente del portafolio. La infraestructura real de `alsdevstudio` está publicada en **https://alsdevstudio.firebaseapp.com/**, con Firebase Auth, Firestore y Functions. La primera entrada Google del titular aún requiere comprobación manual; no se ha verificado una sesión administrativa real. Está pendiente publicar la redirección de `/admin` del portafolio hacia el panel para que el titular pueda completar ese ingreso.
+
+También existe una demostración local bajo `demo-alsdevstudio`, completamente separada. Los cuatro productos siguen desconectados de sus plataformas; registrar un pago crea una orden pendiente y no activa sistemas externos. No hay clientes, suscripciones ni pagos reales cargados. Estado de la conexión y comprobaciones: [CONEXION-FIREBASE.md](../docs/CONEXION-FIREBASE.md).
 
 ## Inicio local
 
@@ -25,7 +27,7 @@ El comando compila el panel, inicia los tres emuladores y sirve únicamente el b
 | Emulator UI | `127.0.0.1:4001` |
 | Hub / logging / websocket Firestore | `4401` / `4501` / `9150` |
 
-Detén con Ctrl+C. Los datos emulados son temporales y se pierden al detener los emuladores; persisten entre recargas y nuevas sesiones mientras el proceso sigue activo. Este hito no importa datos históricos ni los escribe en Firebase real. Las pruebas no limpian bases existentes; crean registros sintéticos identificables.
+Detén con Ctrl+C. Los datos emulados son temporales y se pierden al detener los emuladores; persisten entre recargas y nuevas sesiones mientras el proceso sigue activo. El modo local no importa datos históricos ni los escribe en Firebase real. Las pruebas no limpian bases existentes; crean registros sintéticos identificables.
 
 La función declara Node 22, versión soportada en la documentación oficial de Firebase consultada. En una máquina con Node 24 la CLI puede avisar que ejecutará el emulador con el Node anfitrión; el runtime declarado para Functions permanece en 22. La validación local de este hito se realizó con Node 24.18.0, CLI 15.34.0 y JRE 21.0.12.1.
 
@@ -50,23 +52,38 @@ No ejecutes dos suites de emuladores a la vez ni durante una sesión de QA que d
 
 El servidor local entrega CSP, cabeceras privadas y rechaza Host/Origin externos. `/__dev/session` acepta exclusivamente POST del mismo origen y existe solo en el servidor de desarrollo; no existe en Functions ni en Hosting de producción. `/api/*` se reenvía a la función emulada. El proceso de emuladores recibe una lista limitada de variables del sistema para evitar heredar credenciales de otras herramientas.
 
-## Firebase real pendiente
+## Firebase real y publicación
 
-No se ha conectado, desplegado ni modificado el proyecto real. Para una integración futura autorizada:
+El proyecto `alsdevstudio` tiene la app web `ALSDevStudio Control`, Firestore exclusivo y `controlApi` Gen2 activo en `us-central1`, con Node 22. Hosting sirve el panel y reenvía `/api/**` a esa función en el mismo origen. La cuenta runtime dedicada `als-control-api` no tiene claves privadas, rol Editor ni administración de usuarios. Tiene los permisos necesarios sobre la base del panel y lectura Auth para comprobar revocación. El servicio escala de cero a una instancia, con concurrencia 20, memoria 256 MiB y timeout 30 s.
 
-1. Registrar o confirmar una aplicación web en el proyecto `alsdevstudio`; copiar su **configuración pública real** a `config/public.json`, usando `config/public.example.json` como estructura y reemplazando todos los marcadores.
-2. Activar Google como proveedor Auth y autorizar el dominio real. Establecer el UID definitivo del administrador y el claim `admin:true` mediante un procedimiento administrativo autorizado. El backend comprueba UID, correo verificado, proyecto, proveedor Google, expiración y revocación; nunca concede acceso al primer usuario.
-3. Configurar `CONTROL_ADMIN_UID` y `CONTROL_ALLOWED_ORIGINS` en el entorno backend a partir de `functions/.env.example`, con origen HTTPS exacto. No introducir credenciales de servicio en web ni en Git. Sin UID/configuración, la API falla cerrada.
-4. Compilar con `CONTROL_PUBLIC_CONFIG=config/public.json` y revisar el build, reglas y cabeceras. Firebase Hosting está preparado para reenviar `/api/**` a `controlApi`, pero aquí no se ejecuta ningún despliegue.
-5. Verificar costos, presupuesto/alertas y controles de producción antes de autorizar publicación o datos reales. Conectores de licencia, migración histórica y anulaciones/ajustes siguen fuera de este hito.
+Google está habilitado. La identidad del titular se precreó sin contraseña, con correo todavía sin verificar y `admin:true` ligado a su UID concreto. El backend sigue exigiendo correo verificado, proveedor Google, UID, proyecto, expiración y revocación: el claim por sí solo no permite entrar. El ingreso usa la misma pestaña mediante `signInWithRedirect`, procesa el regreso y recupera la identidad del observador de Firebase. Sustituye la ventana emergente que dejó el intento inicial esperando. **Falta que el titular complete Google y compruebe entrada, recarga y cierre de sesión.** La redirección prevista desde `/admin` permitirá llegar al panel desplegado para continuar ese paso.
+
+La configuración pública real está en `config/public.json`, ignorada por Git. Solo admite `mode`, `apiBase` y los cuatro campos Firebase `projectId`, `authDomain`, `apiKey` pública y `appId`; el proyecto y dominio están fijados a `alsdevstudio` y `alsdevstudio.firebaseapp.com`, con `apiBase:/api`. El UID y origen exacto se configuran en `functions/.env.alsdevstudio`, también ignorado. No se publican credenciales de servicio.
+
+`.firebaserc` conserva `demo-alsdevstudio` como proyecto predeterminado por seguridad. **Usa siempre `--project alsdevstudio` explícito al publicar.** Desde `control/`, después de revisar y probar los cambios autorizados:
+
+```powershell
+$env:CONTROL_PUBLIC_CONFIG = 'config/public.json'
+npm run build
+node scripts/assert-production.mjs
+npx firebase deploy --project alsdevstudio --only "functions:controlApi,hosting"
+```
+
+Para una publicación exclusivamente visual se puede limitar `--only hosting`. Las reglas e índices se publican por separado solo cuando corresponda: `npx firebase deploy --project alsdevstudio --only "firestore:rules,firestore:indexes"`.
+
+**Recompila producción después de `npm run qa` o `npm run dev`**: ambos preparan un `dist/` de demostración. El hook `hosting.predeploy` ejecuta `scripts/assert-production.mjs` y bloquea artefactos demo, sin configurar, de otro proyecto o con recursos internos. Lee el JSON de `public-config.mjs` sin ejecutarlo y revisa que la plataforma no contenga conexiones locales. También valida una lista explícita de archivos públicos; se debe revisar si se agregan nuevos recursos. El hook se comprobó durante una publicación real de Hosting con 40 archivos. El panel entrega `no-store` y `X-Robots-Tag: noindex, nofollow, noarchive`; estas cabeceras no sustituyen la autorización del backend.
+
+Blaze se vinculó con autorización del titular a la cuenta «Pago de Firebase», en COP. Existe un presupuesto mensual de COP 25.000, exclusivo del proyecto, con alertas al 50 %, 90 % y 100 %. Es una alerta, no un tope de gasto ni un corte automático. Artifact Registry tiene una política de limpieza de imágenes de despliegue de un día. Conectores de licencia, migración histórica y anulaciones/ajustes siguen pendientes.
 
 Las reglas Firestore deniegan todas las lecturas y escrituras desde clientes; el panel opera únicamente mediante la API y el Admin SDK. Las transacciones difieren todas las escrituras hasta concluir las lecturas, preservan lecturas de datos preparados dentro del callback y descartan cambios cuando una operación falla. Los pagos confirmados son inmutables.
 
 La plataforma muestra errores de red y sesión mediante mensajes seguros, sin respuestas internas ni tokens. Un reintento de una operación conserva su clave idempotente; el servidor rechaza una clave usada con un contenido distinto. No confirma pagos fuera de la vista previa emitida por el backend.
 
+La verificación final completó `npm run qa` con 111/111 pruebas sin omitidas después de cambiar el ingreso de Google, smoke de recuperación/foco, siete escenarios E2E y axe en 320, 390, 768 y 1440 px sin hallazgos. En producción se comprobaron portada `200`, API sin sesión `401`, origen ajeno `403`, token inválido `401`, preflight admitido `204` y acceso directo a Firestore denegado con `403`. Los helpers `/__/auth/iframe` y `/__/auth/handler` responden `200` sin heredar CSP ni X-Frame-Options del panel. Estas comprobaciones no incluyen todavía una sesión Google válida del titular.
+
 ## Dependencias y fuentes
 
-Versiones fijadas y lockfiles reproducibles en ambos paquetes. `npm audit --omit=dev` y la auditoría de Functions resultaron sin vulnerabilidades. La auditoría completa conserva siete nodos afectados exclusivamente por la CLI de desarrollo: `braces`/`chokidar`/`firebase-tools` (tres altos) y `@opentelemetry/core`/`@google-cloud/pubsub`/`uuid`/`gaxios` (cuatro moderados). La CLI más reciente consultada conserva estas transitivas; no se fuerzan cambios de versión mayor incompatibles. `@grpc/grpc-js` y `stream-json` usan overrides fijados a versiones corregidas del mismo major. Este estado debe revisarse antes de una futura publicación.
+Versiones fijadas y lockfiles reproducibles en ambos paquetes. `npm audit --omit=dev` y la auditoría de Functions resultaron sin vulnerabilidades. La auditoría completa conserva siete nodos afectados exclusivamente por la CLI de desarrollo: `braces`/`chokidar`/`firebase-tools` (tres altos) y `@opentelemetry/core`/`@google-cloud/pubsub`/`uuid`/`gaxios` (cuatro moderados). La CLI más reciente consultada conserva estas transitivas; no se fuerzan cambios de versión mayor incompatibles. `@grpc/grpc-js` y `stream-json` usan overrides fijados a versiones corregidas del mismo major. Las transitivas de la CLI no se incluyen en el artefacto del panel ni en las dependencias runtime de Functions; deben revisarse al actualizar las herramientas.
 
 - [Runtimes Node y ESM de Functions](https://firebase.google.com/docs/functions/manage-functions).
 - [Configuración de Emulator Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure).

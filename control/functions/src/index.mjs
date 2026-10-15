@@ -7,15 +7,11 @@ import { createApi } from './api.mjs';
 import { createFirebaseVerifier } from './auth.mjs';
 import { createControlService } from './service.mjs';
 import { createFirestoreStore } from './firestore-store.mjs';
+import { getRuntimeOptions, resolveRuntimeEnvironment } from './runtime-options.mjs';
 
 let api;
 function initializeApi() {
-  const projectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT ?? '';
-  const demo = projectId === 'demo-alsdevstudio';
-  const authEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
-  const firestoreEmulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
-  if (demo && (authEmulatorHost !== '127.0.0.1:9099' || firestoreEmulatorHost !== '127.0.0.1:8085')) throw new Error('Emuladores locales requeridos.');
-  if (!demo && (authEmulatorHost || firestoreEmulatorHost)) throw new Error('Emuladores inválidos en producción.');
+  const { projectId, demo, authEmulatorHost } = resolveRuntimeEnvironment(process.env);
   const config = {
     projectId, environment: demo ? 'demo' : 'production', authEmulatorHost,
     adminUid: demo ? 'andres-demo-admin' : process.env.CONTROL_ADMIN_UID ?? '',
@@ -26,7 +22,7 @@ function initializeApi() {
   return createApi({ service: createControlService({ store: createFirestoreStore(getFirestore(app)) }), verifyToken: createFirebaseVerifier({ auth: getAuth(app), config }), config });
 }
 
-export const controlApi = onRequest({ region: 'us-central1', maxInstances: 3, concurrency: 20, timeoutSeconds: 30, memory: '256MiB', cors: false }, async (request, response) => {
+export const controlApi = onRequest(getRuntimeOptions(process.env), async (request, response) => {
   try {
     api ??= initializeApi();
     const url = `https://control.invalid${request.path}`;

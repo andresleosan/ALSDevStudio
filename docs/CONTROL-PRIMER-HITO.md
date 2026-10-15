@@ -1,5 +1,7 @@
 # Panel central: primer hito local
 
+> **Actualización de infraestructura:** Firebase real ya está publicado en <https://alsdevstudio.firebaseapp.com/>, con Firestore, Auth y `controlApi` activos. La primera sesión Google del titular aún requiere comprobación manual; está pendiente publicar la redirección de `/admin` hacia el panel para completar ese ingreso. Los productos siguen desconectados y no hay clientes, suscripciones ni pagos reales cargados. Este documento conserva la evidencia histórica del primer hito local; el estado vigente está en [CONEXION-FIREBASE.md](CONEXION-FIREBASE.md).
+
 Implementado y verificado el 14 de octubre de 2026; código consolidado en `main`, dentro de `control/`. La implementación original se probó en `.worktrees/control`, conservado como copia local sin rama propia. El alcance es una versión local funcional del centro administrativo. El proyecto Firebase real `alsdevstudio`, la VPS de Dialon y los demás productos no se han modificado.
 
 ## Qué permite probar

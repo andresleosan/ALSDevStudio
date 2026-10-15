@@ -11,12 +11,12 @@ export function createPlatform(options = {}) {
   const mode = ['demo', 'production'].includes(config.mode) ? config.mode : 'unconfigured';
   const request = options.fetch ?? globalThis.fetch.bind(globalThis);
   const loadSdk = options.loadSdk ?? (() => import('./vendor/firebase.mjs'));
-  const listeners = new Set();
+  const listeners = new Map();
   let user = null;
   let sdk;
   let auth;
   let initialized;
-  const notify = () => { const session = user ? { uid: user.uid, email: user.email } : null; for (const callback of listeners) callback(session); };
+  const notify = () => { const session = user ? { uid: user.uid, email: user.email } : null; for (const callback of listeners.keys()) callback(session); };
 
   async function initialize() {
     if (mode === 'unconfigured') throw failure('not-configured', 'Configura Firebase para iniciar sesión.');
@@ -32,6 +32,9 @@ export function createPlatform(options = {}) {
         }
         sdk.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
       } else if (mode !== 'production') throw failure('invalid-environment', 'Este build no permite sesiones de demostración.');
+      // Procesa el regreso de Google antes de observar la identidad persistida.
+      // El observador, no el inicio de la redirección, determina la sesión.
+      if (mode === 'production') await sdk.getRedirectResult(auth);
       await new Promise((resolve, reject) => sdk.onIdTokenChanged(auth, (value) => { user = value; notify(); resolve(); }, reject));
     })().catch((error) => { initialized = null; throw failure(error.code ?? 'auth-unavailable', 'No fue posible iniciar Firebase. Revisa la configuración y la conexión.'); });
     return initialized;
@@ -62,10 +65,10 @@ export function createPlatform(options = {}) {
 
   return {
     mode,
-    onSession(callback) {
-      listeners.add(callback);
+    onSession(callback, onError = () => {}) {
+      listeners.set(callback, onError);
       callback(user ? { uid: user.uid, email: user.email } : null);
-      if (mode !== 'unconfigured') initialize().catch(() => {});
+      if (mode !== 'unconfigured') initialize().catch(error => listeners.get(callback)?.(error));
       return () => listeners.delete(callback);
     },
     async signIn() {
@@ -79,7 +82,7 @@ export function createPlatform(options = {}) {
           return;
         }
         const provider = new sdk.GoogleAuthProvider();
-        await sdk.signInWithPopup(auth, provider);
+        await sdk.signInWithRedirect(auth, provider);
       } catch (error) {
         throw failure(error.code ?? 'auth-error', 'No se pudo iniciar sesión. Revisa la conexión e inténtalo nuevamente.');
       }

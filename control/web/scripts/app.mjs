@@ -694,7 +694,14 @@ async function init() {
     if (hasDrafts()) askDiscard({ title: 'Cerrar sesión', description: 'Al salir se borrarán los borradores guardados en esta pestaña.', discard: signOut, save: null });
     else signOut();
   });
-  platform.onSession(onSession);
+  platform.onSession(onSession, error => {
+    $('#login-error').textContent = errorMessage(error);
+    $('#login-error').hidden = false;
+    $('#sign-in').disabled = mode === 'unconfigured';
+  });
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) $('#sign-in').disabled = mode === 'unconfigured';
+  });
   window.addEventListener('hashchange', () => { if (session) navigate(location.hash.slice(1)); });
   workDialog.addEventListener('cancel', event => { event.preventDefault(); requestCloseModal(); });
   window.addEventListener('beforeunload', event => { if (modal?.dirty || modal?.busy || modal?.confirmPending) { event.preventDefault(); event.returnValue = ''; } });

@@ -1,2 +1,2 @@
 export { initializeApp } from 'firebase/app';
-export { getAuth, onIdTokenChanged, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, connectAuthEmulator } from 'firebase/auth';
+export { getAuth, onIdTokenChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithCustomToken, signOut, connectAuthEmulator } from 'firebase/auth';

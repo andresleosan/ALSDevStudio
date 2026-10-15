@@ -1,5 +1,15 @@
 # Stack — ALS DevStudio
 
+### Conexión Firebase real · 2026-10-14
+
+- Centro publicado en `https://alsdevstudio.firebaseapp.com/`, independiente del portafolio Cloudflare. Hosting reenvía `/api/**` a `controlApi` Gen2, Node 22, `us-central1`. El acceso público `/admin` está preparado para redirigir al centro; la primera sesión Google del titular continúa pendiente de comprobación manual.
+- Proyecto `alsdevstudio` (`365384555628`), app web real y Firestore Native `(default)` con protección de borrado. Reglas cerradas al cliente, API con UID fijo, correo verificado, Google, claim `admin:true` y comprobación de revocación. Cuenta runtime dedicada sin claves: `datastore.user` condicionado a esa base y `firebaseauth.viewer`.
+- Blaze vinculado, con autorización expresa, a «Pago de Firebase». Presupuesto mensual del proyecto: COP 25.000, avisos al 50/90/100 %; es una alerta, no un tope. Estimación inicial del centro: US$0–5/mes con poco uso, sin garantía de costo cero. `minInstances:0`, `maxInstances:1`, concurrencia 20, 256 MiB y 30 s; limpieza de imágenes de build tras un día.
+- Publicación protegida por validación del artefacto real: proyecto/app/dominio exactos, configuración pública limitada, sin emuladores, secretos ni archivos internos. `.firebaserc` conserva el proyecto demo; cada despliegue real exige `--project alsdevstudio`. El portafolio sigue excluyendo `control/`.
+- Ingreso Google en la misma pestaña con procesamiento del regreso, observador de identidad y errores seguros; reintento al volver desde el historial. Sustituye la ventana emergente que dejó el intento inicial esperando. La selección real del titular sigue pendiente de intervención manual.
+- Verificación final: QA completa 111/111 sin omitidas, smoke de recuperación/foco, siete recorridos E2E y axe 0 en cuatro anchos; incluye runtime/build/guard y el retorno Google. Hosting real sirve 40 archivos, `no-store` y `noindex`; API 401 sin sesión o con token inválido, 403 por origen ajeno, preflight 204 y Firestore directo 403. Build público 12/12, 206 archivos / 4.911.029 bytes; footer/respaldo en cuatro anchos y sin JavaScript, contraste 9,57:1. Auditorías de dependencias de producción: 0 vulnerabilidades. Revisión independiente sin bloqueos; falta validar la sesión real del titular.
+- Los cuatro productos continúan desconectados y sin clientes, pagos ni suscripciones reales precargados. El centro no activa sus plataformas hasta implementar sus conectores. [Operación, evidencia y reversión](docs/CONEXION-FIREBASE.md).
+
 ### Entrada administrativa en el footer · 2026-10-14
 
 - Enlace nativo «Administración», discreto y sin iconos, separado de la navegación legal al final del footer. Conserva color/tipografía, objetivo de 44 px y foco visible; en móvil se acomoda abajo a la derecha.

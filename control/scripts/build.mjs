@@ -5,12 +5,27 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { controlRoot, demoPublicConfig } from './config.mjs';
 
+export function isProductionConfig(config) {
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (!object(config) || !object(config.firebase)) return false;
+  // Solo los campos públicos utilizados por este panel pueden llegar al artefacto.
+  const configFields = new Set(['mode', 'apiBase', 'firebase']);
+  const firebaseFields = new Set(['projectId', 'authDomain', 'apiKey', 'appId']);
+  return Object.keys(config).every(key => configFields.has(key)) &&
+    Object.keys(config.firebase).every(key => firebaseFields.has(key)) &&
+    config.mode === 'production' && config.apiBase === '/api' &&
+    config.firebase.projectId === 'alsdevstudio' &&
+    config.firebase.authDomain === 'alsdevstudio.firebaseapp.com' &&
+    typeof config.firebase.apiKey === 'string' && /^AIza[A-Za-z0-9_-]{35}$/.test(config.firebase.apiKey) &&
+    typeof config.firebase.appId === 'string' && /^1:365384555628:web:[a-f0-9]{16,64}$/.test(config.firebase.appId);
+}
+
 export async function buildControl({ demo = false, configPath = process.env.CONTROL_PUBLIC_CONFIG } = {}) {
   let config = { mode: 'unconfigured', apiBase: '/api' };
   if (demo) config = demoPublicConfig;
   else if (configPath) {
     config = JSON.parse(await readFile(resolve(controlRoot, configPath), 'utf8'));
-    if (config.mode !== 'production' || config.firebase?.projectId?.startsWith('demo-') || !config.firebase?.apiKey || !config.firebase?.appId || !/^[a-z0-9-]+\.firebaseapp\.com$/.test(config.firebase?.authDomain ?? '') || config.apiBase !== '/api') {
+    if (!isProductionConfig(config)) {
       throw new Error('Configuración pública de producción inválida. Usa config/public.example.json.');
     }
   }

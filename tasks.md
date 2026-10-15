@@ -1,5 +1,16 @@
 # Tareas — ALS DevStudio
 
+## CONTROL-FIREBASE · Conexión real del centro · 2026-10-14
+- Autorización: conectar el panel a `alsdevstudio`, habilitar Blaze y vincular «Pago de Firebase», con alerta mensual de COP 25.000; no es un límite automático de gasto.
+- [x] App web real, identidad administrativa precreada sin contraseña y claim administrativo; Firestore `(default)` con protección de borrado y reglas denegando clientes directos.
+- [x] API Gen2 desplegada con Node 22 y cuenta dedicada sin claves, permisos limitados, escala de cero a una instancia y separación estricta de los emuladores.
+- [x] Hosting real publicado con API del mismo origen, configuración pública validada y guard antes de publicar; presupuesto del proyecto y limpieza de imágenes configurados.
+- [x] Tras el bloqueo del intento con popup, Google usa la misma pestaña y procesa el regreso con errores seguros, sin conceder una sesión al iniciar la redirección. Rehabilita el botón al volver desde el historial. Cambio publicado y selector Google abierto.
+- [x] QA completa final 111/111 sin omitidas, smoke de recuperación/foco, siete escenarios E2E y axe 0 en cuatro anchos. Revisión independiente sin bloqueos. Smoke real: 200 panel, 401 sin sesión/token inválido, 403 origen ajeno y Firestore directo, preflight 204; cabeceras privadas verificadas. Build público 12/12; footer/respaldo en cuatro anchos, teclado, axe 0, no-JS y contraste corregido.
+- [ ] Completar Google del titular en la pestaña abierta y comprobar carga autenticada y persistencia tras recarga. La herramienta no puede leer el selector Google; se pidió intervención manual sin contraseñas ni códigos.
+- [ ] Publicar y comprobar el acceso `/admin` desde Cloudflare hacia Firebase. Fallback HTML preparado con enlace nativo al centro.
+- Los cuatro productos siguen pendientes de conector; no se crean datos comerciales ni pagos ficticios en producción. [Registro y reversión](docs/CONEXION-FIREBASE.md).
+
 ## ADMIN-FOOTER · Acceso discreto al final del sitio · 2026-10-14
 - Implementado y verificado: enlace nativo «Administración» hacia `/admin`, con el estilo del pie de página, foco visible y adaptación móvil. Pantalla estática honesta sobre el ingreso Google pendiente; sin exponer el panel local ni datos.
 - Build 12/12, 206 archivos / 4.910.917 bytes; allowlist y exclusión de `control/`, configuración y Functions comprobadas. Navegador en 320/390/768/1440: destino/regreso, teclado, axe 0, sin overflow/erroresJS/redexterna; sin JavaScript en 390/1440. Redirección con query y cabeceras noindex/no-store verificadas localmente.
