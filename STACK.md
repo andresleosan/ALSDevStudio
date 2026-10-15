@@ -1,5 +1,11 @@
 # Stack — ALS DevStudio
 
+### Panel central de suscripciones — diseño propuesto · 2026-10-14
+
+- Alcance confirmado: La Parada, Sarin Bot y SemanControl por negocio; Dialon individual. Administrador Google exclusivo `andres.san1404@gmail.com`; registro manual de pagos por transferencia/Nequi.
+- [Especificación propuesta](docs/superpowers/specs/2026-10-14-panel-central-suscripciones-design.md): Firebase `alsdevstudio` para el control comercial, datos operativos en cada producto y conectores de servidor. SemanControl conserva D1 y requiere aislamiento empresarial y tratamiento de sus pendientes offline.
+- Estado: documentación para revisión; el sitio público conserva su stack y aún no tiene backend central. Presupuesto inicial estimado del centro: US$0–5/mes con un administrador y 50–100 sujetos, consumo bajo y Blaze; facturación y alertas aún requieren comprobación antes de conectar producción.
+
 ### Placeholder SemanControl y registro de fotogramas · 2026-10-14
 - Tarjeta20 mediante article.project-card--pending, categoríaProducto y estadoEn construcción. Visual HTML/CSS local con proporción16:10 y textos honestos; sin href/foco/CTA. Galería20; carrusel/capturas conservan19 proyectos con demos disponibles. Excluir article de flecha, subrayado y tilt mediante selectores de enlaces.
 - Corrección localizada de registro: translateX(12.5%) del fotograma B de Proceso, equivalente a40/320 del canvas. No editar PNG ni modificar temporización/controlador; bbox alfa del contenido permanece dentro del actor. Verificar cabeza/patas de ambos estados, noJS/reducido y texto, en320/390/1440.
