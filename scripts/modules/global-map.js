@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Alcance global: selección de ubicaciones sincronizada entre lista, mapa SVG y panel de datos,
- * con recorrido automático visible, pausa explícita y selección manual.
+ * con recorrido automático visible y pausa al interactuar con el mapa.
  */
 import { lowPowerMotion } from './env.js';
 import { query, queryAll } from './dom.js';
@@ -25,7 +25,6 @@ const ROTATION_DELAY = 2000;
 export function initGlobalMap() {
   const stage = query('.global-stage', HTMLElement);
   const buttons = queryAll('.global-location', HTMLButtonElement);
-  const toggle = query('[data-map-toggle]', HTMLButtonElement);
   const statusText = query('#global-status strong', HTMLElement);
   const selection = query('#global-map-selection', HTMLElement);
   const detail = query('#global-map-detail', HTMLElement);
@@ -42,28 +41,18 @@ export function initGlobalMap() {
   let current = 0;
   let visible = false;
   let pointerInside = false;
-  let togglePointerDown = false;
   let userPaused = false;
   /** @type {number | undefined} */
   let timer;
 
-  const available = () => Boolean(toggle) && !lowPowerMotion() && 'IntersectionObserver' in window;
+  const available = () => !lowPowerMotion() && 'IntersectionObserver' in window;
   const canRotate = () => available() && visible && !document.hidden && !pointerInside && !userPaused;
 
-  const updateToggle = () => {
-    if (!toggle) return;
-    toggle.hidden = !available();
-    const action = userPaused ? 'Reanudar' : 'Pausar';
-    toggle.textContent = `${action} recorrido`;
-    toggle.setAttribute('aria-label', `${action} recorrido automático de países`);
-  };
   const stop = () => {
     clearTimeout(timer);
     timer = undefined;
-    updateToggle();
   };
   const start = () => {
-    updateToggle();
     if (timer !== undefined || !canRotate()) return;
     timer = window.setTimeout(() => {
       timer = undefined;
@@ -100,15 +89,6 @@ export function initGlobalMap() {
     sync();
   };
   buttons.forEach(button => button.addEventListener('click', () => selectManually(button.dataset.location ?? '')));
-  toggle?.addEventListener('pointerdown', () => { togglePointerDown = true; });
-  const clearTogglePointer = () => { togglePointerDown = false; };
-  window.addEventListener('pointerup', clearTogglePointer);
-  window.addEventListener('pointercancel', clearTogglePointer);
-  toggle?.addEventListener('blur', clearTogglePointer);
-  toggle?.addEventListener('click', () => {
-    userPaused = !userPaused;
-    sync();
-  });
 
   /**
    * Conecta el SVG recién insertado. El mapa es decorativo para tecnologías de asistencia:
@@ -162,9 +142,7 @@ export function initGlobalMap() {
     sync();
   });
   stage.addEventListener('pointerleave', () => { pointerInside = false; sync(); });
-  stage.addEventListener('focusin', event => {
-    // Un clic conserva la acción del control; entrar con teclado pausa el recorrido.
-    if (event.target === toggle && togglePointerDown) return;
+  stage.addEventListener('focusin', () => {
     userPaused = true;
     sync();
   });
@@ -178,7 +156,6 @@ export function initGlobalMap() {
   document.addEventListener('visibilitychange', sync);
   window.addEventListener('pagehide', stop);
   window.addEventListener('pageshow', sync);
-  updateToggle();
 
   return { start, stop };
 }

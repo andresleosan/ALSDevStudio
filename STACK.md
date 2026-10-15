@@ -1,5 +1,10 @@
 # Stack — ALS DevStudio
 
+### Retirada de la franja de contadores · 2026-10-15
+
+- Eliminados los contadores y el botón «Pausar recorrido», junto con su código exclusivo. El recorrido conserva las pausas por hover, foco, selección manual y visibilidad, además de respetar movimiento reducido.
+- Build 12/12; QA de ciclo, teclado, visibilidad y selección aprobada. Cinco anchos 320–1440 px sin overflow, axe 0 y sin errores; no-JS verificado. Reversión pública a `59a8692` mediante commit nuevo.
+
 ### Ficha de ubicación del mapa · 2026-10-15
 
 - Banda unificada con país, mensaje sincronizado desde `LOCATIONS` y coordenadas en un `dl` semántico. Jerarquía más legible y disposición vertical en móvil, con espacio reservado para evitar saltos. Conserva el anuncio manual y el recorrido existentes.

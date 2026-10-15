@@ -1,5 +1,10 @@
 # Tareas — ALS DevStudio
 
+## GLOBAL-METRICS · Retirar la franja de contadores · 2026-10-15
+- [x] Quitar los dos contadores, el botón «Pausar recorrido» y sus estilos/listeners exclusivos. Mantener el recorrido sin depender del botón y la pausa por interacción.
+- [x] QA en navegador: ciclo completo, hover, visibilidad, teclado y selección manual; cinco anchos 320–1440 px sin overflow ni hallazgos axe, movimiento reducido y no-JS. Build 12/12, 206 archivos / 4.905.637 bytes; capturas revisadas y revisión independiente sin bloqueos.
+- Publicación por `main`; reversión mediante commit nuevo restaurando los tres archivos públicos de `59a8692`.
+
 ## GLOBAL-CONSOLE · Mejorar la ficha de ubicación · 2026-10-15
 - [x] Unificar los dos recuadros inferiores en una tarjeta: país destacado, mensaje propio de la ubicación y coordenadas con etiquetas Latitud/Longitud. Retirar antetítulos y barra decorativa.
 - [x] Sincronizar el mensaje mediante `textContent`, conservando IDs, selección, pausa y anuncios exclusivamente manuales. QA RED/GREEN del detalle automático/manual; recorrido existente 10 comprobaciones, axe 0 y sin errores.
