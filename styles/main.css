@@ -203,9 +203,7 @@ main, footer { position:relative; z-index:1; }
 .global-stage::before { content:''; position:absolute; width:580px; height:580px; right:-290px; top:-360px; border:1px solid rgba(101,212,157,.14); border-radius:50%; box-shadow:0 0 0 34px rgba(101,212,157,.025),0 0 0 80px rgba(77,155,255,.02),0 0 0 142px rgba(77,155,255,.015); pointer-events:none; opacity:.65; }
 .global-intro, .global-map-wrap, .global-status { position:relative; z-index:1; }
 .global-intro { display:flex; flex-direction:column; padding:4px 4px 0; }
-.global-signal { display:flex; justify-content:space-between; gap:14px; color:var(--muted); font:500 10px 'IBM Plex Mono',monospace; letter-spacing:.06em; text-transform:uppercase; }
-.global-signal i { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 5px rgba(101,212,157,.12),0 0 15px rgba(101,212,157,.5); animation:signal-pulse 2.4s ease-in-out infinite; }
-.global-intro h3 { max-width:390px; margin-top:22px; font:600 clamp(24px,2.7vw,42px)/1.02 'Chakra Petch',sans-serif; letter-spacing:-.03em; text-wrap:balance; }
+.global-intro h3 { max-width:390px; margin-top:0; font:600 clamp(24px,2.7vw,42px)/1.02 'Chakra Petch',sans-serif; letter-spacing:-.03em; text-wrap:balance; }
 .global-intro > p { max-width:400px; margin-top:14px; color:var(--muted); font-size:14.5px; line-height:1.48; }
 .global-metrics { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:22px; padding-top:16px; border-top:1px solid var(--line); }
 .global-metrics-group { display:flex; align-items:center; gap:22px; }
@@ -225,9 +223,8 @@ main, footer { position:relative; z-index:1; }
 .global-map-wrap { min-height:0; padding:16px 16px 14px; border:1px solid rgba(221,237,252,.13); border-radius:20px; background:radial-gradient(circle at 50% 42%,rgba(77,155,255,.14),transparent 58%),linear-gradient(180deg,rgba(4,18,36,.5),rgba(4,18,36,.22)); box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 18px 50px rgba(0,0,0,.12); display:flex; flex-direction:column; overflow:hidden; }
 .global-map-wrap::before { content:''; position:absolute; inset:0; z-index:0; background:linear-gradient(180deg,transparent 0%,transparent 47%,rgba(101,212,157,.09) 49%,rgba(101,212,157,.02) 51%,transparent 54%); background-size:100% 220px; background-repeat:no-repeat; animation:map-scanline 8s linear infinite; pointer-events:none; }
 .global-map-wrap > * { position:relative; z-index:1; }
-.global-map-label { display:flex; justify-content:space-between; color:var(--muted); font:500 9px 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; }
 /* El mapa SVG se carga desde assets/brand/world-map.svg; el host reserva su proporción para evitar saltos de layout. */
-.global-map-host { display:block; width:calc(100% + 14px); margin:16px -7px 14px; aspect-ratio:1200/560; }
+.global-map-host { display:block; width:calc(100% + 14px); margin:0 -7px 14px; aspect-ratio:1200/560; }
 .global-map { display:block; width:100%; height:100%; overflow:visible; transform:scale(1.06); transform-origin:center; }
 .global-map-console { display:grid; grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr); gap:10px; margin-top:0; }
 .global-map-insight { display:flex; flex-direction:column; align-items:flex-start; gap:12px; min-height:118px; margin:0; padding:14px; border:1px solid rgba(77,155,255,.18); border-radius:12px; background:linear-gradient(135deg,rgba(77,155,255,.09),rgba(101,212,157,.05)); }
@@ -237,8 +234,6 @@ main, footer { position:relative; z-index:1; }
 .global-map-nodebar i { position:relative; flex:1; height:1px; background:rgba(101,212,157,.2); }
 .global-map-nodebar i::after { content:''; position:absolute; top:50%; right:-2px; width:5px; height:5px; border-radius:50%; background:#376b72; transform:translateY(-50%); }
 .global-map-nodebar i:nth-child(4)::after { width:7px; height:7px; background:var(--mint); box-shadow:0 0 0 5px rgba(101,212,157,.1),0 0 14px rgba(101,212,157,.6); animation:signal-pulse 2.4s ease-in-out infinite; }
-.global-map-footer { display:flex; justify-content:space-between; gap:14px; margin-top:auto; padding:10px 2px 0; border-top:1px solid rgba(221,237,252,.1); color:rgba(202,220,237,.68); font:500 8px 'IBM Plex Mono',monospace; letter-spacing:.08em; }
-.global-map-footer i { display:inline-block; width:6px; height:6px; margin-right:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 10px rgba(101,212,157,.7); }
 .map-grid path { fill:none; stroke:rgba(138,190,228,.08); stroke-width:1; stroke-dasharray:2 10; }
 .map-country-land { pointer-events:none; }
 .map-country-land path { fill:rgba(23,91,151,.78); stroke:rgba(184,216,241,.22); stroke-width:.65; vector-effect:non-scaling-stroke; }
@@ -491,7 +486,7 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .contact-actions { align-items:start; }
   .global-stage { grid-template-columns:1fr; }
   .global-intro { padding-right:0; }
-  .global-intro h3 { margin-top:34px; max-width:520px; }
+  .global-intro h3 { max-width:520px; }
   .global-location-list { grid-template-columns:repeat(4,minmax(0,1fr)); }
   .global-map-wrap { align-self:stretch; }
 }
@@ -546,8 +541,6 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .marquee-toggle { width:52px; }
   .marquee-toggle span { display:none; }
   .global-stage { padding:16px; gap:20px; }
-  .global-signal { display:block; line-height:2; }
-  .global-signal span { display:block; }
   .global-location { min-height:44px; }
   .global-location-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .global-map-wrap { padding:12px 8px 8px; }
@@ -556,8 +549,6 @@ footer { padding:30px 0 46px; display:flex; justify-content:space-between; flex-
   .global-map-console { grid-template-columns:1fr; }
   .global-map-insight { align-items:flex-start; }
   .global-map-insight strong { font-size:14px; }
-  .global-map-footer { display:block; line-height:1.7; }
-  .global-map-footer span { display:block; }
   .global-status { display:block; }
   .global-status strong { display:block; margin-top:8px; text-align:left; line-height:1.4; }
   .filter { min-height:44px; }

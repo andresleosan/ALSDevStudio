@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Limpieza de rótulos del mapa · 2026-10-15
+
+- Alcance empieza directamente por su título y mapa: retirados los tres grupos de textos señalados y sus estilos exclusivos, con márgenes recompuestos. Selección de países y recorrido intactos. Build 12/12 y QA del mapa 10 comprobaciones aprobadas, axe 0, móvil/reducido/no-JS verificados; reversión pública a `ef214fb` mediante commit nuevo.
+
 ### Favicon de la pestaña administrativa · 2026-10-15
 
 - El panel utiliza el `favicon.svg` canónico del portafolio, copiado por el build y requerido en el guard. Hosting publicado con 45 archivos; SVG 200 e idéntico al del sitio público. Pruebas build/guard 37/37 y smoke UI aprobados. [Registro y reversión](docs/CONTROL-FAVICONS.md).

@@ -1,5 +1,10 @@
 # Tareas — ALS DevStudio
 
+## GLOBAL-LABELS · Retirar rótulos del mapa · 2026-10-15
+- [x] Quitar los tres grupos señalados: trabajo remoto/colaboración a distancia, mapa ilustrativo/ALS 2026 y pie del mapa. Retirar su CSS y recomponer márgenes; conservar países, métricas y controles.
+- [x] Build 12/12, 206 archivos / 4.909.393 bytes; QA del mapa 10 comprobaciones, axe 0, sin errores ni red externa, móvil/reducido/no-JS y capturas revisadas. El harness local se actualizó para no buscar el control del hero retirado anteriormente.
+- Publicación mediante push normal a `main`; reversión con commit nuevo restaurando `index.html` y `styles/main.css` de `ef214fb`.
+
 ## CONTROL-TAB-FAVICON · Favicon de la pestaña administrativa · 2026-10-15
 - [x] Usar el mismo favicon ALS del portafolio en el panel: enlace HTML, copia del SVG canónico durante el build y archivo obligatorio en el guard.
 - [x] Build/guard 37/37, smoke UI completo y Hosting publicado con 45 archivos. HTTP confirma declaración y SVG 200 idéntico al del portafolio. [Registro](docs/CONTROL-FAVICONS.md).
