@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Favicon de la pestaña administrativa · 2026-10-15
+
+- El panel utiliza el `favicon.svg` canónico del portafolio, copiado por el build y requerido en el guard. Hosting publicado con 45 archivos; SVG 200 e idéntico al del sitio público. Pruebas build/guard 37/37 y smoke UI aprobados. [Registro y reversión](docs/CONTROL-FAVICONS.md).
+
 ### Favicons de las tarjetas administrativas · 2026-10-14
 
 - Productos usa copias locales de los cuatro favicons oficiales en los recuadros existentes, a 32 px, con reserva de espacio y fallback a iniciales. Mapa estático y recursos incluidos en la allowlist obligatoria; Hosting pasa de 40 a 44 archivos.

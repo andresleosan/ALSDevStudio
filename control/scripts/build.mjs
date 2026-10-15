@@ -35,6 +35,7 @@ export async function buildControl({ demo = false, configPath = process.env.CONT
   await rm(output, { recursive: true, force: true });
   await mkdir(resolve(output, 'scripts/vendor'), { recursive: true });
   await cp(resolve(controlRoot, 'web'), output, { recursive: true, filter: (source) => !source.endsWith('firebase-entry.mjs') });
+  await cp(resolve(controlRoot, '../favicon.svg'), resolve(output, 'favicon.svg'));
   await mkdir(resolve(output, 'assets/fonts'), { recursive: true });
   await cp(resolve(controlRoot, '../assets/fonts'), resolve(output, 'assets/fonts'), { recursive: true });
   await mkdir(resolve(output, 'assets/brand'), { recursive: true });

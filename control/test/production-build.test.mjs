@@ -26,6 +26,7 @@ async function fixture() {
   await cp(join(controlRoot, 'web'), join(root, 'web'), { recursive: true });
   await writeFile(join(directory, 'assets/fonts/fonts.css'), '/* fixture local */');
   await writeFile(join(directory, 'assets/brand/logo-als.png'), 'fixture local');
+  await cp(join(controlRoot, '../favicon.svg'), join(directory, 'favicon.svg'));
   const { buildControl } = await import(pathToFileURL(join(root, 'scripts/build.mjs')).href);
   return {
     root, buildControl,

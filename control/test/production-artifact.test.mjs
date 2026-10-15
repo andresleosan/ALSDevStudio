@@ -25,7 +25,7 @@ async function fixture() {
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, value);
   }
-  for (const path of ['index.html', 'styles/control.css', 'assets/brand/logo-als.png',
+  for (const path of ['index.html', 'favicon.svg', 'styles/control.css', 'assets/brand/logo-als.png',
     'assets/fonts/fonts.css', 'scripts/app.mjs', 'scripts/render.mjs', 'scripts/vendor/firebase.mjs',
     'assets/products/dialon.ico', 'assets/products/laparada.png', 'assets/products/sarinbotsaas.png',
     'assets/products/semancontrol.svg']) await put(path);

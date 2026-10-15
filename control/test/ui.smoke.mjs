@@ -48,7 +48,7 @@ const server = createServer(async (request, response) => {
       }
       response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(result)); return;
     }
-    const sharedAsset = url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/assets/products/');
+    const sharedAsset = url.pathname === '/favicon.svg' || (url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/assets/products/'));
     const file = sharedAsset ? resolve(root, `.${url.pathname}`) : resolve(root, 'control/web', `.${url.pathname === '/' ? '/index.html' : url.pathname}`);
     if (!file.startsWith(root)) throw new Error('Ruta inválida');
     response.setHeader('Content-Type', types[extname(file)] || 'text/plain'); response.end(await readFile(file));

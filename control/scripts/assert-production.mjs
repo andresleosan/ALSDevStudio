@@ -6,11 +6,11 @@ import { controlRoot } from './config.mjs';
 import { isProductionConfig } from './build.mjs';
 
 const directories = new Set(['assets', 'assets/brand', 'assets/fonts', 'assets/products', 'scripts', 'scripts/vendor', 'styles']);
-const required = new Set(['index.html', 'styles/control.css', 'scripts/app.mjs', 'scripts/render.mjs',
+const required = new Set(['index.html', 'favicon.svg', 'styles/control.css', 'scripts/app.mjs', 'scripts/render.mjs',
   'scripts/platform.mjs', 'scripts/public-config.mjs', 'scripts/vendor/firebase.mjs',
   'assets/brand/logo-als.png', 'assets/fonts/fonts.css', 'assets/products/dialon.ico',
   'assets/products/laparada.png', 'assets/products/sarinbotsaas.png', 'assets/products/semancontrol.svg']);
-const publicFile = /^(?:index\.html|styles\/control\.css|scripts\/(?:app|render|platform|public-config)\.mjs|scripts\/vendor\/firebase\.mjs|assets\/brand\/logo-als\.png|assets\/products\/(?:dialon\.ico|laparada\.png|sarinbotsaas\.png|semancontrol\.svg)|assets\/fonts\/(?:[A-Za-z0-9_-]+\.(?:woff2|css|txt)|SOURCES\.json))$/;
+const publicFile = /^(?:index\.html|favicon\.svg|styles\/control\.css|scripts\/(?:app|render|platform|public-config)\.mjs|scripts\/vendor\/firebase\.mjs|assets\/brand\/logo-als\.png|assets\/products\/(?:dialon\.ico|laparada\.png|sarinbotsaas\.png|semancontrol\.svg)|assets\/fonts\/(?:[A-Za-z0-9_-]+\.(?:woff2|css|txt)|SOURCES\.json))$/;
 
 /** Verifica el artefacto sin ejecutar su configuración ni modificar archivos. */
 export async function assertProductionArtifact({ directory = process.env.RESOURCE_DIR ?? resolve(controlRoot, 'dist'), projectId = process.env.GCLOUD_PROJECT } = {}) {

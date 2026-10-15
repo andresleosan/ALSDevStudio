@@ -16,3 +16,7 @@ La UI usa rutas locales de un mapa fijo y el guard de publicación exige exactam
 Verificación: 37/37 pruebas existentes de build/guard; recorrido UI completo aprobado. Inspección de Productos en 320/390/768/1440 px: cuatro imágenes cargadas, axe 0 y sin desbordamiento. Se corrigió una espera del harness para observar las tarjetas después del evento de navegación. Capturas locales en `test-results/control-favicons-*.png`.
 
 Hosting publicado y comprobado: los cuatro iconos, `app.mjs` y `control.css` responden 200 y coinciden byte a byte con el artefacto revisado. Evidencia en `test-results/control-favicons-live.json`. Para revertir, restaurar el commit anterior, reconstruir producción y publicar únicamente Hosting.
+
+## Favicon de la pestaña del panel · 15 de octubre de 2026
+
+El panel declara `favicon.svg` en su HTML y el build copia el archivo canónico del portafolio. El guard exige ese recurso; Hosting contiene ahora 45 archivos. Verificado en producción: declaración HTML presente, SVG con respuesta 200 y contenido idéntico al favicon publicado en `www.alsdevstudio.com`. Pruebas existentes build/guard 37/37 y smoke UI completo aprobados. Evidencia: `test-results/control-tab-favicon-live.json`. Reversión mediante commit anterior y publicación de Hosting.

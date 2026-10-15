@@ -1,5 +1,9 @@
 # Tareas — ALS DevStudio
 
+## CONTROL-TAB-FAVICON · Favicon de la pestaña administrativa · 2026-10-15
+- [x] Usar el mismo favicon ALS del portafolio en el panel: enlace HTML, copia del SVG canónico durante el build y archivo obligatorio en el guard.
+- [x] Build/guard 37/37, smoke UI completo y Hosting publicado con 45 archivos. HTTP confirma declaración y SVG 200 idéntico al del portafolio. [Registro](docs/CONTROL-FAVICONS.md).
+
 ## CONTROL-FAVICONS · Iconos reales de los productos · 2026-10-14
 - [x] Sustituir Di/LP/SB/SC por los favicons oficiales de Dialon, La Parada, Sarin Bot y SemanControl en las tarjetas, usando copias locales y fallback a iniciales.
 - [x] Validación de los cuatro assets, allowlist exacta y recursos obligatorios en el guard. Pruebas build/guard 37/37, smoke UI completo, imágenes cargadas y axe 0 en 320/390/768/1440; capturas revisadas.
