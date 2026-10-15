@@ -1,5 +1,15 @@
 # Tareas — ALS DevStudio
 
+## CONTROL-LOCAL · Primer hito del panel de suscripciones · 2026-10-14
+- Estado: implementada y verificada localmente; sin push ni despliegue. Rama `feature/subscription-control`, worktree `.worktrees/control`. Alcance autorizado mediante «procedamos»: panel independiente y núcleo comercial con Firebase emulado, sin conectar plataformas reales.
+- [x] Catálogo de La Parada, Sarin Bot, Dialon y SemanControl; planes configurables sin precios inventados y sujetos por negocio/persona.
+- [x] Prueba única, renovación por mes calendario o 30 días, pago manual Nequi/transferencia con vista previa, confirmación transaccional e historial; suspensión/reactivación con motivo.
+- [x] API con autorización administrativa, reglas cerradas y adaptador Firestore; modo demo local separado del acceso Google futuro. Órdenes de licencia con conexión pendiente visible.
+- [x] Interfaz ALS responsive con filtros/páginas, teclado, diálogos, recuperación de borradores y reintentos idempotentes tras perder sesión o respuesta.
+- [x] `npm run qa`: 63/63 pruebas sin omitidas; smoke UI y siete escenarios E2E con Auth/Firestore/Functions reales de Emulator Suite. Axe 0, sin overflow en 320/390/768/1440 ni errores JavaScript. Revisión independiente: corregidos reintento de pago tras 429/401 y restauración de foco; sin bloqueantes pendientes.
+- [x] Build público 12/12 y 205 archivos excluyendo el panel; build administrativo sin configurar falla cerrado, sin endpoint demo y con aviso noscript visible. Auditorías de producción 0; incidencias transitivas de CLI registradas.
+- Registro: [alcance, evidencias y pendientes](docs/CONTROL-PRIMER-HITO.md). Conexión Firebase real, Google/UID definitivo, conectores, migración histórica, gracia por comprobante y ajustes/anulaciones siguen pendientes. La entrega local no modifica el acceso de clientes reales.
+
 ## SEMAN-PROCESS · Espacio en construcción y corregir salto de Sarin · 2026-10-14
 - Estado: desplegada y verificada en producción. Placeholder SemanControl no clicable en galería20; conservar19 capturas/carrusel, enlaces/orden/filtros. Marca En construcción, sin capturas ficticias, URL errónea o funcionalidades no verificadas.
 - Alinear frameB Proceso+12.5% tras diagnosticar desalineación40px; mantener pose/tecleo/texto y otros assets/animaciones. Regression de registro de cabeza/patas, imágenes reales, noJS/reducido y finales estables.

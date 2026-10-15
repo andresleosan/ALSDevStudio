@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#071a2f">
+  <title>Control · ALS DevStudio</title>
+  <link rel="stylesheet" href="./assets/fonts/fonts.css">
+  <link rel="stylesheet" href="./styles/control.css">
+  <script type="module" src="./scripts/app.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Saltar al contenido</a>
+  <noscript><div class="noscript"><strong>Activa JavaScript para usar el panel.</strong> El acceso y las operaciones administrativas requieren una sesión verificada. No se han realizado cambios.</div></noscript>
+  <section id="login" class="login-screen" aria-labelledby="login-title">
+    <div class="login-brand"><span class="brand-symbol" aria-hidden="true"><picture><img src="./assets/brand/logo-als.png" width="44" height="44" alt=""></picture></span><span>ALS<span class="mint">DevStudio</span></span></div>
+    <div class="login-copy">
+      <p class="section-label">Centro de control</p>
+      <h1 id="login-title">Tus productos.<br><span class="mint">Una sola vista.</span></h1>
+      <p>Planes, suscripciones y pagos de ALS DevStudio, en un espacio privado.</p>
+      <div class="login-products" aria-label="Productos administrados"><span>La Parada</span><span>Sarin Bot</span><span>Dialon</span><span>SemanControl</span></div>
+    </div>
+    <div class="login-card">
+      <span id="login-environment" class="badge">Comprobando entorno</span>
+      <h2>Acceso administrativo</h2>
+      <p id="login-description">Preparando el acceso seguro al panel.</p>
+      <button id="sign-in" class="button primary" type="button" disabled>Preparando acceso…</button>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <div class="login-note">Solo la cuenta administrativa autorizada puede consultar y modificar los registros.</div>
+    </div>
+    <p class="login-footer">ALS DevStudio <span aria-hidden="true">/</span> Administración de productos</p>
+  </section>
+
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a href="#resumen" class="brand" aria-label="ALS DevStudio Control, ir a Resumen"><span class="brand-symbol" aria-hidden="true"><picture><img src="./assets/brand/logo-als.png" width="44" height="44" alt=""></picture></span><span>ALS<span class="mint">DevStudio</span><small>Control</small></span></a>
+      <nav class="main-nav" aria-label="Secciones del panel">
+        <a href="#resumen" data-view="resumen"><svg aria-hidden="true" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h18v18H3zM9 3v18M9 10h12"/></svg>Resumen</a>
+        <a href="#productos" data-view="productos"><svg aria-hidden="true" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>Productos</a>
+        <a href="#suscripciones" data-view="suscripciones"><svg aria-hidden="true" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg>Suscripciones</a>
+        <a href="#pagos" data-view="pagos"><svg aria-hidden="true" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4zM4 9h16M7 15h5"/></svg>Pagos</a>
+        <a href="#actividad" data-view="actividad"><svg aria-hidden="true" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8a9 9 0 1 1-1 7M3 3v6h6M12 7v6l4 2"/></svg>Actividad</a>
+      </nav>
+      <div class="sidebar-bottom"><p class="section-label">Administración privada</p><p>Vigencias claras.<br>Decisiones registradas.</p><span id="sidebar-mode" class="badge"></span></div>
+    </aside>
+    <div class="app-body">
+      <header class="topbar">
+        <div class="topbar-context"><span class="status-dot" aria-hidden="true"></span><span id="environment-label">Centro de control</span></div>
+        <div class="account"><span id="account-email"></span><button id="sign-out" type="button" class="button text-button">Salir</button></div>
+      </header>
+      <div class="connection-banner"><span class="connection-symbol" aria-hidden="true">○</span><p><strong>Plataformas pendientes de conexión.</strong> Las vigencias y los pagos se registran en el centro; todavía no controlan el acceso en cada producto.</p></div>
+      <div id="global-error" class="global-error" role="alert" hidden></div>
+      <main id="workspace" tabindex="-1" aria-busy="false"></main>
+      <footer class="app-footer"><span>ALS DevStudio · Control</span><span id="snapshot-time">Sincronizando…</span></footer>
+    </div>
+  </div>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="work-dialog" class="work-dialog" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
+  <dialog id="discard-dialog" class="discard-dialog" aria-labelledby="discard-title"><div id="discard-content"></div></dialog>
+</body>
+</html>

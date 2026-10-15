@@ -1,6 +1,8 @@
 # Núcleo del panel de suscripciones Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
+
+**Estado:** cinco tareas implementadas y verificadas localmente. `npm run qa`: 63/63 pruebas sin omitidas, smoke UI y siete escenarios E2E; cuatro anchos con axe sin hallazgos. [Evidencia y pendientes de producción](../../CONTROL-PRIMER-HITO.md). No se han conectado productos reales ni realizado push/despliegue.
 
 **Goal:** Entregar un panel local funcional para configurar planes, crear personas o negocios, asignar suscripciones y registrar pagos manuales con vigencia e historial.
 
@@ -41,12 +43,12 @@ El navegador consume `createPlatform()` de `web/scripts/platform.mjs`: `mode`, `
 
 **Interfaces:** producir el servicio y almacén descritos arriba; registros JSON con fechas ISO e importes enteros en unidades menores. La hora y los identificadores se inyectan para pruebas reproducibles.
 
-- [ ] Escribir pruebas que fallen para modalidades, plan borrador, prueba única de 168 horas, renovación anticipada/vencida y ancla de fin de mes.
-- [ ] Implementar catálogo de cuatro productos, validación de sujetos/planes y creación única de suscripciones.
-- [ ] Escribir y ejecutar pruebas de pagos repetidos, concurrencia, diferencias de importe y vista previa caducada o invalidada por cambio de versión.
-- [ ] Implementar vista previa persistida de diez minutos, confirmación atómica, pagos inmutables, auditoría y órdenes de licencia absoluta sin conector.
-- [ ] Probar suspensión/reactivación: pagar no levanta una suspensión; operaciones inválidas no dejan escrituras parciales.
-- [ ] Verificar `node --test control/functions/test/domain.test.mjs control/functions/test/service.test.mjs`.
+- [x] Escribir pruebas que fallen para modalidades, plan borrador, prueba única de 168 horas, renovación anticipada/vencida y ancla de fin de mes.
+- [x] Implementar catálogo de cuatro productos, validación de sujetos/planes y creación única de suscripciones.
+- [x] Escribir y ejecutar pruebas de pagos repetidos, concurrencia, diferencias de importe y vista previa caducada o invalidada por cambio de versión.
+- [x] Implementar vista previa persistida de diez minutos, confirmación atómica, pagos inmutables, auditoría y órdenes de licencia absoluta sin conector.
+- [x] Probar suspensión/reactivación: pagar no levanta una suspensión; operaciones inválidas no dejan escrituras parciales.
+- [x] Verificar `node --test control/functions/test/domain.test.mjs control/functions/test/service.test.mjs`.
 
 ### Task 2: API protegida y Firestore
 
@@ -54,12 +56,12 @@ El navegador consume `createPlatform()` de `web/scripts/platform.mjs`: `mode`, `
 
 **Interfaces:** consumir Task 1. Exportar `createApi({service, verifyToken, config})`, que acepta `Request` y devuelve `Response`; `createFirestoreStore(db)` implementa el mismo almacén. Functions exporta `controlApi`.
 
-- [ ] Escribir pruebas que nieguen token ausente, UID incorrecto, otro proyecto, correo no verificado, proveedor incorrecto o claim ausente.
-- [ ] Implementar autorización con revocación y configuración que falla cerrada al faltar UID; permitir identidad sintética únicamente con proyecto demo y emuladores loopback.
-- [ ] Implementar `GET /api/state` y `POST /api/commands` con tipos, límite de cuerpo, CORS de orígenes explícitos y errores seguros.
-- [ ] Implementar Firestore con transacciones y escrituras diferidas hasta terminar lecturas; reglas deniegan escrituras del navegador.
-- [ ] Probar contra emulador persistencia y dos confirmaciones concurrentes, y denegar acceso directo no autorizado a Firestore.
-- [ ] Verificar Node tests y prueba integrada con emuladores.
+- [x] Escribir pruebas que nieguen token ausente, UID incorrecto, otro proyecto, correo no verificado, proveedor incorrecto o claim ausente.
+- [x] Implementar autorización con revocación y configuración que falla cerrada al faltar UID; permitir identidad sintética únicamente con proyecto demo y emuladores loopback.
+- [x] Implementar `GET /api/state` y `POST /api/commands` con tipos, límite de cuerpo, CORS de orígenes explícitos y errores seguros.
+- [x] Implementar Firestore con transacciones y escrituras diferidas hasta terminar lecturas; reglas deniegan escrituras del navegador.
+- [x] Probar contra emulador persistencia y dos confirmaciones concurrentes, y denegar acceso directo no autorizado a Firestore.
+- [x] Verificar Node tests y prueba integrada con emuladores.
 
 ### Task 3: Interfaz administrativa
 
@@ -67,12 +69,12 @@ El navegador consume `createPlatform()` de `web/scripts/platform.mjs`: `mode`, `
 
 **Interfaces:** consumir `createPlatform()` y las acciones de `CONTRACT.md`. La UI no calcula ni concede vigencias por su cuenta; muestra la vista previa emitida por servidor.
 
-- [ ] Construir navegación Resumen, Productos, Suscripciones, Pagos y Actividad con identidad ALS y formularios etiquetados.
-- [ ] Mostrar catálogo sin precios inventados, configuración de plan, alta de persona/negocio y asignación de producto compatible.
-- [ ] Permitir prueba elegible, pago con vista previa y confirmación, suspensión/reactivación motivadas e historial.
-- [ ] Separar vigencia deseada de conexión pendiente; resumen distingue pagos recibidos y valor periódico previsto por moneda.
-- [ ] Implementar búsqueda, filtros y páginas de diez elementos; errores y carga accesibles, foco visible, diálogos y advertencia de cambios sin guardar.
-- [ ] Comprobar con navegador en 320, 390, 768 y 1440 px, teclado, movimiento reducido y `noscript`.
+- [x] Construir navegación Resumen, Productos, Suscripciones, Pagos y Actividad con identidad ALS y formularios etiquetados.
+- [x] Mostrar catálogo sin precios inventados, configuración de plan, alta de persona/negocio y asignación de producto compatible.
+- [x] Permitir prueba elegible, pago con vista previa y confirmación, suspensión/reactivación motivadas e historial.
+- [x] Separar vigencia deseada de conexión pendiente; resumen distingue pagos recibidos y valor periódico previsto por moneda.
+- [x] Implementar búsqueda, filtros y páginas de diez elementos; errores y carga accesibles, foco visible, diálogos y advertencia de cambios sin guardar.
+- [x] Comprobar con navegador en 320, 390, 768 y 1440 px, teclado, movimiento reducido y `noscript`.
 
 ### Task 4: Entorno local y acceso Firebase
 
@@ -80,22 +82,22 @@ El navegador consume `createPlatform()` de `web/scripts/platform.mjs`: `mode`, `
 
 **Interfaces:** producir la plataforma consumida por Task 3 y lanzar Task 2 sobre `demo-alsdevstudio`. El servidor de desarrollo escuchará solo loopback y no viajará al build de producción.
 
-- [ ] Instalar dependencias fijadas en `control/`; compilar SDK Firebase modular localmente, sin CDN ni secretos en web.
-- [ ] Preparar emuladores y Java compatible en carpeta local ignorada si el sistema no lo tiene; no modificar Java global.
-- [ ] Crear identidad sintética del administrador exclusivamente en Auth emulator y sesión de prueba local; producción usa Google real y falla cerrada sin configuración.
-- [ ] Implementar build explícito del panel, fuentes locales y cabeceras de seguridad; distinguir claramente entorno local y modo no configurado.
-- [ ] Probar inicio/cierre de sesión, recarga, error de red y expiración; verificar que ningún endpoint de desarrollo exista en Functions ni en el build web.
-- [ ] Documentar comandos de arranque, pruebas y configuración pendiente para conectar Firebase real.
+- [x] Instalar dependencias fijadas en `control/`; compilar SDK Firebase modular localmente, sin CDN ni secretos en web.
+- [x] Preparar emuladores y Java compatible en carpeta local ignorada si el sistema no lo tiene; no modificar Java global.
+- [x] Crear identidad sintética del administrador exclusivamente en Auth emulator y sesión de prueba local; producción usa Google real y falla cerrada sin configuración.
+- [x] Implementar build explícito del panel, fuentes locales y cabeceras de seguridad; distinguir claramente entorno local y modo no configurado.
+- [x] Probar inicio/cierre de sesión, recarga, error de red y expiración; verificar que ningún endpoint de desarrollo exista en Functions ni en el build web.
+- [x] Documentar comandos de arranque, pruebas y configuración pendiente para conectar Firebase real.
 
 ### Task 5: Verificación integrada y cierre
 
 **Files:** crear `control/test/e2e.mjs`, actualizar `STACK.md`, `tasks.md` y el registro de verificación del hito.
 
-- [ ] Probar el recorrido completo: configurar plan, crear sujeto, crear suscripción, iniciar prueba, previsualizar/confirmar pago y comprobar historial tras recarga.
-- [ ] Comprobar acceso directo sin token y usuario no administrador, texto malicioso como dato y límite de cuerpo de API.
-- [ ] Ejecutar pruebas de dominio/API/Firestore, QA responsive y accesibilidad; revisar dependencias con `npm audit`.
-- [ ] Ejecutar la regresión del build público y confirmar que no publica código, configuración ni archivos del panel.
-- [ ] Revisar seguridad de la rama completa, corregir hallazgos y registrar evidencia fresca; conservar revisión local sin push ni despliegue.
+- [x] Probar el recorrido completo: configurar plan, crear sujeto, crear suscripción, iniciar prueba, previsualizar/confirmar pago y comprobar historial tras recarga.
+- [x] Comprobar acceso directo sin token y usuario no administrador, texto malicioso como dato y límite de cuerpo de API.
+- [x] Ejecutar pruebas de dominio/API/Firestore, QA responsive y accesibilidad; revisar dependencias con `npm audit`.
+- [x] Ejecutar la regresión del build público y confirmar que no publica código, configuración ni archivos del panel.
+- [x] Revisar seguridad de la rama completa, corregir hallazgos y registrar evidencia fresca; conservar revisión local sin push ni despliegue.
 
 ## Verificación y ejecución
 

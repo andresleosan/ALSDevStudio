@@ -1,11 +1,16 @@
 # Stack — ALS DevStudio
 
-### Panel central de suscripciones — diseño propuesto · 2026-10-14
+### Panel central de suscripciones — primer hito local · 2026-10-14
 
 - Alcance confirmado: La Parada, Sarin Bot y SemanControl por negocio; Dialon individual. Administrador Google exclusivo `andres.san1404@gmail.com`; registro manual de pagos por transferencia/Nequi.
 - [Especificación propuesta](docs/superpowers/specs/2026-10-14-panel-central-suscripciones-design.md): Firebase `alsdevstudio` para el control comercial, datos operativos en cada producto y conectores de servidor. SemanControl conserva D1 y requiere aislamiento empresarial y tratamiento de sus pendientes offline.
 - Dialon: [código localizado en GitHub](https://github.com/andresleosan/Dialon), commit revisado `7740d9a053db0081a6774af1dd2600f70676121c`; VPS confirmada por el titular. Actualmente es una demo Expo: audio local web sin traducción; escucha, traducción y voz simuladas en nativo; sin cuentas ni backend. Su suscripción individual requiere identidad y API de licencias en la VPS; Firebase aún no está implementado en ese producto.
-- Estado: documentación para revisión; el sitio público conserva su stack y aún no tiene backend central. Presupuesto inicial estimado del centro: US$0–5/mes con un administrador y 50–100 sujetos, consumo bajo y Blaze; facturación y alertas aún requieren comprobación antes de conectar producción.
+- Estado: núcleo, API protegida y panel implementados y verificados localmente en `control/`. Firebase Auth, Firestore y Functions emulados bajo `demo-alsdevstudio`; los cuatro productos siguen desconectados. El sitio público conserva su stack y su build excluye el panel. No se ha conectado ni desplegado Firebase real.
+- Stack administrativo: HTML/CSS/ES Modules con JSDoc, Firebase Auth modular compilado localmente, Admin SDK y Functions ESM con runtime Node 22. Sin framework frontend ni paquete npm en la raíz. CLI, Java portable, pruebas y dependencias viven dentro de `control/`.
+- Identidad: tinta `#071a2f`, menta `#65d49d`, azul `#4d9bff`; Chakra Petch en títulos, DM Sans en lectura e IBM Plex Mono en datos breves. Navegación lateral en escritorio y horizontal en móvil, tablas desplazables, formularios nativos y diálogos con foco controlado; marca y fuentes locales.
+- Controles: UID fijado, correo verificado, proveedor Google, claim administrativo y revocación en backend; reglas Firestore cerradas al navegador. Pagos transaccionales con vista previa versionada e idempotencia persistente incluso tras errores de red/sesión; órdenes absolutas de licencia pendientes de conector. La demostración sintética solo funciona en emuladores loopback.
+- Evidencia: `npm run qa` pasa 63/63 pruebas sin omitidas, recuperación de pago/foco y siete escenarios de navegador; 320/390/768/1440 px sin desbordamiento ni hallazgos axe. Build público 12/12 y 205 archivos, sin incluir el panel. Auditorías de dependencias de producción sin vulnerabilidades; siete nodos afectados en herramientas de desarrollo documentados en `control/README.md`.
+- Operación y límites: [primer hito](docs/CONTROL-PRIMER-HITO.md), [arranque y configuración](control/README.md). Planes sin precios precargados; datos demo temporales. Presupuesto inicial estimado del centro real: US$0–5/mes con un administrador y 50–100 sujetos, consumo bajo y Blaze; facturación y alertas aún requieren comprobación antes de conectar producción.
 
 ### Placeholder SemanControl y registro de fotogramas · 2026-10-14
 - Tarjeta20 mediante article.project-card--pending, categoríaProducto y estadoEn construcción. Visual HTML/CSS local con proporción16:10 y textos honestos; sin href/foco/CTA. Galería20; carrusel/capturas conservan19 proyectos con demos disponibles. Excluir article de flecha, subrayado y tilt mediante selectores de enlaces.
@@ -15,7 +20,7 @@
 - Conservar la galería/carrusel estáticos y su diseño existente. Proyecto19, clave `sarinbotsaas`, URL externa HTTPS con noopener/noreferrer, estado Próximamente. Captura real mediante el pipeline existente a1440×900 y variantes AVIF/WebP480/768/1200, sin iframe ni conexiones automáticas nuevas.
 - Vuelo con pose de giro en los extremos y parada central en ambas direcciones; cinco mensajes locales de servicios. Reservar el tamaño del globo para el mensaje más alto, conservar poses y WAAPI con cleanup. No agregar dependencias, datos o cambios de proveedor.
 
-## Estado actual
+## Estado actual del sitio público
 - HTML5 estático en `index.html`.
 - CSS externo en `styles/main.css`, organizado por secciones numeradas.
 - JavaScript vanilla en módulos ES: `scripts/main.js` es el punto de entrada y cada sección vive en `scripts/modules/`. Con `@ts-check` y JSDoc; `jsconfig.json` permite `tsc` en modo estricto sin build.
@@ -23,7 +28,7 @@
 - Sin base de datos, API ni secretos.
 
 ## Nivel
-Nivel 1 — landing/portafolio. El workflow completo de Superpowers y las pruebas de nivel 3 no aplican. Sí aplican responsive, accesibilidad básica, seguridad de contenido estático y verificación real en navegador cuando esté disponible.
+El sitio público es Nivel 1 — landing/portafolio: responsive, accesibilidad, seguridad de contenido estático y verificación real en navegador. El módulo administrativo independiente `control/` es Nivel 3 por gestionar identidad, pagos y licencias; requiere transacciones, pruebas de concurrencia y permisos, revisión de seguridad y verificación integrada.
 
 ## Identidad visual (Design DNA)
 

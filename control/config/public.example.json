@@ -1,0 +1,10 @@
+{
+  "mode": "production",
+  "apiBase": "/api",
+  "firebase": {
+    "apiKey": "REEMPLAZAR_CON_CONFIG_PUBLICA_FIREBASE",
+    "authDomain": "alsdevstudio.firebaseapp.com",
+    "projectId": "alsdevstudio",
+    "appId": "REEMPLAZAR_CON_APP_ID_WEB"
+  }
+}
