@@ -20,6 +20,8 @@ firebase-debug.log
 
 # Dependencias e instalación
 node_modules/
+.worktrees/
+control/.tools/
 vendor/
 .venv/
 venv/
