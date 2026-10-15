@@ -33,7 +33,7 @@ async function put(root, file, content = 'fixture') {
 async function fixture() {
   const root = await mkdtemp(path.join(path.resolve(tmpdir()), 'als-cloudflare-test-'));
   temporaryRoots.push(root);
-  for (const name of ['index', 'privacidad', 'terminos', 'cookies', '404']) {
+  for (const name of ['index', 'privacidad', 'terminos', 'cookies', 'admin', '404']) {
     await put(root, `${name}.html`, '<!DOCTYPE html><a href="index.html">Inicio</a><link href="styles/main.css" rel="stylesheet">');
   }
   for (const name of ['favicon.svg', 'robots.txt', '_headers', '_redirects']) await put(root, name);
@@ -69,10 +69,11 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
   const root = await fixture();
   for (const name of ['docs/private.html', 'test-results/report.html', '.env', '.cronos/AGENCY.md',
     'scripts/internal-tool.js', 'assets/brand/private.png', 'assets/fonts/SOURCES.json',
-    'assets/projects/source.png', 'wrangler.jsonc']) await put(root, name, 'NO PUBLICAR');
+    'assets/projects/source.png', 'wrangler.jsonc', 'control/.env', 'control/functions/src/index.mjs',
+    'control/dist/index.html', 'control/config/public.json']) await put(root, name, 'NO PUBLICAR');
   await build(root);
   assert.deepEqual(await files(path.join(root, 'dist')), [
-    '404.html', '_headers', '_redirects', 'cookies.html', 'favicon.svg', 'index.html',
+    '404.html', '_headers', '_redirects', 'admin.html', 'cookies.html', 'favicon.svg', 'index.html',
     'privacidad.html', 'robots.txt', 'sitemap.xml', 'terminos.html', 'styles/main.css',
     ...scripts.map(name => `scripts/${name}`), ...brand.map(name => `assets/brand/${name}`),
     'assets/fonts/fonts.css', 'assets/fonts/font-1.woff2', 'assets/fonts/spacegrotesk-OFL.txt',
@@ -83,14 +84,14 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
 
 test('normaliza enlaces y canonicals de Pages conservando fuentes y destinos externos', async () => {
   const root = await fixture();
-  const original = '<a href="index.html#inicio">Inicio</a><a href="cookies.html#analitica">Cookies</a>' +
+  const original = '<a href="index.html#inicio">Inicio</a><a href="cookies.html#analitica">Cookies</a><a href="admin.html">Administración</a>' +
     '<link rel="canonical" href="https://www.alsdevstudio.com/privacidad.html">' +
     '<a href="https://external.example/privacidad.html">Externo</a>';
   await put(root, 'index.html', original);
   await put(root, 'scripts/analytics.js', 'const oldPath = "privacidad.html";');
   await build(root);
   assert.equal(await readFile(path.join(root, 'dist/index.html'), 'utf8'),
-    '<a href="/#inicio">Inicio</a><a href="/cookies#analitica">Cookies</a>' +
+    '<a href="/#inicio">Inicio</a><a href="/cookies#analitica">Cookies</a><a href="/admin">Administración</a>' +
     '<link rel="canonical" href="https://www.alsdevstudio.com/privacidad">' +
     '<a href="https://external.example/privacidad.html">Externo</a>');
   assert.equal(await readFile(path.join(root, 'index.html'), 'utf8'), original);

@@ -1,5 +1,11 @@
 # Stack — ALS DevStudio
 
+### Entrada administrativa en el footer · 2026-10-14
+
+- Enlace nativo «Administración», discreto y sin iconos, separado de la navegación legal al final del footer. Conserva color/tipografía, objetivo de 44 px y foco visible; en móvil se acomoda abajo a la derecha.
+- Ruta pública `/admin` con shell HTML estático: informa que el ingreso Google está pendiente y conserva el botón inhabilitado. Sin SDK, JavaScript, correo personal ni datos administrativos. No conecta Firebase ni publica `control/`.
+- Build con allowlist explícita de `admin.html`, URL normalizada y redirección histórica; `noindex/nofollow/noarchive` y `no-store` para el acceso, sin entrada en sitemap. [Registro](docs/ADMIN-FOOTER.md).
+
 ### Panel central de suscripciones — primer hito local · 2026-10-14
 
 - Alcance confirmado: La Parada, Sarin Bot y SemanControl por negocio; Dialon individual. Administrador Google exclusivo `andres.san1404@gmail.com`; registro manual de pagos por transferencia/Nequi.

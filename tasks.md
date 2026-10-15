@@ -1,5 +1,10 @@
 # Tareas — ALS DevStudio
 
+## ADMIN-FOOTER · Acceso discreto al final del sitio · 2026-10-14
+- Implementado y verificado: enlace nativo «Administración» hacia `/admin`, con el estilo del pie de página, foco visible y adaptación móvil. Pantalla estática honesta sobre el ingreso Google pendiente; sin exponer el panel local ni datos.
+- Build 12/12, 206 archivos / 4.910.917 bytes; allowlist y exclusión de `control/`, configuración y Functions comprobadas. Navegador en 320/390/768/1440: destino/regreso, teclado, axe 0, sin overflow/erroresJS/redexterna; sin JavaScript en 390/1440. Redirección con query y cabeceras noindex/no-store verificadas localmente.
+- [Registro y reversión](docs/ADMIN-FOOTER.md). Continúa el flujo de commit/push autorizado; conectar Firebase real y habilitar el ingreso requieren el siguiente hito.
+
 ## GIT-MAIN · Consolidación en una única rama · 2026-10-14
 - Solicitud del titular: «unifica todas las ramas, quiero tener una unica rama main». Integrar el panel, conservar toda la historia y retirar las ramas auxiliares locales/remotas.
 - Integración: panel `1708cfe` por fast-forward; las demás ramas ya eran ancestros de `main`, excepto 39 commits de `feat/depth-3d-live-previews` con parches equivalentes ya integrados. Se incorporan como historia con estrategia `ours`, conservando las decisiones posteriores de privacidad y diseño.
