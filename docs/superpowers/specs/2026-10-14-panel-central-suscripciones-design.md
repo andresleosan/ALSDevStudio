@@ -10,7 +10,7 @@ El panel privado de ALS DevStudio permitirá a Andrés administrar suscripciones
 | --- | --- | --- | --- |
 | La Parada | Negocio | Siete días | Añadir vigencia SaaS al control de negocios existente |
 | Sarin Bot | Negocio | Siete días | Integrar el flujo comercial existente y conservar vigencias |
-| Dialon | Persona | Configurable; sin concesión automática hasta definirla | Conector condicionado a localizar y revisar su código |
+| Dialon | Persona | Configurable; sin concesión automática hasta definirla | Crear identidad individual y API de licencias en la VPS |
 | SemanControl | Negocio | Configurable; sin concesión automática hasta definirla | Conector para D1 y definición del aislamiento empresarial |
 
 El administrador autorizado es `andres.san1404@gmail.com`, mediante Google y Firebase Authentication. Inicialmente registrará pagos ya recibidos por transferencia o Nequi. Cada producto tendrá planes, precios y políticas propios. Las suscripciones de una persona que también administra negocios serán independientes.
@@ -27,9 +27,9 @@ La configuración local de Sarin Bot declara Firebase `sarinbotsaas`. Ya existen
 
 SemanControl usa Firebase `semancontrolapp` para identidad, Cloudflare D1 para datos y R2 para comprobantes. Su esquema actual representa una sola empresa; no ofrece aislamiento multiempresa. Sus cobros de cartera pertenecen a la operación del negocio, no a la suscripción de SemanControl. Tiene cola, fotos y borradores offline en IndexedDB que deben conservarse.
 
-Dialon aparece en el portafolio como prototipo de conversación bilingüe. Su modalidad individual está confirmada; su backend, identidad y almacenamiento se verificarán antes de conectar usuarios reales.
+Dialon tiene su código en [andresleosan/Dialon](https://github.com/andresleosan/Dialon), y Andrés confirma su ubicación en una VPS. La revisión de `main`, commit `7740d9a053db0081a6774af1dd2600f70676121c`, muestra una aplicación Expo en `apps/mobile`, con exportación web, paquetes compartidos de contratos y máquina de turnos. La versión es DEMO: en web captura y reproduce audio local, sin traducción; en nativo la escucha, la traducción y la voz están simuladas. Todavía no implementa cuentas, Firebase, API, base de datos ni suscripciones. La documentación también contempla una exportación de la demo a Cloudflare Pages; esto no sustituye la comprobación posterior de la versión y los procesos que corren en la VPS.
 
-Estas observaciones describen el código local inspeccionado. Antes de migrar se comprobarán las versiones desplegadas, las cuentas de facturación y las configuraciones de las consolas.
+Estas observaciones describen el código local de ALS DevStudio, La Parada, Sarin Bot y SemanControl, y el repositorio GitHub de Dialon. Antes de migrar se comprobarán las versiones desplegadas, las cuentas de facturación y las configuraciones de las consolas y de la VPS.
 
 ## Arquitectura propuesta
 
@@ -44,15 +44,15 @@ flowchart TD
     API --> M[Conector SemanControl]
     L --> LF[Datos y licencia en La Parada]
     S --> SF[Datos y licencia en Sarin Bot]
-    D --> DF[Datos y licencia en Dialon]
+    D --> DF[API y licencia en VPS de Dialon por implementar]
     M --> MD[Datos y licencia en D1]
 ```
 
-La API central será un backend modular en Firebase Cloud Functions, con módulos de autorización, suscripciones, pagos y conectores. Cada conector vivirá en el backend existente de su producto; no necesita un servicio nuevo independiente. El centro guardará los datos comerciales mínimos, sin copiar pedidos, inventario, citas, conversaciones ni cartera.
+La API central será un backend modular en Firebase Cloud Functions, con módulos de autorización, suscripciones, pagos y conectores. Cada conector vivirá en el backend de su producto; La Parada, Sarin Bot y SemanControl ya disponen de servidor, mientras que Dialon requiere construir esa capa. Los conectores no necesitan un despliegue adicional separado del backend del producto. El centro guardará los datos comerciales mínimos, sin copiar pedidos, inventario, citas, conversaciones, audios ni cartera.
 
 El panel y su backend tendrán configuraciones y salidas de build separadas del portafolio. El build público actual seguirá excluyendo el panel, las funciones y la documentación. Firebase solo se cargará en la aplicación administrativa; la CSP de la landing conservará su alcance actual.
 
-Se consideran dos alternativas: dar al centro acceso administrativo directo a todas las bases, o migrar todos los datos a una única base. Los conectores reducen la dependencia de los esquemas internos y permiten soportar Firestore y D1 con el mismo contrato comercial.
+Se consideran dos alternativas: dar al centro acceso administrativo directo a todas las bases, o migrar todos los datos a una única base. Los conectores reducen la dependencia de los esquemas internos y permiten soportar Firestore, D1 y el futuro almacenamiento del backend de Dialon con el mismo contrato comercial.
 
 ## Modelo de datos central
 
@@ -60,7 +60,7 @@ Se consideran dos alternativas: dar al centro acceso administrativo directo a to
 | --- | --- |
 | `products` | Clave estable, nombre, tipo de sujeto permitido, planes y política comercial versionada; referencia del conector, sin secretos |
 | `subjects` | Identificador central, `kind: person\|business`, nombre y contacto de facturación mínimo |
-| `bindings` | Producto, sujeto, entorno, instancia y referencia local; proyecto Firebase, tenant de Auth si existe y UID o identificador de negocio según corresponda |
+| `bindings` | Producto, sujeto, entorno, instancia y referencia local; emisor de identidad e identificador de cuenta o negocio; proyecto Firebase y tenant de Auth cuando se utilicen |
 | `subscriptions` | Producto y sujeto, plan contratado, precio y política capturados, fechas de prueba y pago, suspensión, versión deseada y versión confirmada |
 | `payments` | Suscripción, importe entero en unidades monetarias menores, moneda, medio, referencia, fecha recibida, confirmación administrativa y período concedido |
 | `commands` | Licencia absoluta que debe aplicar un producto, versión, identificador idempotente, intentos y confirmación |
@@ -70,7 +70,7 @@ Existirá una sola suscripción por `productId + subjectId`, con ID determinista
 
 El MVP admitirá un único vínculo operativo de producción por suscripción, validado transaccionalmente. La versión confirmada corresponderá a ese vínculo; las pruebas de integración usarán vínculos de un entorno separado y no contarán como activaciones de producción. Cambiar de instancia exigirá retirar la licencia anterior y confirmar su revocación, o esperar su vencimiento, antes de activar el destino nuevo. El soporte para varios destinos simultáneos requerirá confirmaciones independientes por vínculo en una versión posterior.
 
-El UID de Firebase siempre se interpretará dentro de su proyecto y tenant de Authentication. Una coincidencia de correo o de UID entre proyectos no vincula identidades automáticamente. Los usuarios de cada negocio seguirán siendo miembros del producto; agregar un empleado no crea una suscripción.
+Toda identidad local se interpretará junto con su emisor. El UID de Firebase siempre se interpretará dentro de su proyecto y tenant de Authentication. Una coincidencia de correo o de UID entre proyectos no vincula identidades automáticamente. Dialon tendrá un identificador individual estable; su proveedor de identidad se definirá en la especificación de ese producto, sin suponer que Firebase ya esté instalado. Los usuarios de cada negocio seguirán siendo miembros del producto; agregar un empleado no crea una suscripción.
 
 ## Reglas de prueba y vigencia
 
@@ -118,11 +118,21 @@ El alta administrativa inicial se realizará desde un entorno confiable, verific
 
 Cada endpoint verificará firma, expiración, proyecto emisor `alsdevstudio`, UID permitido, permiso y estado vigente de autorización. Las operaciones sensibles comprobarán revocación. Firestore denegará por defecto; las escrituras comerciales pasarán por backend. El Admin SDK omite las reglas de Firestore, por lo que el servidor aplicará autorización explícita e IAM mínimo.
 
-Las cuentas de clientes seguirán en Authentication de sus productos. El token administrativo de `alsdevstudio` no se reutilizará como si fuera un token de `sarinbotsaas`, `laparada-26` o `semancontrolapp`. La comunicación entre servidores usará su propia identidad y audiencia.
+Las cuentas de clientes seguirán en el sistema de identidad de sus productos. El token administrativo de `alsdevstudio` no se reutilizará como si fuera un token de `sarinbotsaas`, `laparada-26` o `semancontrolapp`, ni otorgará una cuenta individual en Dialon. La comunicación entre servidores usará su propia identidad y audiencia.
 
 Las otras cuentas Google carecerán de acceso a datos y acciones. El flujo cliente rechazará sesiones no autorizadas. Si además se requiere impedir que Firebase llegue a crear o autenticar esas cuentas, se habilitarán funciones de bloqueo con Identity Platform como decisión adicional; la autorización del panel no dependerá de ese complemento.
 
 La configuración web pública de Firebase puede incluirse en el panel. Las credenciales Admin SDK y secretos de conectores permanecerán en el servidor. Los logs omitirán tokens, comprobantes y datos bancarios; la auditoría conservará solo los campos necesarios. Las consultas y escrituras comprobarán el sujeto y producto autorizado aunque el identificador recibido tenga formato válido.
+
+## Integración individual de Dialon en la VPS
+
+La VPS indicada por Andrés será el destino propuesto de la futura API de Dialon. Su ubicación no exige mover la aplicación ni sus datos a Firebase para administrarla desde ALS DevStudio. La nueva API necesitará sesiones verificables, cuentas individuales estables y almacenamiento durable de la última licencia aplicada. La elección de proveedor de identidad, motor de datos y proceso de despliegue corresponderá a la especificación de integración de Dialon.
+
+El conector recibirá licencias del centro mediante HTTPS y autenticación entre servidores, con las mismas versiones, idempotencia y confirmaciones del contrato común. La cuenta autenticada determinará el sujeto destinatario; no se aceptará un identificador de otro usuario enviado por el cliente. Los usuarios del producto no tendrán acceso al backend administrativo central.
+
+Para el servicio mensual se propone una API de traducción que valide sesión, vigencia, suspensión y límites del plan antes de consumir inferencia. Los límites actuales de audio y turnos son validaciones funcionales locales; no equivalen a control de suscripción. La demo local puede seguir siendo una demostración, pero ocultar botones de Expo no protegerá por sí solo un servicio comercial. La política de prueba de Dialon seguirá sin concesión automática hasta configurar su duración.
+
+El centro recibirá exclusivamente información comercial y el estado necesario para administrar el acceso. Los audios y conversaciones permanecerán en el flujo propio de Dialon. La implementación verificará que una cuenta vencida o suspendida no invoque directamente la traducción protegida y que una caída del centro respete la última vigencia confirmada sin ampliarla.
 
 ## Tratamiento de SemanControl y su modo offline
 
@@ -159,7 +169,7 @@ Se configurarán alertas de facturación, límites de instancias y limpieza de a
 1. Solo el UID administrativo autorizado puede consultar o cambiar los datos del centro, incluidas llamadas directas a la API.
 2. El catálogo representa los cuatro productos con el tipo de sujeto confirmado, y distingue conexión pendiente de conexión operativa.
 3. Una suscripción individual y una de negocio de la misma persona conservan pagos y permisos separados.
-4. La prueba de siete días comienza con hora servidor y no se reinicia al reactivar, cambiar propietario o agregar usuarios.
+4. Las pruebas de siete días de La Parada y Sarin Bot comienzan con hora servidor y no se reinician al reactivar, cambiar propietario o agregar usuarios.
 5. Un pago confirmado se aplica una sola vez; dos pagos distintos concurrentes conservan ambos períodos.
 6. La renovación respeta el contrato de 30 días o mes calendario, incluidos cambios de mes y vencimiento anticipado.
 7. El navegador no puede modificar vigencias, conceder permisos ni alterar la licencia local mediante acceso directo a la base.
@@ -168,6 +178,7 @@ Se configurarán alertas de facturación, límites de instancias y limpieza de a
 10. Las vigencias históricas de Sarin se conservan, y la aprobación comercial queda bajo una única autoridad.
 11. La futura integración de SemanControl conserva sus pendientes offline y valida su recuperación sin duplicar operaciones ni mezclar empresas.
 12. El panel funciona con teclado y en móvil; los cambios se anuncian de forma accesible. El build del portafolio continúa excluyendo los archivos del panel y del backend.
+13. Antes de activar la suscripción de Dialon, su backend autentica la cuenta individual y rechaza traducciones protegidas sin licencia vigente, incluidas llamadas directas que omitan la interfaz; el centro no recibe audio.
 
 ## Referencias
 
@@ -175,6 +186,7 @@ Se configurarán alertas de facturación, límites de instancias y limpieza de a
 - Sarin Bot: `src/lib/server/businesses.ts`, `billing.ts`, `billing-policy.ts`, `auth.ts`, `src/app/api/admin/route.ts` y `firestore.rules` en el proyecto local `F:/Proyectos/Sarin Bot`.
 - La Parada: `src/types/negocio.ts` y `firestore.rules` en `F:/Proyectos/la-parada/Dev`.
 - SemanControl: `migrations/0001_init.sql`, `src/lib/auth/principal.ts`, `src/lib/offline/storage.ts` y `queue.ts` en `F:/Proyectos/SemanControl`.
+- Dialon: [README](https://github.com/andresleosan/Dialon/blob/7740d9a053db0081a6774af1dd2600f70676121c/README.md), [controlador DEMO](https://github.com/andresleosan/Dialon/blob/7740d9a053db0081a6774af1dd2600f70676121c/apps/mobile/src/useDemoConversation.ts) y [exportación web](https://github.com/andresleosan/Dialon/blob/7740d9a053db0081a6774af1dd2600f70676121c/docs/deploy/cloudflare-pages.md). Ubicación en VPS confirmada por Andrés; procesos desplegados aún por verificar.
 - [Permisos administrativos Firebase](https://firebase.google.com/docs/auth/admin/custom-claims), [verificación de tokens](https://firebase.google.com/docs/auth/admin/verify-id-tokens) y [funciones de bloqueo](https://firebase.google.com/docs/auth/extend-with-blocking-functions).
 - [Seguridad Firestore](https://firebase.google.com/docs/firestore/security/overview) y [comportamiento de TTL](https://firebase.google.com/docs/firestore/ttl).
 - [Planes de Firebase](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans), [tarifas de Firestore](https://firebase.google.com/docs/firestore/pricing) y [límites de gasto](https://firebase.google.com/docs/projects/billing/spend-caps).

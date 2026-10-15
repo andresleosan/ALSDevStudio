@@ -4,6 +4,7 @@
 
 - Alcance confirmado: La Parada, Sarin Bot y SemanControl por negocio; Dialon individual. Administrador Google exclusivo `andres.san1404@gmail.com`; registro manual de pagos por transferencia/Nequi.
 - [Especificación propuesta](docs/superpowers/specs/2026-10-14-panel-central-suscripciones-design.md): Firebase `alsdevstudio` para el control comercial, datos operativos en cada producto y conectores de servidor. SemanControl conserva D1 y requiere aislamiento empresarial y tratamiento de sus pendientes offline.
+- Dialon: [código localizado en GitHub](https://github.com/andresleosan/Dialon), commit revisado `7740d9a053db0081a6774af1dd2600f70676121c`; VPS confirmada por el titular. Actualmente es una demo Expo: audio local web sin traducción; escucha, traducción y voz simuladas en nativo; sin cuentas ni backend. Su suscripción individual requiere identidad y API de licencias en la VPS; Firebase aún no está implementado en ese producto.
 - Estado: documentación para revisión; el sitio público conserva su stack y aún no tiene backend central. Presupuesto inicial estimado del centro: US$0–5/mes con un administrador y 50–100 sujetos, consumo bajo y Blaze; facturación y alertas aún requieren comprobación antes de conectar producción.
 
 ### Placeholder SemanControl y registro de fotogramas · 2026-10-14
