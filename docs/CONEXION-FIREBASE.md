@@ -4,7 +4,7 @@ Proyecto autorizado: `alsdevstudio`, número `365384555628`. Titular único: `an
 
 ## Ruta elegida
 
-El portafolio permanece en Cloudflare Pages. El panel real está en `https://alsdevstudio.firebaseapp.com/`, usando Firebase Hosting y su rewrite `/api/**` hacia `controlApi`, en `us-central1`. `authDomain` coincide con el dominio del panel; frontend y API operan en el mismo origen, sin proxy adicional ni cambios DNS. Está pendiente publicar y comprobar la redirección `302` de `/admin` del portafolio hacia el panel, para que el titular pueda completar su primera entrada Google.
+El portafolio permanece en Cloudflare Pages. El panel real está en `https://alsdevstudio.firebaseapp.com/`, usando Firebase Hosting y su rewrite `/api/**` hacia `controlApi`, en `us-central1`. `authDomain` coincide con el dominio del panel; frontend y API operan en el mismo origen, sin proxy adicional ni cambios DNS. `/admin` y `/admin/` del portafolio ya redirigen con `302` al panel; `/admin.html` conserva su `301` hacia `/admin` y la query. Las tres respuestas se comprobaron en producción después de publicar `a21b3de` en `main`.
 
 La configuración web real se mantiene en `control/config/public.json`, ignorada por Git; contiene solo `projectId`, `authDomain`, `apiKey` pública y `appId`. El UID definitivo y los orígenes admitidos están en `control/functions/.env.alsdevstudio`, también ignorado. No se crean ni descargan claves privadas de cuentas de servicio.
 
@@ -23,8 +23,8 @@ El intento inicial con ventana emergente dejó el botón esperando y el titular 
 - [x] APIs de Functions/Run/Build/Artifact Registry habilitadas, producción compilada y `controlApi` y Hosting desplegados.
 - [x] Comprobaciones HTTP reales: `401` sin sesión, `403` por origen ajeno, `401` con token inválido, `204` en preflight admitido y `403` al acceder directamente a Firestore. Portada `200`, `no-store` y cabecera de no indexación comprobados.
 - [x] Hook previo a Hosting ejecutado durante un despliegue real: valida el artefacto productivo de 40 archivos y bloquea demostraciones o recursos internos.
-- [ ] Completar manualmente la primera entrada Google del titular y comprobar autorización de API, recarga y cierre de sesión. La identidad precreada aún tiene `emailVerified:false`; no se fuerza su verificación desde el procedimiento administrativo.
-- [ ] Publicar la redirección `302` de `/admin` hacia el panel desde `main` y comprobar el destino mediante HTTP.
+- [ ] Completar manualmente la primera entrada Google del titular y comprobar autorización de API, recarga y cierre de sesión. La verificación del correo debe proceder de Google; no se fuerza desde el procedimiento administrativo.
+- [x] Publicar la redirección `302` de `/admin` hacia el panel desde `main` y comprobar el destino mediante HTTP.
 
 ## Permisos de compilación y runtime
 
@@ -45,6 +45,8 @@ La suite de emuladores utiliza exclusivamente `demo-alsdevstudio`; los clientes,
 La QA completa final, después de cambiar el ingreso a la misma pestaña, pasó 111/111 pruebas sin omisiones, smoke de recuperación de pagos/foco, siete escenarios E2E con Firebase emulado y axe sin hallazgos en 320, 390, 768 y 1440 px. Incluye runtime, build, guard y autenticación con retorno/error de Google; no incluye una sesión Google real ni pagos reales. Las auditorías de dependencias de producción de ambos paquetes dieron cero vulnerabilidades. El build público pasó 12/12 y produjo 206 archivos / 4.911.029 bytes; footer y respaldo HTML pasaron cuatro anchos, teclado, axe 0 y no-JS en 390/1440. Se corrigió el contraste del enlace de respaldo, comprobado en 9,57:1.
 
 Los helpers reales `/__/auth/iframe` y `/__/auth/handler` respondieron `200` sin CSP ni X-Frame-Options, aun con las cabeceras globales de Hosting activas. Se mantuvieron las políticas de protección del panel. La pantalla de entrada está disponible para continuar con Google, pero el inicio requiere interacción manual del titular y aún falta verificar la sesión resultante.
+
+Recorrido público final en navegador aislado: abrir el portafolio, pulsar «Administración» y llegar a Firebase con el botón Google habilitado. Comprobado en 390/1440 px, sin errores JavaScript ni desbordamiento y axe 0; el contenido administrativo permanece oculto sin sesión. Evidencia local en `test-results/control-login-live.json`, `control-login-live-390.png`, `control-login-live-1440.png` y `admin-connection-live-routing.json`. Esta prueba no inicia Google ni utiliza cuentas reales.
 
 El build de producción rechaza proyectos ajenos, configuración demo, credenciales de ejemplo y campos privados. El guard lee el JSON de `public-config.mjs` sin ejecutar ese módulo, valida los campos de producción y revisa rutas demo, conexiones locales y recursos internos. `hosting.predeploy` lo ejecuta antes de publicar. Hosting añade `X-Robots-Tag: noindex, nofollow, noarchive`; las reglas de autorización siguen siendo obligatorias aunque el panel no se indexe.
 

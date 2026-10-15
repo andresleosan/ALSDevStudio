@@ -1,6 +1,6 @@
 # Entrada administrativa en el pie de página
 
-Actualización de conexión real: Firebase Hosting y la API ya están publicados. El destino `/admin` se prepara para redirigir con 302 a `https://alsdevstudio.firebaseapp.com/`; el HTML de respaldo tiene un enlace activo al centro. La primera sesión Google y la publicación de esa redirección se registran en [Conexión Firebase](CONEXION-FIREBASE.md). Los resultados siguientes corresponden al shell inicial antes de conectar Firebase.
+Actualización de conexión real: Firebase Hosting y la API ya están publicados. `/admin` y `/admin/` redirigen con 302 a `https://alsdevstudio.firebaseapp.com/`, comprobado por HTTP y desde el footer en móvil/escritorio tras `a21b3de`; el HTML de respaldo tiene un enlace activo al centro. Google usa la misma pestaña y la primera sesión del titular sigue pendiente de comprobación manual, registrada en [Conexión Firebase](CONEXION-FIREBASE.md). Los resultados siguientes corresponden al shell inicial antes de conectar Firebase.
 
 14 de octubre de 2026. Solicitud: un acceso discreto en la parte inferior del sitio. Se agrega «Administración» al final del footer, con la misma tipografía, color y subrayado de los enlaces existentes. Tiene un área de 44 px y foco visible; en móvil pasa abajo a la derecha.
 
