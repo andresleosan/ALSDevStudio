@@ -1,6 +1,6 @@
 # Panel central: primer hito local
 
-Implementado y verificado el 14 de octubre de 2026 en la rama `feature/subscription-control`, dentro de `.worktrees/control`. El alcance es una versión local funcional del centro administrativo. El proyecto Firebase real `alsdevstudio`, la VPS de Dialon y los demás productos no se han modificado.
+Implementado y verificado el 14 de octubre de 2026; código consolidado en `main`, dentro de `control/`. La implementación original se probó en `.worktrees/control`, conservado como copia local sin rama propia. El alcance es una versión local funcional del centro administrativo. El proyecto Firebase real `alsdevstudio`, la VPS de Dialon y los demás productos no se han modificado.
 
 ## Qué permite probar
 
@@ -59,4 +59,4 @@ Capturas y resultados regenerables quedan en `test-results/control/`, ignorados 
 4. Añadir importación histórica, gracia por comprobantes y ajustes/anulaciones con auditoría antes de necesitarlos. Este hito no recibe comprobantes ni procesa cobros automáticamente.
 5. Ampliar consultas y paginación de servidor al crecer: el snapshot actual limita cada colección a 500 registros, avisa si trunca y calcula el resumen sobre los registros cargados.
 
-El portafolio sigue con su publicación actual. El build del panel vive aparte; no se han enviado commits, modificado DNS, desplegado Functions ni escrito datos en producción.
+El código está versionado en GitHub y consolidado en `main`. El build del panel vive aparte; no se han modificado DNS, desplegado Functions ni escrito datos en producción. La [consolidación de ramas](GIT-MAIN.md) conserva el historial anterior sin cambiar los archivos públicos del portafolio.

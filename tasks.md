@@ -1,7 +1,13 @@
 # Tareas — ALS DevStudio
 
+## GIT-MAIN · Consolidación en una única rama · 2026-10-14
+- Solicitud del titular: «unifica todas las ramas, quiero tener una unica rama main». Integrar el panel, conservar toda la historia y retirar las ramas auxiliares locales/remotas.
+- Integración: panel `1708cfe` por fast-forward; las demás ramas ya eran ancestros de `main`, excepto 39 commits de `feat/depth-3d-live-previews` con parches equivalentes ya integrados. Se incorporan como historia con estrategia `ours`, conservando las decisiones posteriores de privacidad y diseño.
+- Verificación: build público 12/12 y 205 archivos / 4.908.959 bytes; sin cambios de archivos públicos respecto de `origin/main`, sin `dist/control` y sin cambios en `control/` respecto del panel probado. Copia completa del historial verificada con `git bundle verify` antes de la limpieza.
+- [Registro y recuperación](docs/GIT-MAIN.md). Política de rama única incorporada a `AGENTS.md`; Firebase real y conectores siguen pendientes.
+
 ## CONTROL-LOCAL · Primer hito del panel de suscripciones · 2026-10-14
-- Estado: implementada y verificada localmente; sin push ni despliegue. Rama `feature/subscription-control`, worktree `.worktrees/control`. Alcance autorizado mediante «procedamos»: panel independiente y núcleo comercial con Firebase emulado, sin conectar plataformas reales.
+- Estado: implementada y verificada localmente; código integrado en `main` para GitHub, sin despliegue del panel. Alcance autorizado mediante «procedamos»: panel independiente y núcleo comercial con Firebase emulado, sin conectar plataformas reales.
 - [x] Catálogo de La Parada, Sarin Bot, Dialon y SemanControl; planes configurables sin precios inventados y sujetos por negocio/persona.
 - [x] Prueba única, renovación por mes calendario o 30 días, pago manual Nequi/transferencia con vista previa, confirmación transaccional e historial; suspensión/reactivación con motivo.
 - [x] API con autorización administrativa, reglas cerradas y adaptador Firestore; modo demo local separado del acceso Google futuro. Órdenes de licencia con conexión pendiente visible.

@@ -68,3 +68,4 @@ Este documento establece los principios de arquitectura, estándares de código 
 2. **Ediciones quirúrgicas:** Realizar modificaciones puntuales y limpias preservando comentarios, estructura y código no relacionado.
 3. **Verificación:** Probar siempre la funcionalidad, la responsividad y la accesibilidad de cada cambio antes de darlo por completado.
 4. **Idioma:** Todas las explicaciones y comentarios dirigidos al operador deben ser en español.
+5. **Rama única:** Por instrucción del titular, este repositorio mantiene únicamente `main`, tanto localmente como en GitHub. Trabajar sobre `main` y no crear ramas nuevas salvo solicitud explícita del titular. Conservar copias de recuperación locales cuando una operación lo requiera.

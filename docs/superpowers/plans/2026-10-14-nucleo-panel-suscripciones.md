@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
-**Estado:** cinco tareas implementadas y verificadas localmente. `npm run qa`: 63/63 pruebas sin omitidas, smoke UI y siete escenarios E2E; cuatro anchos con axe sin hallazgos. [Evidencia y pendientes de producción](../../CONTROL-PRIMER-HITO.md). No se han conectado productos reales ni realizado push/despliegue.
+**Estado:** cinco tareas implementadas y verificadas localmente; código consolidado en `main` para GitHub. `npm run qa`: 63/63 pruebas sin omitidas, smoke UI y siete escenarios E2E; cuatro anchos con axe sin hallazgos. [Evidencia y pendientes de producción](../../CONTROL-PRIMER-HITO.md). No se han conectado productos reales ni desplegado el panel.
 
 **Goal:** Entregar un panel local funcional para configurar planes, crear personas o negocios, asignar suscripciones y registrar pagos manuales con vigencia e historial.
 
