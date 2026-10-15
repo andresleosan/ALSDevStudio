@@ -10,7 +10,7 @@ Este documento establece los principios de arquitectura, estándares de código 
 
 - **Rendimiento extremo y ligereza:** Este proyecto se basa en tecnologías web nativas (HTML5 semántico, CSS moderno con variables CSS y JavaScript Vanilla modular con ES Modules). No se deben introducir frameworks pesados (React, Vue, Tailwind, etc.) a menos que se solicite explícitamente.
 - **Mejora progresiva (*Progressive Enhancement*):** La experiencia base debe ser funcional incluso sin JavaScript (usando etiquetas `<noscript>`, semántica clara y estilos adecuados).
-- **Estética oscura y cyberpunk pulida:** Identidad visual propia basada en tonos oscuros (`--ink`, `--ink-deep`, `--panel`), toques de menta (`--mint: #65d49d`), azul tecnológico (`--blue: #4d9bff`) y tipografías *Space Grotesk*, *DM Sans* e *IBM Plex Mono*.
+- **Estética oscura y cyberpunk pulida:** Identidad visual propia basada en tonos oscuros (`--ink`, `--ink-deep`, `--panel`), toques de menta (`--mint: #65d49d`), azul tecnológico (`--blue: #4d9bff`) y tipografías *Chakra Petch*, *DM Sans* e *IBM Plex Mono*.
 - **Accesibilidad (a11y - WCAG 2.2 AA):** Toda interacción debe ser navegable por teclado (`:focus-visible`), compatible con lectores de pantalla (estados `aria-pressed`, `aria-live`, etiquetas semánticas) y respetar `prefers-reduced-motion`.
 
 ---

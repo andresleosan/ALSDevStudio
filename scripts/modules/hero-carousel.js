@@ -1,10 +1,14 @@
 // @ts-check
 // Cada avance carga las imágenes de la diapositiva activa y la siguiente.
-import { mobilePerformanceMode, reducedMotionQuery } from './env.js';
+import { reducedMotionQuery, saveDataQuery } from './env.js';
 import { query, queryAll } from './dom.js';
 
-const AUTOPLAY_DELAY = 6000;
-const PAUSE_STORAGE_KEY = 'als:hero-autoplay-paused:v1';
+const AUTOPLAY_DELAY = 3000;
+try {
+  sessionStorage.removeItem('als:hero-autoplay-paused:v1');
+} catch {
+  /* noop */
+}
 
 /** @typedef {'init' | 'auto' | 'user' | 'programmatic'} SlideOrigin */
 
@@ -18,9 +22,6 @@ export function initHeroCarousel() {
   const status = query('#hero-carousel-status', HTMLElement);
   const prevButton = query("[data-hero-step='-1']", HTMLButtonElement);
   const nextButton = query("[data-hero-step='1']", HTMLButtonElement);
-  const toggle = query('[data-hero-toggle]', HTMLButtonElement);
-  const toggleIcon = query('[data-hero-toggle-icon]', HTMLElement);
-  const toggleText = query('[data-hero-toggle-text]', HTMLElement);
   const projectLink = query('#hero-project-link', HTMLAnchorElement);
   const projectCards = new Map(
     queryAll('.project-card[data-project-key]', HTMLAnchorElement).map(card => [card.dataset.projectKey, card]),
@@ -37,24 +38,6 @@ export function initHeroCarousel() {
   let focusWithin = false;
   /** @type {{ id: number, startX: number, startY: number, lastX: number, lastY: number, direction: 'horizontal' | 'vertical' | null } | null} */
   let swipe = null;
-  let userPaused = readStoredPause();
-
-  /** @param {boolean} [fallback] */
-  function readStoredPause(fallback = false) {
-    try {
-      return sessionStorage.getItem(PAUSE_STORAGE_KEY) === 'true';
-    } catch {
-      return fallback;
-    }
-  }
-
-  function storePause() {
-    try {
-      sessionStorage.setItem(PAUSE_STORAGE_KEY, String(userPaused));
-    } catch {
-      /* almacenamiento no disponible */
-    }
-  }
 
   function stop() {
     clearTimeout(timer);
@@ -107,22 +90,12 @@ export function initHeroCarousel() {
   function canAutoplay() {
     return slides.length > 1
       && !reducedMotionQuery.matches
-      && !mobilePerformanceMode()
-      && !userPaused
+      && !saveDataQuery.matches
       && visible
       && !document.hidden
       && !pointerInside
       && !focusWithin
       && !swipe;
-  }
-
-  function updateToggle() {
-    if (!toggle) return;
-    toggle.hidden = slides.length < 2 || reducedMotionQuery.matches || mobilePerformanceMode();
-    const action = userPaused ? 'Reanudar' : 'Pausar';
-    if (toggleText) toggleText.textContent = action;
-    if (toggleIcon) toggleIcon.textContent = userPaused ? '▶' : 'Ⅱ';
-    toggle.setAttribute('aria-label', `${action} rotación automática`);
   }
 
   /** @param {HTMLElement} slide */
@@ -142,7 +115,6 @@ export function initHeroCarousel() {
 
   function syncAutoplay() {
     stop();
-    updateToggle();
     if (canAutoplay()) timer = window.setTimeout(() => setSlide(index + 1, 'auto'), AUTOPLAY_DELAY);
   }
 
@@ -176,13 +148,6 @@ export function initHeroCarousel() {
 
   prevButton?.addEventListener('click', () => setSlide(index - 1, 'user'));
   nextButton?.addEventListener('click', () => setSlide(index + 1, 'user'));
-  toggle?.addEventListener('click', () => {
-    userPaused = !userPaused;
-    storePause();
-    updateToggle();
-    announce(userPaused ? 'Rotación automática pausada.' : 'Rotación automática activada.');
-    syncAutoplay();
-  });
 
   carousel.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -242,10 +207,7 @@ export function initHeroCarousel() {
   }
   document.addEventListener('visibilitychange', syncAutoplay);
   window.addEventListener('pagehide', stop);
-  window.addEventListener('pageshow', () => {
-    userPaused = readStoredPause(userPaused);
-    syncAutoplay();
-  });
+  window.addEventListener('pageshow', syncAutoplay);
   reducedMotionQuery.addEventListener('change', syncAutoplay);
 
   setSlide(0, 'init');

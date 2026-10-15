@@ -113,6 +113,34 @@
     {
       "file": "spacegrotesk-OFL.txt",
       "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/spacegrotesk/OFL.txt"
+    },
+    {
+      "file": "chakrapetch-500-latin.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkebIl1R5_F.woff2"
+    },
+    {
+      "file": "chakrapetch-500-latinext.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkebIl1SZ_F7AY.woff2"
+    },
+    {
+      "file": "chakrapetch-600-latin.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI51R5_F.woff2"
+    },
+    {
+      "file": "chakrapetch-600-latinext.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI51SZ_F7AY.woff2"
+    },
+    {
+      "file": "chakrapetch-700-latin.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeJI91R5_F.woff2"
+    },
+    {
+      "file": "chakrapetch-700-latinext.woff2",
+      "source": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeJI91SZ_F7AY.woff2"
+    },
+    {
+      "file": "chakrapetch-OFL.txt",
+      "source": "https://raw.githubusercontent.com/googlefonts/chakrapetch/master/OFL.txt"
     }
   ]
 }

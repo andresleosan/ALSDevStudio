@@ -43,12 +43,16 @@ safely('escenas de Sarin', initMascotScenes);
 
 const refreshPerformanceMode = () => {
   space?.sync();
-  if (lowPowerMotion()) {
+  if (reducedMotionQuery.matches) {
     hero?.stop();
     globalMap?.stop();
   } else {
     hero?.sync();
-    globalMap?.start();
+    if (lowPowerMotion()) {
+      globalMap?.stop();
+    } else {
+      globalMap?.start();
+    }
   }
 };
 
