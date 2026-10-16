@@ -1,4 +1,4 @@
-# Cabeceras para assets estáticos de Cloudflare Pages; sin Functions.
+# Cabeceras de assets estáticos. /api/sarin establece sus propias cabeceras.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer

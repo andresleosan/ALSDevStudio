@@ -1,5 +1,11 @@
 # Brief — ALS DevStudio
 
+## Sarin comercial · versión LOCAL implementada · 2026-10-16
+
+- Chat para explorar páginas web, tiendas virtuales, aplicaciones y chatbots, con ejemplos del catálogo real. Resumen revisable de hasta 1800 caracteres y continuación manual con Andrés por WhatsApp; Andrés confirma alcance y cotización.
+- Implementación Vanilla JS + Pages Function + D1 para metadatos de cuotas, con `deepseek-flash` y pensamiento desactivado como única IA. Conversación solo en memoria, contexto de cuatro intercambios y máximo quince turnos por conversación. Sin registro ni apertura o consulta automática.
+- Versión local validada con DeepSeek real, desactivada por defecto y **sin publicar**. Probados ejemplos de landing, tienda y chatbot, pregunta ajena y resumen editable hasta WhatsApp; no se envían mensajes automáticamente ni se contratan planes. [Operación local, controles de costo y activación pendiente](docs/SARIN-OPERACION.md).
+
 ## Sarin comercial y vistas de proyectos · 2026-10-16
 - Sarin orientará sobre páginas web/landing pages, tiendas virtuales, aplicaciones a medida, soluciones web y chatbots; dará ejemplos reales según el problema del visitante. Objetivo confirmado: continuar por WhatsApp con un resumen revisable. Cotización final a cargo de Andrés; único proveedor DeepSeek, sin IA local. [Alcance y ejemplos](docs/SARIN-ASISTENTE-COMERCIAL.md).
 - Actualizar las vistas de Dialon, Vigia (`/demo/`), Sarin Bot y SemanControl. Incorporar enlace/captura/carrusel de SemanControl y reflejar los estados públicos actuales sin atribuir funciones operativas a prototipos.

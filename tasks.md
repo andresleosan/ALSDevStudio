@@ -1,5 +1,17 @@
 # Tareas — ALS DevStudio
 
+## SARIN-WEB · Asistente comercial LOCAL · 2026-10-16
+
+- Estado: implementación local validada y lista para probar; **no publicada**. El historial de entregas anteriores permanece debajo.
+- [x] Implementar Pages Function `/api/sarin`, catálogo cerrado y DeepSeek `deepseek-flash` con pensamiento desactivado; D1 para cuotas/reservas sin conversaciones. Límites de aplicación: 10/min y 50/día por IP pseudonimizada, 1 USD/día y 10 USD/mes globales.
+- [x] Implementar interfaz Vanilla JS, memoria de pestaña, contexto de cuatro pares y quince turnos; resumen editable de hasta 1800 caracteres, WhatsApp manual y contacto disponible ante fallo.
+- [x] Preparar build y desarrollo exclusivamente local, secretos ignorados y modo apagado por defecto; sin recursos remotos ni despliegue.
+- [x] Verificar interfaz con dobles: `node --test .github/cloudflare/sarin-ui.test.mjs`, 7/7 PASS; cinco anchos 320/390/680/900/1440, axe sin violaciones en el diálogo, teclado/IME/foco/analítica prioritaria, cancelación, resumen y no-JS. Botón cerrar mínimo 44 × 44 px, con regresión RED/GREEN; capturas en `test-results/sarin/`.
+- [x] Completar prueba integrada local con DeepSeek real y cuotas activas: landing, tienda, chatbot y pregunta ajena con 200; navegador móvil con dos ejemplos, resumen editable exacto para WhatsApp y cero errores. Corregidos redirect incompatible de `workerd` y reformulación del borrador; solo metadatos técnicos en logs.
+- [x] Cerrar QA local: suite conjunta 120/120, Pages/escenas 64/64, capturas revisadas y revisión independiente sin bloqueantes. TypeScript conserva doce errores previos fuera de Sarin. Muestra D1 local: 2110 microUSD verificados + 12196 retenidos, sin bloqueo global; no representa la factura de la cuenta.
+- [ ] Publicación y activación posteriores: revisión, recursos/configuración remotos, condiciones del proveedor y límites/alertas de cuenta; no se afirma un límite de facturación verificado.
+- [Diseño](docs/superpowers/specs/2026-10-16-sarin-chat-web-design.md), [plan](docs/superpowers/plans/2026-10-16-sarin-chat-web.md) y [operación](docs/SARIN-OPERACION.md).
+
 ## ADMIN-RETIRADA · Volver a la landing sin panel · 2026-10-15
 - Solicitud del titular: retirar el panel administrativo y su publicación Firebase, limpiar el código y conservar `https://www.alsdevstudio.com/`.
 - [x] Copia de recuperación local verificada antes de retirar archivos. Eliminar enlace, página, estilos, rutas y soporte del build; conservar cambios recientes del mapa.

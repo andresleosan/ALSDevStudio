@@ -1,5 +1,13 @@
 # Stack — ALS DevStudio
 
+### Sarin comercial · implementación LOCAL · 2026-10-16
+
+- Estado: implementado y validado en `main` para revisión local; **no publicado**. Suite conjunta 120/120, regresión de Pages/escenas 64/64 y muestra real de DeepSeek con cuotas activas; recorrido móvil hasta resumen revisado para WhatsApp, sin envío. [Operación y pendientes](docs/SARIN-OPERACION.md).
+- Frontend HTML/CSS/JavaScript Vanilla: diálogo nativo, mascota existente, tokens tinta/menta/azul y fuentes locales Chakra Petch, DM Sans e IBM Plex Mono. Módulos aislados y carga del transporte al abrir; sin conexión de IA al abrir el panel. Resumen editable hasta 1800 caracteres y contacto manual por WhatsApp.
+- Backend: Pages Function del mismo origen `/api/sarin`; DeepSeek como único proveedor, modelo `deepseek-flash`, `thinking: disabled`, JSON completo sin streaming. D1 contiene exclusivamente cuotas, reservas e identificadores técnicos; mensajes e historial solo en memoria de pestaña y durante la petición, sin persistir conversaciones.
+- Límites: 10 turnos/minuto y 50/día por IP pseudonimizada; 15 turnos por conversación de interfaz y contexto de hasta cuatro pares completos. Tope global del contador: 1 USD/día y 10 USD/mes. Reservas atómicas antes de cada llamada, sin reintentos; tiempos inciertos conservan la reserva.
+- **Costo:** con `SARIN_ENABLED=false`, no hay inferencias. La configuración calcula entrada a 300000 y salida a 1200000 microUSD por millón de tokens (0,30/1,20 USD); presupuesto técnico global de 1000000/10000000 microUSD diario/mensual, períodos UTC. La muestra local contabiliza 0,014306 USD entre uso verificado y reservas retenidas; no acredita el total facturado ni permite proyectar un mes de tráfico. No se han verificado límites ni alertas de la cuenta del proveedor y no se contrata un plan de pago en esta entrega.
+
 ### Vistas y capturas dos veces al día · 2026-10-16
 - Cuatro proyectos recapturados y SemanControl enlazado en galería/carrusel: 20 proyectos con variantes AVIF/WebP. Vigia abre `/demo/`; descripciones y estados revisados contra las páginas públicas.
 - Workflow existente: cron `0 5,17 * * *` (00:00 y 12:00 Colombia), ejecución manual conservada, input aislado del shell y build verificado antes del commit. Sin nuevas dependencias ni servicios de pago. [Evidencia y reversión](docs/CAPTURAS-PROYECTOS.md).
@@ -36,7 +44,7 @@
 - CSS externo en `styles/main.css`, organizado por secciones numeradas.
 - JavaScript vanilla en módulos ES: `scripts/main.js` es el punto de entrada y cada sección vive en `scripts/modules/`. Con `@ts-check` y JSDoc; `jsconfig.json` permite `tsc` en modo estricto sin build.
 - Assets de marca en `assets/brand/`, incluido `world-map.svg` que se inyecta con `fetch`.
-- Sin base de datos, API ni secretos.
+- La versión pública previa a Sarin conserva la landing estática. La integración local nueva de API/D1 y sus secretos privados se describe al inicio; todavía no está publicada.
 
 ## Nivel
 El sitio es Nivel 1: landing/portafolio con responsive, accesibilidad, seguridad de contenido y QA real en navegador.

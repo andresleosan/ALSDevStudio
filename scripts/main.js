@@ -40,6 +40,8 @@ safely('navegación', initNav);
 safely('contacto', initContact);
 safely('capa 3D', initDepth);
 safely('escenas de Sarin', initMascotScenes);
+// La carga del chat queda aislada incluso si falla su importación.
+import('./modules/sarin-chat.js').then(({ initSarinChat }) => safely('chat de Sarin', initSarinChat)).catch(() => {});
 
 const refreshPerformanceMode = () => {
   space?.sync();

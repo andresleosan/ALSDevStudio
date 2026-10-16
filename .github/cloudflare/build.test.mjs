@@ -12,7 +12,8 @@ const implementation = await import('./build.mjs').catch(error => {
 const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
-    'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)];
+    'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
+    'sarin-chat', 'sarin-api', 'sarin-summary'].map(name => `modules/${name}.js`)];
 const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg'];
 
@@ -37,6 +38,7 @@ async function fixture() {
     await put(root, `${name}.html`, '<!DOCTYPE html><a href="index.html">Inicio</a><link href="styles/main.css" rel="stylesheet">');
   }
   for (const name of ['favicon.svg', 'robots.txt', '_headers', '_redirects']) await put(root, name);
+  await put(root, '_routes.json', JSON.stringify({ version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [] }));
   await put(root, 'sitemap.xml', '<urlset><url><loc>https://www.alsdevstudio.com/privacidad.html</loc></url></urlset>');
   await put(root, 'styles/main.css', 'body { color: black; }');
   for (const name of scripts) await put(root, `scripts/${name}`, '// fixture');
@@ -70,16 +72,32 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
   for (const name of ['docs/private.html', 'test-results/report.html', '.env', '.cronos/AGENCY.md',
     'scripts/internal-tool.js', 'assets/brand/private.png', 'assets/fonts/SOURCES.json',
     'assets/projects/source.png', 'wrangler.jsonc', 'internal/.env', 'internal/functions/src/index.mjs',
-    'internal/dist/index.html', 'internal/config/public.json']) await put(root, name, 'NO PUBLICAR');
+    'internal/dist/index.html', 'internal/config/public.json', 'server/sarin/knowledge.js',
+    'functions/api/sarin.js', 'migrations/sarin/0001_usage.sql', '.dev.vars']) await put(root, name, 'NO PUBLICAR');
   await build(root);
   assert.deepEqual(await files(path.join(root, 'dist')), [
-    '404.html', '_headers', '_redirects', 'cookies.html', 'favicon.svg', 'index.html',
+    '404.html', '_headers', '_redirects', '_routes.json', 'cookies.html', 'favicon.svg', 'index.html',
     'privacidad.html', 'robots.txt', 'sitemap.xml', 'terminos.html', 'styles/main.css',
     ...scripts.map(name => `scripts/${name}`), ...brand.map(name => `assets/brand/${name}`),
     'assets/fonts/fonts.css', 'assets/fonts/font-1.woff2', 'assets/fonts/spacegrotesk-OFL.txt',
     'assets/projects/demo.jpg', 'assets/projects/responsive/480/demo.avif',
     'assets/projects/responsive/768/demo.webp',
   ].sort());
+});
+
+test('solo permite las dos rutas exactas del chat sin invocar Functions en recursos estáticos', async () => {
+  const root = await fixture();
+  await build(root);
+  assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist/_routes.json'), 'utf8')),
+    { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [] });
+  for (const routes of [
+    { version: 1, include: ['/*'], exclude: [] },
+    { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [], extra: true },
+    { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: ['/api/sarin'] },
+  ]) {
+    await put(root, '_routes.json', JSON.stringify(routes));
+    await assert.rejects(build(root), /rutas|routes|sarin/i);
+  }
 });
 
 test('normaliza enlaces y canonicals de Pages conservando fuentes y destinos externos', async () => {

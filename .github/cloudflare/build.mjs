@@ -10,12 +10,13 @@ const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', '404.html'];
 const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
-    'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)]
+    'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
+    'sarin-chat', 'sarin-api', 'sarin-summary'].map(name => `modules/${name}.js`)]
   .map(name => `scripts/${name}`);
 const BRAND_FILES = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg']
   .map(name => `assets/brand/${name}`);
-const FIXED_FILES = [...HTML_FILES, 'favicon.svg', 'robots.txt', 'sitemap.xml', '_headers', '_redirects',
+const FIXED_FILES = [...HTML_FILES, 'favicon.svg', 'robots.txt', 'sitemap.xml', '_headers', '_redirects', '_routes.json',
   'styles/main.css', ...SCRIPT_FILES, ...BRAND_FILES, 'assets/fonts/fonts.css'];
 const FIXED_SET = new Set(FIXED_FILES);
 const PAGE_ROUTES = new Map([['/index.html', '/'], ['/privacidad.html', '/privacidad'],
@@ -160,6 +161,18 @@ function validateReferences(contents, outputFiles) {
   }
 }
 
+function validateFunctionRoutes(content) {
+  let routes;
+  try { routes = JSON.parse(content); }
+  catch { throw new Error('El archivo _routes.json debe contener las rutas exactas de Sarin.'); }
+  if (!routes || Object.keys(routes).sort().join(',') !== 'exclude,include,version' || routes.version !== 1 ||
+      !Array.isArray(routes.include) || routes.include.length !== 2 ||
+      [...routes.include].sort().join(',') !== '/api/sarin,/api/sarin/' ||
+      !Array.isArray(routes.exclude) || routes.exclude.length !== 0) {
+    throw new Error('Las rutas de Functions deben limitarse a /api/sarin y /api/sarin/.');
+  }
+}
+
 async function verifyOwnedOutput(root, output) {
   if (!samePath(path.resolve(root, 'dist'), output)) throw new Error('La salida debe ser exactamente la carpeta dist del sitio.');
   let stat;
@@ -185,7 +198,7 @@ async function verifyOwnedOutput(root, output) {
   return true;
 }
 
-/** Build estático sin dependencias, red, Functions, credenciales ni acceso a archivos internos. */
+/** Empaqueta recursos públicos; el servidor se compila por separado y no se copia a dist. */
 export async function build({ sourceDir = PROJECT_ROOT, outputDir } = {}) {
   const root = path.resolve(sourceDir);
   const rootStat = await lstat(root);
@@ -196,13 +209,14 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir } = {}) {
   const selected = await collectFiles(root);
   const contents = new Map();
   for (const file of selected) {
-    if (/\.(?:html|xml|css|js|txt)$/.test(file.path) || ['_headers', '_redirects'].includes(file.path)) {
+    if (/\.(?:html|xml|css|js|txt)$/.test(file.path) || ['_headers', '_redirects', '_routes.json'].includes(file.path)) {
       const text = transform(file.path, await readFile(path.join(root, file.path), 'utf8'));
       contents.set(file.path, text);
       file.size = Buffer.byteLength(text);
     }
   }
   validateLimits(selected);
+  validateFunctionRoutes(contents.get('_routes.json'));
   validateReferences(contents, new Set(selected.map(file => file.path)));
   // Revalidar la ruta absoluta y propiedad inmediatamente antes de cualquier borrado.
   if (await verifyOwnedOutput(root, output)) await rm(output, { recursive: true });
