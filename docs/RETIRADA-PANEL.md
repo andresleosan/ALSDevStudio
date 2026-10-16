@@ -4,7 +4,7 @@ Fecha: 2026-10-15, Colombia. Solicitud del titular: volver a la landing, retirar
 
 ## Alcance
 
-La landing permanece en Cloudflare Pages, con publicación desde `main`. Se retiran el enlace Administración, `admin.html`, los estilos exclusivos y las reglas de cabeceras y redirección administrativas. Las rutas `/admin`, `/admin/` y `/admin.html` deben devolver 404. No se modifican DNS, correo, proyectos del portafolio ni las mejoras recientes del mapa.
+La landing permanece en Cloudflare Pages, con publicación desde `main`. Se retiran el enlace Administración, `admin.html`, los estilos exclusivos, sus cabeceras y la redirección a Firebase. Las rutas antiguas `/admin`, `/admin/` y `/admin.html` llevan a la portada con 301 para reemplazar la respuesta obsoleta observada en Cloudflare y conservar los marcadores existentes. No se modifican DNS, correo, proyectos del portafolio ni las mejoras recientes del mapa.
 
 Se elimina el módulo `control/`, incluidas sus dependencias y configuración local, y la documentación exclusiva que lo proponía como producto activo. El historial Git permanece íntegro. Las menciones en el registro de unificación de ramas se conservan como hechos históricos.
 
@@ -12,8 +12,9 @@ Firebase alojaba únicamente el panel: un sitio Hosting sin dominios personaliza
 
 ## Verificación
 
-- Build público: `node --test .github/cloudflare/build.test.mjs`, 12/12; `node .github/cloudflare/build.mjs`, 205 archivos y 4.903.567 bytes.
-- Pages local: `.github/cloudflare/pages.test.mjs`, 4/4. Las tres rutas administrativas devuelven 404 sin cabecera Location. QA adicional en 320/390/768/1440 px: sin enlace administrativo, desbordamiento, errores JavaScript ni solicitudes a Firebase; footer con axe 0. Teclado, movimiento reducido y no-JS comprobados; el mapa conserva ciclo, selección y pausas.
+- Build público: `node --test .github/cloudflare/build.test.mjs`, 12/12; `node .github/cloudflare/build.mjs`, 205 archivos y 4.903.687 bytes.
+- Pages local inicial: `.github/cloudflare/pages.test.mjs`, 4/4. QA adicional en 320/390/768/1440 px: sin enlace administrativo, desbordamiento, errores JavaScript ni solicitudes a Firebase; footer con axe 0. Teclado, movimiento reducido y no-JS comprobados; el mapa conserva ciclo, selección y pausas.
+- La primera comprobación de producción encontró `/admin` sirviendo un HTML anterior desde caché (`HIT`, antigüedad superior a 21 horas), mientras `/admin?retirada=1` y el despliegue inmutable ya devolvían 404. Se añaden redirecciones permanentes de las tres direcciones retiradas a la portada; no restauran la página ni el acceso a Firebase. Repetir QA local y pública tras publicarlas.
 - Estado final de Firebase y publicación: pendientes al iniciar este registro; completar con evidencia real.
 
 ## Recuperación

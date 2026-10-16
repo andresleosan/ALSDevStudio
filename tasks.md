@@ -3,7 +3,7 @@
 ## ADMIN-RETIRADA · Volver a la landing sin panel · 2026-10-15
 - Solicitud del titular: retirar el panel administrativo y su publicación Firebase, limpiar el código y conservar `https://www.alsdevstudio.com/`.
 - [x] Copia de recuperación local verificada antes de retirar archivos. Eliminar enlace, página, estilos, rutas y soporte del build; conservar cambios recientes del mapa.
-- [x] Retirar módulo y documentación administrativa. Build 12/12 y 205 archivos; Pages local 4/4, antiguas rutas administrativas 404, móvil 320–1440 px, teclado, axe 0 y no-JS. Mapa conserva ciclo, pausas y selección.
+- [x] Retirar módulo y documentación administrativa. Build 12/12 y 205 archivos; Pages local inicial 4/4, móvil 320–1440 px, teclado, axe 0 y no-JS. Mapa conserva ciclo, pausas y selección. Direcciones antiguas con retorno 301 a la portada para evitar la copia obsoleta de `/admin` detectada en la caché pública; repetir QA tras publicar.
 - [ ] Retirar servicios Firebase del panel y verificar el dominio público tras publicar por `main`.
 - [Registro y recuperación](docs/RETIRADA-PANEL.md).
 

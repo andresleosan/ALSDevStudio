@@ -34,15 +34,18 @@ test('Pages sirve el artefacto revisado, sus cabeceras y las imágenes sociales'
 });
 
 test('las URLs históricas redirigen y las rutas desconocidas o internas devuelven 404', async () => {
-  for (const [old, current] of [['/index.html', '/'], ['/privacidad.html', '/privacidad'], ['/terminos.html', '/terminos'], ['/cookies.html', '/cookies']]) {
-    const response = await fetch(base + old + '?qa=public', { redirect: 'manual' });
-    assert.ok([301, 308].includes(response.status), old);
-    const location = new URL(response.headers.get('location'), base);
-    assert.equal(location.origin, origin);
-    assert.equal(location.pathname, current);
-    assert.equal(location.search, '?qa=public');
+  for (const [old, current] of [['/index.html', '/'], ['/privacidad.html', '/privacidad'], ['/terminos.html', '/terminos'], ['/cookies.html', '/cookies'],
+    ['/admin', '/'], ['/admin/', '/'], ['/admin.html', '/']]) {
+    for (const search of ['', '?qa=public']) {
+      const response = await fetch(base + old + search, { redirect: 'manual' });
+      assert.ok([301, 308].includes(response.status), old + search);
+      const location = new URL(response.headers.get('location'), base);
+      assert.equal(location.origin, origin);
+      assert.equal(location.pathname, current);
+      assert.equal(location.search, search);
+    }
   }
-  for (const route of ['/admin', '/admin/', '/admin.html', '/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects']) {
+  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 404, route);
     assert.match(await response.text(), /Página no encontrada/);
