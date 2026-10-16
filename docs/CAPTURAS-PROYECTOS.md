@@ -24,4 +24,6 @@ Las cuatro capturas se generaron y revisaron visualmente. Build estático: 12/12
 
 QA adicional en 320, 390, 680, 900 y 1440 px: cuatro tarjetas nuevas visibles, imágenes decodificadas, sin desbordamiento y axe sin violaciones automáticas. Recorrido completo de las 20 diapositivas con destino e imagen correctos y retorno al inicio; SemanControl accesible sin JavaScript. Evidencia local en `test-results/proyectos-actualizados-qa.json` y capturas de 390/1440 px. Revisión independiente sin bloqueantes.
 
+Publicada la revisión `a7ba4fb` en `main`; Cloudflare Pages confirmó éxito en el despliegue `76ed08cd-2cb5-4295-a4c0-5c461cf8f001`. HTML público idéntico al build revisado y 28/28 imágenes publicadas idénticas a los archivos locales. QA de Pages repetido contra `https://www.alsdevstudio.com`: 4/4 PASS. Workflow remoto activo y cron verificado en GitHub.
+
 Para revertir, crear un commit inverso del commit de esta actualización sobre `main` y dejar que Cloudflare reconstruya. No usar reset ni force push. La programación anterior era semanal, lunes a las 07:00 UTC.

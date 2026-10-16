@@ -632,9 +632,10 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 
 
 ## CAPTURAS-DIARIAS · Vistas y ejemplos de Sarin · 2026-10-16
-- Estado: aprobada localmente para publicar en `main`, según solicitud del titular de actualizar GitHub.
+- Estado: desplegada y verificada en producción desde `main`, según solicitud del titular de actualizar GitHub.
 - [x] Capturas reales y variantes AVIF/WebP de Dialon, Vigia demo, Sarin Bot y SemanControl; enlace de Vigia a `/demo/`, SemanControl enlazado en galería y carrusel, 20 proyectos y estados/descripciones revisados.
 - [x] Workflow existente programado a las 00:00 y 12:00 Colombia (`0 5,17 * * *` UTC), ejecución manual conservada, input aislado del shell, checkout de main y build antes del commit.
 - [x] Alcance y ejemplos comerciales de Sarin documentados en `docs/SARIN-ASISTENTE-COMERCIAL.md`: landing pages, tiendas, soluciones web y chatbot; DeepSeek exclusivo y continuación por WhatsApp. La integración conversacional sigue pendiente.
 - Evidencia: `node --test .github/cloudflare/build.test.mjs` 12/12 PASS; build 212 archivos/5.231.811 bytes; Pages 4/4 PASS con Wrangler 4.150.0; QA focal cinco anchos 320–1440, axe 0, sin overflow/errores, 20 destinos/imágenes del carrusel y lectura sin JS correctos. Capturas inspeccionadas y revisión independiente sin bloqueantes. `git diff --check` PASS.
 - Registro, programación y recuperación: `docs/CAPTURAS-PROYECTOS.md`; base `9f3d263`, reversión por commit normal sin force push.
+- Publicada `a7ba4fb`, Cloudflare Pages `76ed08cd-2cb5-4295-a4c0-5c461cf8f001` con éxito. QA de Pages repetido en producción 4/4 PASS, HTML idéntico al build y 28/28 imágenes idénticas; workflow remoto activo con cron correcto. Cierre documental sin cambios públicos.
