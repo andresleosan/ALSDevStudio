@@ -3,8 +3,9 @@
 ## ADMIN-RETIRADA · Volver a la landing sin panel · 2026-10-15
 - Solicitud del titular: retirar el panel administrativo y su publicación Firebase, limpiar el código y conservar `https://www.alsdevstudio.com/`.
 - [x] Copia de recuperación local verificada antes de retirar archivos. Eliminar enlace, página, estilos, rutas y soporte del build; conservar cambios recientes del mapa.
-- [x] Retirar módulo y documentación administrativa. Build 12/12 y 205 archivos; Pages local inicial 4/4, móvil 320–1440 px, teclado, axe 0 y no-JS. Mapa conserva ciclo, pausas y selección. Direcciones antiguas con retorno 301 a la portada para evitar la copia obsoleta de `/admin` detectada en la caché pública; repetir QA tras publicar.
-- [ ] Retirar servicios Firebase del panel y verificar el dominio público tras publicar por `main`.
+- [x] Retirar módulo y documentación administrativa. Build 12/12 y 205 archivos; Pages local final 4/4, móvil 320–1440 px, teclado, axe 0 y no-JS. Mapa conserva ciclo, pausas y selección. Direcciones antiguas con retorno 301 a la portada, comprobadas con y sin query tras corregir la copia obsoleta de `/admin` en la caché pública.
+- [x] Retirar servicios Firebase del panel: Hosting 404, API/Run, Firestore y recursos exclusivos eliminados; acceso administrativo revocado y facturación desvinculada únicamente de este proyecto. Informe final aprobado y respaldo externo verificado.
+- [x] Publicado por `main` en `4c04f88` y `51b67b3`. Pages público final 4/4; www 200 con artefacto idéntico, apex 301 a www, antiguas rutas 301 a portada y Firebase 404. Revisión independiente sin bloqueantes.
 - [Registro y recuperación](docs/RETIRADA-PANEL.md).
 
 ## GLOBAL-METRICS · Retirar la franja de contadores · 2026-10-15
