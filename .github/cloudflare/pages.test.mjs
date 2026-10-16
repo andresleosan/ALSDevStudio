@@ -42,7 +42,7 @@ test('las URLs históricas redirigen y las rutas desconocidas o internas devuelv
     assert.equal(location.pathname, current);
     assert.equal(location.search, '?qa=public');
   }
-  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects']) {
+  for (const route of ['/admin', '/admin/', '/admin.html', '/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 404, route);
     assert.match(await response.text(), /Página no encontrada/);

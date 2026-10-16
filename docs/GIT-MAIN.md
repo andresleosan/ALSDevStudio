@@ -4,6 +4,8 @@ El 14 de octubre de 2026 el titular solicitó unificar todas las ramas y mantene
 
 ## Integración
 
+Nota posterior: el 15 de octubre se retira el panel a petición del titular; los apartados siguientes conservan la evidencia histórica de la unificación. La política de rama única sigue vigente. [Estado actual](RETIRADA-PANEL.md).
+
 - El panel de suscripciones `1708cfe` se incorpora por fast-forward. Su código queda en `control/`, independiente del build del portafolio y sin Firebase real conectado.
 - Las ramas de mascota, Argentina, escenas y vuelos de Sarin, correcciones y Cloudflare ya eran ancestros de `main`; no contenían commits pendientes de integrar.
 - La rama local `feat/depth-3d-live-previews` tenía 39 hashes fuera de `main`. `git cherry` confirmó que sus 39 parches ya tenían equivalentes en `main`; su punta `4334836` equivale a `7e6e3c4`. Se preservan también esos hashes con una fusión de historia mediante `--strategy=ours`, manteniendo el contenido actual.

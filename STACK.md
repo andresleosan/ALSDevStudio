@@ -1,5 +1,10 @@
 # Stack — ALS DevStudio
 
+### Retirada del panel administrativo · 2026-10-15
+
+- Se conserva la landing estática en Cloudflare Pages y el dominio canónico `https://www.alsdevstudio.com/`. Retirados el enlace Administración, su página, estilos, rutas y módulo independiente con sus dependencias. Los cambios recientes del mapa permanecen.
+- No hay backend administrativo ni SDK Firebase en el sitio. [Retirada, verificación y recuperación](docs/RETIRADA-PANEL.md).
+
 ### Retirada de la franja de contadores · 2026-10-15
 
 - Eliminados los contadores y el botón «Pausar recorrido», junto con su código exclusivo. El recorrido conserva las pausas por hover, foco, selección manual y visibilidad, además de respetar movimiento reducido.
@@ -13,43 +18,6 @@
 ### Limpieza de rótulos del mapa · 2026-10-15
 
 - Alcance empieza directamente por su título y mapa: retirados los tres grupos de textos señalados y sus estilos exclusivos, con márgenes recompuestos. Selección de países y recorrido intactos. Build 12/12 y QA del mapa 10 comprobaciones aprobadas, axe 0, móvil/reducido/no-JS verificados; reversión pública a `ef214fb` mediante commit nuevo.
-
-### Favicon de la pestaña administrativa · 2026-10-15
-
-- El panel utiliza el `favicon.svg` canónico del portafolio, copiado por el build y requerido en el guard. Hosting publicado con 45 archivos; SVG 200 e idéntico al del sitio público. Pruebas build/guard 37/37 y smoke UI aprobados. [Registro y reversión](docs/CONTROL-FAVICONS.md).
-
-### Favicons de las tarjetas administrativas · 2026-10-14
-
-- Productos usa copias locales de los cuatro favicons oficiales en los recuadros existentes, a 32 px, con reserva de espacio y fallback a iniciales. Mapa estático y recursos incluidos en la allowlist obligatoria; Hosting pasa de 40 a 44 archivos.
-- Publicado y verificado por HTTP con igualdad de los seis recursos modificados; 37/37 build/guard, smoke UI completo y cuatro anchos con imágenes cargadas, axe 0 y sin overflow. [Orígenes, evidencia y reversión](docs/CONTROL-FAVICONS.md).
-
-### Conexión Firebase real · 2026-10-14
-
-- Centro publicado en `https://alsdevstudio.firebaseapp.com/`, independiente del portafolio Cloudflare. Hosting reenvía `/api/**` a `controlApi` Gen2, Node 22, `us-central1`. `/admin` y `/admin/` redirigen con 302 al centro, comprobados en producción tras `a21b3de`. Recorrido real footer → Firebase en 390/1440 px, axe 0 y sin errores. El titular confirmó el ingreso; Auth y respuestas `200` de la API lo corroboran.
-- Proyecto `alsdevstudio` (`365384555628`), app web real y Firestore Native `(default)` con protección de borrado. Reglas cerradas al cliente, API con UID fijo, correo verificado, Google, claim `admin:true` y comprobación de revocación. Cuenta runtime dedicada sin claves: `datastore.user` condicionado a esa base y `firebaseauth.viewer`.
-- Blaze vinculado, con autorización expresa, a «Pago de Firebase». Presupuesto mensual del proyecto: COP 25.000, avisos al 50/90/100 %; es una alerta, no un tope. Estimación inicial del centro: US$0–5/mes con poco uso, sin garantía de costo cero. `minInstances:0`, `maxInstances:1`, concurrencia 20, 256 MiB y 30 s; limpieza de imágenes de build tras un día.
-- Publicación protegida por validación del artefacto real: proyecto/app/dominio exactos, configuración pública limitada, sin emuladores, secretos ni archivos internos. `.firebaserc` conserva el proyecto demo; cada despliegue real exige `--project alsdevstudio`. El portafolio sigue excluyendo `control/`.
-- Ingreso Google en la misma pestaña con procesamiento del regreso, observador de identidad y errores seguros; reintento al volver desde el historial. Sustituye la ventana emergente que dejó el intento inicial esperando. Titular con UID coincidente, correo verificado, proveedor Google y claim administrativo comprobados mediante lectura de Auth.
-- Verificación final: QA completa 111/111 sin omitidas, smoke de recuperación/foco, siete recorridos E2E y axe 0 en cuatro anchos; incluye runtime/build/guard y el retorno Google. Hosting real sirve 40 archivos, `no-store` y `noindex`; API 401 sin sesión o con token inválido, 403 por origen ajeno, preflight 204 y Firestore directo 403. Dos respuestas reales `200` de `/api/state` tras el ingreso autorizado; catálogo real con los cuatro productos. Build público 12/12, 206 archivos / 4.911.029 bytes; footer/respaldo en cuatro anchos y sin JavaScript, contraste 9,57:1. Auditorías de dependencias de producción: 0 vulnerabilidades. Revisión independiente sin bloqueos; recarga y cierre real no observados en la herramienta.
-- Los cuatro productos continúan desconectados y sin clientes, pagos ni suscripciones reales precargados. El centro no activa sus plataformas hasta implementar sus conectores. [Operación, evidencia y reversión](docs/CONEXION-FIREBASE.md).
-
-### Entrada administrativa en el footer · 2026-10-14
-
-- Enlace nativo «Administración», discreto y sin iconos, separado de la navegación legal al final del footer. Conserva color/tipografía, objetivo de 44 px y foco visible; en móvil se acomoda abajo a la derecha.
-- Ruta pública `/admin` con shell HTML estático: informa que el ingreso Google está pendiente y conserva el botón inhabilitado. Sin SDK, JavaScript, correo personal ni datos administrativos. No conecta Firebase ni publica `control/`.
-- Build con allowlist explícita de `admin.html`, URL normalizada y redirección histórica; `noindex/nofollow/noarchive` y `no-store` para el acceso, sin entrada en sitemap. [Registro](docs/ADMIN-FOOTER.md).
-
-### Panel central de suscripciones — primer hito local · 2026-10-14
-
-- Alcance confirmado: La Parada, Sarin Bot y SemanControl por negocio; Dialon individual. Administrador Google exclusivo `andres.san1404@gmail.com`; registro manual de pagos por transferencia/Nequi.
-- [Especificación propuesta](docs/superpowers/specs/2026-10-14-panel-central-suscripciones-design.md): Firebase `alsdevstudio` para el control comercial, datos operativos en cada producto y conectores de servidor. SemanControl conserva D1 y requiere aislamiento empresarial y tratamiento de sus pendientes offline.
-- Dialon: [código localizado en GitHub](https://github.com/andresleosan/Dialon), commit revisado `7740d9a053db0081a6774af1dd2600f70676121c`; VPS confirmada por el titular. Actualmente es una demo Expo: audio local web sin traducción; escucha, traducción y voz simuladas en nativo; sin cuentas ni backend. Su suscripción individual requiere identidad y API de licencias en la VPS; Firebase aún no está implementado en ese producto.
-- Estado: núcleo, API protegida y panel implementados y verificados localmente en `control/`. Firebase Auth, Firestore y Functions emulados bajo `demo-alsdevstudio`; los cuatro productos siguen desconectados. El sitio público conserva su stack y su build excluye el panel. No se ha conectado ni desplegado Firebase real.
-- Stack administrativo: HTML/CSS/ES Modules con JSDoc, Firebase Auth modular compilado localmente, Admin SDK y Functions ESM con runtime Node 22. Sin framework frontend ni paquete npm en la raíz. CLI, Java portable, pruebas y dependencias viven dentro de `control/`.
-- Identidad: tinta `#071a2f`, menta `#65d49d`, azul `#4d9bff`; Chakra Petch en títulos, DM Sans en lectura e IBM Plex Mono en datos breves. Navegación lateral en escritorio y horizontal en móvil, tablas desplazables, formularios nativos y diálogos con foco controlado; marca y fuentes locales.
-- Controles: UID fijado, correo verificado, proveedor Google, claim administrativo y revocación en backend; reglas Firestore cerradas al navegador. Pagos transaccionales con vista previa versionada e idempotencia persistente incluso tras errores de red/sesión; órdenes absolutas de licencia pendientes de conector. La demostración sintética solo funciona en emuladores loopback.
-- Evidencia: `npm run qa` pasa 63/63 pruebas sin omitidas, recuperación de pago/foco y siete escenarios de navegador; 320/390/768/1440 px sin desbordamiento ni hallazgos axe. Build público 12/12 y 205 archivos, sin incluir el panel. Auditorías de dependencias de producción sin vulnerabilidades; siete nodos afectados en herramientas de desarrollo documentados en `control/README.md`.
-- Operación y límites: [primer hito](docs/CONTROL-PRIMER-HITO.md), [arranque y configuración](control/README.md). Planes sin precios precargados; datos demo temporales. Presupuesto inicial estimado del centro real: US$0–5/mes con un administrador y 50–100 sujetos, consumo bajo y Blaze; facturación y alertas aún requieren comprobación antes de conectar producción.
 
 ### Placeholder SemanControl y registro de fotogramas · 2026-10-14
 - Tarjeta20 mediante article.project-card--pending, categoríaProducto y estadoEn construcción. Visual HTML/CSS local con proporción16:10 y textos honestos; sin href/foco/CTA. Galería20; carrusel/capturas conservan19 proyectos con demos disponibles. Excluir article de flecha, subrayado y tilt mediante selectores de enlaces.
@@ -67,7 +35,7 @@
 - Sin base de datos, API ni secretos.
 
 ## Nivel
-El sitio público es Nivel 1 — landing/portafolio: responsive, accesibilidad, seguridad de contenido estático y verificación real en navegador. El módulo administrativo independiente `control/` es Nivel 3 por gestionar identidad, pagos y licencias; requiere transacciones, pruebas de concurrencia y permisos, revisión de seguridad y verificación integrada.
+El sitio es Nivel 1: landing/portafolio con responsive, accesibilidad, seguridad de contenido y QA real en navegador.
 
 ## Identidad visual (Design DNA)
 

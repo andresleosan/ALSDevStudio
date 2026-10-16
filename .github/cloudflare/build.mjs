@@ -7,7 +7,7 @@ const CANONICAL_ORIGIN = 'https://www.alsdevstudio.com';
 const OUTPUT_MARKER = '# ALSDevStudio: salida generada por .github/cloudflare/build.mjs\n';
 const MAX_FILES = 20000;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
-const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', 'admin.html', '404.html'];
+const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', '404.html'];
 const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space'].map(name => `modules/${name}.js`)]
@@ -19,7 +19,7 @@ const FIXED_FILES = [...HTML_FILES, 'favicon.svg', 'robots.txt', 'sitemap.xml', 
   'styles/main.css', ...SCRIPT_FILES, ...BRAND_FILES, 'assets/fonts/fonts.css'];
 const FIXED_SET = new Set(FIXED_FILES);
 const PAGE_ROUTES = new Map([['/index.html', '/'], ['/privacidad.html', '/privacidad'],
-  ['/terminos.html', '/terminos'], ['/cookies.html', '/cookies'], ['/admin.html', '/admin'], ['/404.html', '/404']]);
+  ['/terminos.html', '/terminos'], ['/cookies.html', '/cookies'], ['/404.html', '/404']]);
 
 const samePath = (left, right) => path.relative(left, right) === '';
 const publicFile = name => FIXED_SET.has(name) ||
@@ -96,7 +96,7 @@ async function collectFiles(root) {
 
 function pageURL(value) {
   const isAbsolute = /^https?:\/\//i.test(value);
-  if (!isAbsolute && !/^(?:\/)?(?:index|privacidad|terminos|cookies|admin|404)\.html(?:[?#]|$)/.test(value)) return value;
+  if (!isAbsolute && !/^(?:\/)?(?:index|privacidad|terminos|cookies|404)\.html(?:[?#]|$)/.test(value)) return value;
   const url = new URL(value, `${CANONICAL_ORIGIN}/`);
   if (!['www.alsdevstudio.com', 'alsdevstudio.com'].includes(url.hostname)) return value;
   const route = PAGE_ROUTES.get(url.pathname);

@@ -1,5 +1,12 @@
 # Tareas — ALS DevStudio
 
+## ADMIN-RETIRADA · Volver a la landing sin panel · 2026-10-15
+- Solicitud del titular: retirar el panel administrativo y su publicación Firebase, limpiar el código y conservar `https://www.alsdevstudio.com/`.
+- [x] Copia de recuperación local verificada antes de retirar archivos. Eliminar enlace, página, estilos, rutas y soporte del build; conservar cambios recientes del mapa.
+- [x] Retirar módulo y documentación administrativa. Build 12/12 y 205 archivos; Pages local 4/4, antiguas rutas administrativas 404, móvil 320–1440 px, teclado, axe 0 y no-JS. Mapa conserva ciclo, pausas y selección.
+- [ ] Retirar servicios Firebase del panel y verificar el dominio público tras publicar por `main`.
+- [Registro y recuperación](docs/RETIRADA-PANEL.md).
+
 ## GLOBAL-METRICS · Retirar la franja de contadores · 2026-10-15
 - [x] Quitar los dos contadores, el botón «Pausar recorrido» y sus estilos/listeners exclusivos. Mantener el recorrido sin depender del botón y la pausa por interacción.
 - [x] QA en navegador: ciclo completo, hover, visibilidad, teclado y selección manual; cinco anchos 320–1440 px sin overflow ni hallazgos axe, movimiento reducido y no-JS. Build 12/12, 206 archivos / 4.905.637 bytes; capturas revisadas y revisión independiente sin bloqueos.
@@ -16,46 +23,11 @@
 - [x] Build 12/12, 206 archivos / 4.909.393 bytes; QA del mapa 10 comprobaciones, axe 0, sin errores ni red externa, móvil/reducido/no-JS y capturas revisadas. El harness local se actualizó para no buscar el control del hero retirado anteriormente.
 - Publicación mediante push normal a `main`; reversión con commit nuevo restaurando `index.html` y `styles/main.css` de `ef214fb`.
 
-## CONTROL-TAB-FAVICON · Favicon de la pestaña administrativa · 2026-10-15
-- [x] Usar el mismo favicon ALS del portafolio en el panel: enlace HTML, copia del SVG canónico durante el build y archivo obligatorio en el guard.
-- [x] Build/guard 37/37, smoke UI completo y Hosting publicado con 45 archivos. HTTP confirma declaración y SVG 200 idéntico al del portafolio. [Registro](docs/CONTROL-FAVICONS.md).
-
-## CONTROL-FAVICONS · Iconos reales de los productos · 2026-10-14
-- [x] Sustituir Di/LP/SB/SC por los favicons oficiales de Dialon, La Parada, Sarin Bot y SemanControl en las tarjetas, usando copias locales y fallback a iniciales.
-- [x] Validación de los cuatro assets, allowlist exacta y recursos obligatorios en el guard. Pruebas build/guard 37/37, smoke UI completo, imágenes cargadas y axe 0 en 320/390/768/1440; capturas revisadas.
-- [x] Hosting publicado: 44 archivos; los cuatro iconos y JS/CSS responden 200 e iguales al build. [Registro y reversión](docs/CONTROL-FAVICONS.md).
-
-## CONTROL-FIREBASE · Conexión real del centro · 2026-10-14
-- Autorización: conectar el panel a `alsdevstudio`, habilitar Blaze y vincular «Pago de Firebase», con alerta mensual de COP 25.000; no es un límite automático de gasto.
-- [x] App web real, identidad administrativa precreada sin contraseña y claim administrativo; Firestore `(default)` con protección de borrado y reglas denegando clientes directos.
-- [x] API Gen2 desplegada con Node 22 y cuenta dedicada sin claves, permisos limitados, escala de cero a una instancia y separación estricta de los emuladores.
-- [x] Hosting real publicado con API del mismo origen, configuración pública validada y guard antes de publicar; presupuesto del proyecto y limpieza de imágenes configurados.
-- [x] Tras el bloqueo del intento con popup, Google usa la misma pestaña y procesa el regreso con errores seguros, sin conceder una sesión al iniciar la redirección. Rehabilita el botón al volver desde el historial. Cambio publicado y selector Google abierto.
-- [x] QA completa final 111/111 sin omitidas, smoke de recuperación/foco, siete escenarios E2E y axe 0 en cuatro anchos. Revisión independiente sin bloqueos. Smoke real: 200 panel, 401 sin sesión/token inválido, 403 origen ajeno y Firestore directo, preflight 204; cabeceras privadas verificadas. Build público 12/12; footer/respaldo en cuatro anchos, teclado, axe 0, no-JS y contraste corregido.
-- [x] El titular confirma «Sí, entré al panel». Auth comprueba UID configurado, correo verificado, Google, claim administrativo y usuario habilitado; revisión independiente de Cloud Run identifica dos respuestas `200` de `/api/state`. Catálogo de cuatro productos leído correctamente. La herramienta no comparte la sesión del titular y no observó su recarga/cierre; persistencia y salida cubiertas por QA emulada.
-- [x] Publicado `a21b3de` en la única rama `main`. `/admin` y `/admin/` de Cloudflare responden 302 hacia Firebase; ruta histórica conserva 301/query. Recorrido real del footer al ingreso en 390/1440, botón habilitado, axe 0, sin overflow/errores. Fallback HTML con enlace nativo al centro.
-- Los cuatro productos siguen pendientes de conector; no se crean datos comerciales ni pagos ficticios en producción. [Registro y reversión](docs/CONEXION-FIREBASE.md).
-
-## ADMIN-FOOTER · Acceso discreto al final del sitio · 2026-10-14
-- Implementado y verificado: enlace nativo «Administración» hacia `/admin`, con el estilo del pie de página, foco visible y adaptación móvil. Pantalla estática honesta sobre el ingreso Google pendiente; sin exponer el panel local ni datos.
-- Build 12/12, 206 archivos / 4.910.917 bytes; allowlist y exclusión de `control/`, configuración y Functions comprobadas. Navegador en 320/390/768/1440: destino/regreso, teclado, axe 0, sin overflow/erroresJS/redexterna; sin JavaScript en 390/1440. Redirección con query y cabeceras noindex/no-store verificadas localmente.
-- [Registro y reversión](docs/ADMIN-FOOTER.md). Continúa el flujo de commit/push autorizado; conectar Firebase real y habilitar el ingreso requieren el siguiente hito.
-
 ## GIT-MAIN · Consolidación en una única rama · 2026-10-14
 - Solicitud del titular: «unifica todas las ramas, quiero tener una unica rama main». Integrar el panel, conservar toda la historia y retirar las ramas auxiliares locales/remotas.
 - Integración: panel `1708cfe` por fast-forward; las demás ramas ya eran ancestros de `main`, excepto 39 commits de `feat/depth-3d-live-previews` con parches equivalentes ya integrados. Se incorporan como historia con estrategia `ours`, conservando las decisiones posteriores de privacidad y diseño.
 - Verificación: build público 12/12 y 205 archivos / 4.908.959 bytes; sin cambios de archivos públicos respecto de `origin/main`, sin `dist/control` y sin cambios en `control/` respecto del panel probado. Copia completa del historial verificada con `git bundle verify` antes de la limpieza.
-- [Registro y recuperación](docs/GIT-MAIN.md). Política de rama única incorporada a `AGENTS.md`; Firebase real y conectores siguen pendientes.
-
-## CONTROL-LOCAL · Primer hito del panel de suscripciones · 2026-10-14
-- Estado: implementada y verificada localmente; código integrado en `main` para GitHub, sin despliegue del panel. Alcance autorizado mediante «procedamos»: panel independiente y núcleo comercial con Firebase emulado, sin conectar plataformas reales.
-- [x] Catálogo de La Parada, Sarin Bot, Dialon y SemanControl; planes configurables sin precios inventados y sujetos por negocio/persona.
-- [x] Prueba única, renovación por mes calendario o 30 días, pago manual Nequi/transferencia con vista previa, confirmación transaccional e historial; suspensión/reactivación con motivo.
-- [x] API con autorización administrativa, reglas cerradas y adaptador Firestore; modo demo local separado del acceso Google futuro. Órdenes de licencia con conexión pendiente visible.
-- [x] Interfaz ALS responsive con filtros/páginas, teclado, diálogos, recuperación de borradores y reintentos idempotentes tras perder sesión o respuesta.
-- [x] `npm run qa`: 63/63 pruebas sin omitidas; smoke UI y siete escenarios E2E con Auth/Firestore/Functions reales de Emulator Suite. Axe 0, sin overflow en 320/390/768/1440 ni errores JavaScript. Revisión independiente: corregidos reintento de pago tras 429/401 y restauración de foco; sin bloqueantes pendientes.
-- [x] Build público 12/12 y 205 archivos excluyendo el panel; build administrativo sin configurar falla cerrado, sin endpoint demo y con aviso noscript visible. Auditorías de producción 0; incidencias transitivas de CLI registradas.
-- Registro: [alcance, evidencias y pendientes](docs/CONTROL-PRIMER-HITO.md). Conexión Firebase real, Google/UID definitivo, conectores, migración histórica, gracia por comprobante y ajustes/anulaciones siguen pendientes. La entrega local no modifica el acceso de clientes reales.
+- [Registro y recuperación](docs/GIT-MAIN.md). Política de rama única incorporada a `AGENTS.md`. El panel integrado entonces se retira el 15 de octubre; ver ADMIN-RETIRADA.
 
 ## SEMAN-PROCESS · Espacio en construcción y corregir salto de Sarin · 2026-10-14
 - Estado: desplegada y verificada en producción. Placeholder SemanControl no clicable en galería20; conservar19 capturas/carrusel, enlaces/orden/filtros. Marca En construcción, sin capturas ficticias, URL errónea o funcionalidades no verificadas.
