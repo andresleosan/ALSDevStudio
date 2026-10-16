@@ -2,6 +2,8 @@
 
 Fecha: 16 de octubre de 2026. Estado: implementación **LOCAL validada**, no publicada. DeepSeek responde desde la Pages Function con D1 local y cuotas activas.
 
+Ampliación solicitada después de esta validación: historial administrativo completo de 30 días, confirmado por el titular. Está en fase de diseño y no se ha habilitado el registro de mensajes. Consultar [diseño del panel](superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](legal/SARIN-REVISION-DATOS-Y-TERMINOS.md) antes de modificar o publicar el flujo de datos.
+
 ## Preparar y abrir
 
 Desde la raíz del repositorio, con Node y Wrangler 4.150 o posterior disponibles:

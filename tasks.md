@@ -1,5 +1,13 @@
 # Tareas — ALS DevStudio
 
+## SARIN-ADMIN · Historial y revisión de datos · 2026-10-16
+
+- [x] Confirmar intención y retención: cada conversación para revisar uso/abuso; el titular elige 30 días para historial completo y borrado automático.
+- [x] Auditar administración retirada, contrato actual, cuotas, datos y afirmaciones públicas. Investigar fuentes oficiales de Colombia, DeepSeek y Cloudflare; preparar cláusulas y diseño concretos, sin cambiar el funcionamiento ni recoger conversaciones reales.
+- [ ] Revisar el [diseño propuesto](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y los [textos de datos y términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md) antes de implementar la ampliación.
+- [ ] Implementar panel privado, sesiones e historial del servidor, autorización previa y purga programada; actualizar avisos y guía al mismo tiempo. Probar acceso, abuso, borrado y coherencia legal con datos ficticios.
+- [ ] Verificar configuración y contratos de los proveedores y tratamiento internacional, antes de una activación pública autorizada.
+
 ## SARIN-WEB · Asistente comercial LOCAL · 2026-10-16
 
 - Estado: implementación local validada y lista para probar; **no publicada**. El historial de entregas anteriores permanece debajo.
