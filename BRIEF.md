@@ -1,5 +1,10 @@
 # Brief — ALS DevStudio
 
+## Sarin comercial y vistas de proyectos · 2026-10-16
+- Sarin orientará sobre páginas web/landing pages, tiendas virtuales, aplicaciones a medida, soluciones web y chatbots; dará ejemplos reales según el problema del visitante. Objetivo confirmado: continuar por WhatsApp con un resumen revisable. Cotización final a cargo de Andrés; único proveedor DeepSeek, sin IA local. [Alcance y ejemplos](docs/SARIN-ASISTENTE-COMERCIAL.md).
+- Actualizar las vistas de Dialon, Vigia (`/demo/`), Sarin Bot y SemanControl. Incorporar enlace/captura/carrusel de SemanControl y reflejar los estados públicos actuales sin atribuir funciones operativas a prototipos.
+- El titular solicita actualizar GitHub y ejecutar las capturas todos los días a medianoche y mediodía, hora de Colombia. [Programación y recuperación](docs/CAPTURAS-PROYECTOS.md).
+
 ## Espacio SemanControl y tecleo estable · 2026-10-14
 - El titular está construyendo SemanControl; aún no ha hecho push ni está publicado. Añadir su espacio en la galería como tarjeta no clicable «En construcción», sin inventar captura/funcionalidades y sin reutilizar el enlace de Sarin Bot que figura en el Markdown recibido.
 - Corregir el movimiento extraño de la pose de Sarin ante la mesa en Proceso. Diagnóstico: el PNG B está desplazado40px frente a A, causando un salto de14px/11px en pantalla; el controlador mantiene neutral el actor. Alinear el segundo fotograma conservando tecleo y texto progresivo.

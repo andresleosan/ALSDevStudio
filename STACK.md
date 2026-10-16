@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Vistas y capturas dos veces al día · 2026-10-16
+- Cuatro proyectos recapturados y SemanControl enlazado en galería/carrusel: 20 proyectos con variantes AVIF/WebP. Vigia abre `/demo/`; descripciones y estados revisados contra las páginas públicas.
+- Workflow existente: cron `0 5,17 * * *` (00:00 y 12:00 Colombia), ejecución manual conservada, input aislado del shell y build verificado antes del commit. Sin nuevas dependencias ni servicios de pago. [Evidencia y reversión](docs/CAPTURAS-PROYECTOS.md).
+
 ### Retirada del panel administrativo · 2026-10-15
 
 - Se conserva la landing estática en Cloudflare Pages y el dominio canónico `https://www.alsdevstudio.com/`. Retirados el enlace Administración, su página, estilos, rutas y módulo independiente con sus dependencias. Los cambios recientes del mapa permanecen.
@@ -78,7 +82,7 @@ El sitio es Nivel 1: landing/portafolio con responsive, accesibilidad, seguridad
 - **Cuándo se desmonta:** al salir de pantalla, al quedar fuera del cupo, al filtrar proyectos, al ocultarse la pestaña o al apagar el interruptor.
 - **Encuadre:** el iframe se renderiza a 1440×900 y se escala con `transform:scale(--live-scale)`. Las capturas estáticas se generan al **mismo** viewport 1440×900, así que llenan la tarjeta sin barras y el relevo de captura a marco vivo es imperceptible.
 - **Alcance:** las tarjetas de proyecto y la diapositiva activa del carrusel del hero. En el hero solo hay un marco a la vez y se espera 900 ms antes de montarlo; con la rotación automática cada 6 s, un sitio lento puede no llegar a mostrarse antes del siguiente cambio.
-- **Regenerar las capturas:** hay un job semanal (`.github/workflows/capturas.yml`) y se puede lanzar a mano desde Actions. Para hacerlo en local: `npm ci && npx playwright install chromium` dentro de `.github/capturas/`, y después `node .github/capturas/capturar.mjs [--solo clave1,clave2]` desde la raíz. La herramienta vive fuera de la raíz a propósito: un `package.json` en la raíz haría que Vercel intentara compilar el sitio.
+- **Regenerar las capturas:** hay un job diario a las 00:00 y 12:00 de Colombia (`.github/workflows/capturas.yml`) y se puede lanzar a mano desde Actions. Para hacerlo en local: `npm ci && npx playwright install chromium` dentro de `.github/capturas/`, y después `node .github/capturas/capturar.mjs [--solo clave1,clave2]` desde la raíz. La herramienta vive fuera de la raíz a propósito: un `package.json` en la raíz haría que Vercel intentara compilar el sitio.
 - **Cómo se generan:** Playwright a 1440×900 con `deviceScaleFactor: 2` y `reducedMotion: 'reduce'`, esperando a `networkidle`, a las fuentes y a que decodifiquen las imágenes diferidas; después sharp produce la base `.jpg` y las variantes AVIF/WebP a 480, 768 y 1200. Hay que rehacerlas cuando un proyecto cambie de diseño, o la tarjeta mostrará el estado antiguo hasta que cargue el marco vivo.
 - **Contención:** `inert`, `aria-hidden`, `tabindex="-1"`, `pointer-events:none`, `sandbox="allow-scripts allow-same-origin"`, `allow=""` y `referrerpolicy="no-referrer"`.
 - **Coste:** se respeta `prefers-reduced-data` y el ahorro de datos del sistema, y hay un interruptor visible con preferencia persistida.

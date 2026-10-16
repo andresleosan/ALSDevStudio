@@ -78,14 +78,15 @@ test('portafolio, mapa y aviso conservan lectura y controles a 320 y 1440 px', a
       await page.locator('[data-analytics-choice="denied"]').click();
       assert.equal(await dialog.isVisible(), false);
       assert.equal(await page.locator('.project-card').count(), 20);
-      assert.equal(await page.locator('a.project-card').count(), 19);
-      assert.equal(await page.locator('.hero-slide').count(), 19);
-      const pending = page.locator('article.project-card.project-card--pending[data-project-key="semancontrol"]');
-      assert.equal(await pending.count(), 1);
-      assert.equal(await pending.getAttribute('href'), null);
-      assert.equal(await pending.getAttribute('tabindex'), null);
-      assert.equal(await pending.getAttribute('role'), null);
-      assert.equal(await pending.locator('a, button, [tabindex], [role="button"], [role="link"]').count(), 0);
+      assert.equal(await page.locator('a.project-card').count(), 20);
+      assert.equal(await page.locator('.hero-slide').count(), 20);
+      for (const [key, url] of [['dialon', 'https://dialon.pages.dev/'], ['vigia', 'https://vigiaapp.pages.dev/demo/'],
+        ['sarinbotsaas', 'https://sarinbotsaas.pages.dev/'], ['semancontrol', 'https://semancontrol.pages.dev/']]) {
+        const card = page.locator(`a.project-card[data-project-key="${key}"]`);
+        assert.equal(await card.getAttribute('href'), url);
+        assert.equal(await card.locator('picture img').count(), 1);
+        assert.equal(await page.locator(`.hero-slide[data-project-key="${key}"]`).count(), 1);
+      }
       await page.locator('.global-map-host').scrollIntoViewIfNeeded();
       await page.locator('.global-map-host svg').waitFor();
       assert.equal(await page.evaluate(async () => (await fetch('/assets/brand/world-map.svg')).status), 200, 'rechazo conserva fetch propio');

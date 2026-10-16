@@ -629,3 +629,12 @@ Orden de ejecución: OPT-01 → OPT-02 → OPT-03 → OPT-04 → OPT-05 → OPT-
 - Cronos repitió módulo56/56, build tests12/12, TSC aislado/diff-checkPASS; build191archivos/5.030.365bytes. QA integrada10/10 en siete anchos/noJS/reducido/axe, fotogramas18/18 con geometría estable y texto completo. Cuatro PNG320×384/alfa inspeccionados en390/1440; revisión independiente sin bloqueantes. Evidencia y prompts exactos en `docs/SARIN-POSES-DISTINTAS.md`; producción pendiente.
 - Candidato`2711ab6c` de`8962f2e`: Pages4/4 y fotogramas18/18PASS repetidos por Cronos; Chrome confirma nueve scenes/textos/poses distintos/sin overflow. HTTP independiente ocho recursos exactos/noindex/canonical/CSP/Analytics y cuatro301PASS. Promoción dentro de la revisión concreta solicitada de las animaciones autorizadas en la sesión.
 - Publicada en main`2ee0626`, despliegue`808ea77d`: Cronos repitió www Pages4/4, integración10/10 y fotogramas18/18PASS. Chrome real global/process finished, textos completos y sin overflow; capturas guardadas y entregable abierto. HTTP independiente ocho recursos exactos/indexable/canonical/CSP/Analytics/cuatro301PASS. Cierre documental sin cambios públicos; registro y reversión en `docs/SARIN-POSES-DISTINTAS.md`.
+
+
+## CAPTURAS-DIARIAS · Vistas y ejemplos de Sarin · 2026-10-16
+- Estado: aprobada localmente para publicar en `main`, según solicitud del titular de actualizar GitHub.
+- [x] Capturas reales y variantes AVIF/WebP de Dialon, Vigia demo, Sarin Bot y SemanControl; enlace de Vigia a `/demo/`, SemanControl enlazado en galería y carrusel, 20 proyectos y estados/descripciones revisados.
+- [x] Workflow existente programado a las 00:00 y 12:00 Colombia (`0 5,17 * * *` UTC), ejecución manual conservada, input aislado del shell, checkout de main y build antes del commit.
+- [x] Alcance y ejemplos comerciales de Sarin documentados en `docs/SARIN-ASISTENTE-COMERCIAL.md`: landing pages, tiendas, soluciones web y chatbot; DeepSeek exclusivo y continuación por WhatsApp. La integración conversacional sigue pendiente.
+- Evidencia: `node --test .github/cloudflare/build.test.mjs` 12/12 PASS; build 212 archivos/5.231.811 bytes; Pages 4/4 PASS con Wrangler 4.150.0; QA focal cinco anchos 320–1440, axe 0, sin overflow/errores, 20 destinos/imágenes del carrusel y lectura sin JS correctos. Capturas inspeccionadas y revisión independiente sin bloqueantes. `git diff --check` PASS.
+- Registro, programación y recuperación: `docs/CAPTURAS-PROYECTOS.md`; base `9f3d263`, reversión por commit normal sin force push.
