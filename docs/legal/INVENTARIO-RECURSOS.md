@@ -1,6 +1,6 @@
 # Inventario de derechos sobre recursos
 
-Inspección inicial: 12 de octubre de 2026. Revisión del 16 de octubre de 2026, hora de Colombia / 17 de octubre UTC. Se actualizan recursos posteriores y evidencia técnica de licencias; los cambios de esta auditoría son candidatos hasta su publicación. El acceso público, una captura automatizada y la autoría del desarrollo no prueban autorización sobre todos los recursos. No se encontraron reseñas ni testimonios en la revisión del sitio.
+Inspección inicial: 12 de octubre de 2026. Revisión del 16 de octubre de 2026, hora de Colombia / 17 de octubre UTC, publicada con la auditoría y ampliada tras la apertura de Sarin. Se actualizan recursos posteriores y evidencia técnica de licencias. El acceso público, una captura automatizada y la autoría del desarrollo no prueban autorización sobre todos los recursos. No se encontraron reseñas ni testimonios en la revisión del sitio. Se consultó al titular sobre permisos de los veinte proyectos, logo y referencias originales de Sarin; hasta recibir su respuesta y documentar lo que corresponda, esos permisos continúan pendientes.
 
 | Recurso | Procedencia observada | Licencia / autorización | Acción |
 |---|---|---|---|
@@ -31,6 +31,8 @@ Inspección inicial: 12 de octubre de 2026. Revisión del 16 de octubre de 2026,
 | SemanControl — assets/projects/semancontrol.jpg y derivados | https://semancontrol.pages.dev/ | No se acreditó aquí permiso de todos los recursos, marcas o referencias de terceros | Conservar evidencia de autoría y permisos; diferenciar la captura del estado real del producto |
 
 No se retiraron proyectos solo por falta de documentación: no se concluye infracción sin evidencia. La autorización de publicar el sitio y sus políticas no cierra los pendientes de derechos de este inventario. Las licencias de fuentes no cubren imágenes, marcas, textos de los proyectos ni mascotas.
+
+Comprobación acotada posterior: las tres versiones locales examinadas del SVG del mapa no contienen crédito, URL de dataset ni licencia. Existe un GeoJSON de 177 países sin procedencia documentada; su parecido con Natural Earth no demuestra una licencia aplicable a este archivo. No se encontró un generador verificable en los scripts, documentos e introducciones históricas revisados. Sigue pendiente acreditar su fuente o sustituirlo por cartografía con procedencia comprobada. Para las mascotas, el registro sí acredita generación y adaptación a partir de referencias del titular, pero no acredita los derechos originales sobre esas referencias.
 
 MASCOT-SOURCES.json documenta ilustraciones y adaptaciones a partir de referencias, no recortes exactos de los píxeles originales. Sus dimensiones y pasos se transcriben del registro de procedencia; esta revisión no repite la inspección visual de los PNG. El mapa conserva su licencia por acreditar. No se retira contenido solo por falta de documentos ni se presume infracción; el responsable debe reunir los permisos que correspondan o sustituir el recurso si no puede justificar su uso.
 

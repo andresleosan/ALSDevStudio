@@ -1,8 +1,20 @@
 # Operación de Sarin
 
+**Estado vigente comprobado el 16 de octubre de 2026:** Sarin está en producción para visitantes en `https://www.alsdevstudio.com/`. El panel `/control-sarin/` permanece privado. La frase anterior «Sarin sigue privado para tus pruebas» corresponde a una fase cerrada y no describe la publicación actual.
+
+| Asunto | Estado y siguiente acción |
+| --- | --- |
+| Apertura técnica | Publicada y comprobada; no falta otro push de activación. Canonical Pages `53e29312`, código `952d2cb`; widget y cuatro flags activas en producción, políticas v3 HTTP 200. |
+| Información y autorización internacional | Implementadas antes de conversar: receptor identificado, autorización expresa y registro de versión. Los 30 días corresponden al historial de ALS; no se prometen sobre DeepSeek. Esto no certifica cumplimiento de toda obligación aplicable. |
+| Condiciones no garantizadas de DeepSeek | Siguen sin acreditarse un máximo global de conservación API, exclusión de entrenamiento y alcance del opt-out. Los avisos lo explican; obtener confirmación del proveedor sigue siendo seguimiento concreto, sin inventar un permiso especial de lanzamiento. |
+| Contratos de desarrollo | Las condiciones generales existen. Revisar los contratos particulares cuando se concrete cada proyecto: alcance, precio, entregables, soporte, terminación y derechos. La revisión profesional recomendada no es una aprobación externa que hayamos identificado como requisito general para encender este chat. |
+| Recursos visuales | Fuentes tipográficas verificadas; permisos de capturas/marcas, logo, referencias de mascota y mapa aún documentales. Se consultó al titular sobre autorización y procedencia; no registrar como acreditados antes de su respuesta y evidencia correspondiente. |
+| Video promocional | Existe versión sin voz. La locución Edge TTS se entregó para revisión: acreditar el permiso comercial o sustituirla antes de difundir esa versión. Es un pendiente del audiovisual, no un interruptor de Sarin. |
+| Accesibilidad | Correcciones y pruebas realizadas; no se ha contratado ni acreditado una certificación WCAG. La ausencia de esa certificación no significa que el chat esté privado ni que las comprobaciones hechas cubran todos los casos. |
+
 ## Apertura pública · 16 de octubre de 2026
 
-El titular observó que el chat no aparecía en la portada y esperaba su disponibilidad tras el push. La causa era la conservación de ambos flags públicos en `false`, no un despliegue fallido. Se prepara la apertura pública con ambos flags en `true`, un enlace «Administración» a `/control-sarin/` en el pie de portada y aviso/privacidad/términos v3. No se amplía el acceso al panel ni al historial ajeno.
+El titular observó que el chat no aparecía en la portada y esperaba su disponibilidad tras el push. La causa era la conservación de ambos flags públicos en `false`, no un despliegue fallido. La apertura pública se publicó con ambos flags en `true`, un enlace «Administración» a `/control-sarin/` en el pie de portada y aviso/privacidad/términos v3. No se amplía el acceso al panel ni al historial ajeno.
 
 El build usa esas dos variables de Production para mostrar el widget. En Preview siguen apagadas; la fuente y `build()` sin autorización explícita permanecen cerradas. El arranque local sigue exigiendo `--live`. Abrir el diálogo no crea sesión ni llama a DeepSeek; hace falta autorizar expresamente el tratamiento y envío internacional antes de conversar. Nuevas sesiones rechazan las versiones previas y conservan prueba de la aceptación vigente.
 
@@ -18,7 +30,9 @@ Chrome con recarga normal abrió Sarin en `https://www.alsdevstudio.com/` sin qu
 
 Evidencia local ignorada: `test-results/sarin-remote/public-launch-tests.txt`, `public-launch-pages.txt`, `public-launch-deployment.json`, `public-launch-http.json`, `sarin-publico-publicado.png` y `sarin-accesos-publicados.png`. No se enviaron mensajes a WhatsApp, se modificaron credenciales ni se borró historial.
 
-**Actualización posterior de la misma fecha:** revisión de políticas v2 y accesibilidad publicada en `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`. Build con revisión común de módulos y estilos; HSTS, exclusión de analítica privada, correo sin JavaScript y controles accesibles verificados. Chrome normal inicia con v2; prueba ficticia café/Mundial/retorno conserva tres turnos y seis mensajes en el panel. Se mantienen el cierre público, Access, D1 y cuotas. [Auditoría final y fuentes](PRIVACIDAD-Y-CUMPLIMIENTO.md). Los despliegues descritos en la preparación inferior son el registro previo de la primera prueba.
+## Registro histórico: revisión privada anterior a la apertura pública
+
+Revisión de políticas v2 y accesibilidad publicada en `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`. Build con revisión común de módulos y estilos; HSTS, exclusión de analítica privada, correo sin JavaScript y controles accesibles verificados. Chrome normal inició con v2; la prueba ficticia café/Mundial/retorno conservó tres turnos y seis mensajes en el panel. En esa fase seguía el cierre público, después sustituido por la apertura descrita arriba. [Auditoría y fuentes de esa fase](PRIVACIDAD-Y-CUMPLIMIENTO.md). Los apartados siguientes registran las etapas previas y no deben interpretarse como flags vigentes.
 
 Fecha: 16 de octubre de 2026. Estado: **panel y prueba privada publicados con autorización expresa; sesión del titular, DeepSeek real e historial comprobados en el dominio**. `SARIN_ADMIN_ENABLED=true` y `SARIN_PRIVATE_TEST_ENABLED=true`; `SARIN_ENABLED=false` y `SARIN_HISTORY_ENABLED=false` públicos. La portada normal mantiene el chat oculto para visitantes. El titular puede probar con datos ficticios en `https://www.alsdevstudio.com/?sarin=prueba`; el historial aparece en el panel protegido. La activación comercial con datos de visitantes sigue pendiente de sus condiciones efectivas.
 

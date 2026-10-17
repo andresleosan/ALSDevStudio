@@ -1,5 +1,7 @@
 # Sarin: revisión de datos y términos
 
+**Registro histórico, anterior a la apertura pública.** Sarin ya está publicado para visitantes con consentimiento v3; la administración sigue privada. Las propuestas y verificaciones pendientes descritas abajo no son una lista de bloqueos técnicos actuales. [Estado vigente, incertidumbres que permanecen y siguientes acciones](../SARIN-OPERACION.md).
+
 **Borrador interno · 16 de octubre de 2026 · No publicar como política vigente.** Alcance: historial privado solicitado por el titular y textos que deben acompañarlo. No acredita cumplimiento, contratos aceptados, configuración de cuentas ni funciones aún no implementadas.
 
 ## Decisión del titular y alcance
