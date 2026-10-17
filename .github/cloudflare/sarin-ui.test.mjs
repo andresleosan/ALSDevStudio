@@ -85,6 +85,57 @@ test('sesión solo registra autorización cerrada y usa cookie técnica sin expo
   assert.equal(value.conversationId,conversationId);
 });
 
+test('prueba privada renueva CSRF y usa solo destinos administrativos sin historial del navegador',async()=>{
+  const api=await load('sarin-api');
+  const calls=[];let bootstraps=0;
+  const fetchImpl=async(url,options)=>{
+    calls.push({url,options});
+    if(url==='/api/control-sarin/bootstrap')return Response.json({csrfToken:`synthetic-private-token-${++bootstraps}`,adminEmail:'owner@example.test',purge:{},privateTestEnabled:true});
+    if(url==='/api/control-sarin/test/session')return Response.json({conversationId,sessionExpiresAt:Date.now()+86400000});
+    if(url==='/api/control-sarin/test/message')return Response.json({reply:'Una landing de prueba.',examples:[],brief:{},conversationId,requestId,turn:1});
+    throw new Error(`Destino inesperado: ${url}`);
+  };
+  const session=await api.createSarinSession({privateTest:true,fetchImpl});
+  assert.equal(session.conversationId,conversationId);
+  const result=await api.requestSarin('Una landing de prueba',requestId,{privateTest:true,fetchImpl});
+  assert.match(result.reply,/landing/);
+  assert.deepEqual(calls.map(call=>call.url),['/api/control-sarin/bootstrap','/api/control-sarin/test/session','/api/control-sarin/bootstrap','/api/control-sarin/test/message']);
+  for(const call of calls){assert.equal(call.options.credentials,'same-origin');assert.equal(call.options.cache,'no-store');assert.equal(call.options.redirect,'error');}
+  assert.equal(calls[1].options.headers['X-Sarin-CSRF'],'synthetic-private-token-1');
+  assert.equal(calls[3].options.headers['X-Sarin-CSRF'],'synthetic-private-token-2');
+  assert.deepEqual(JSON.parse(calls[3].options.body),{message:'Una landing de prueba',requestId});
+});
+
+test('prueba privada falla cerrada ante acceso inválido, flag falso y bootstrap malformado',async()=>{
+  const api=await load('sarin-api');
+  for(const response of [Response.json({privateTestEnabled:false,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test'}),Response.json({privateTestEnabled:'true',csrfToken:'synthetic-private-token',adminEmail:'owner@example.test'}),Response.json({privateTestEnabled:true,csrfToken:'x',adminEmail:'owner@example.test'}),Response.json({}, {status:401}),new Response('<html>Login</html>',{headers:{'content-type':'text/html'}})]){
+    const calls=[];
+    await assert.rejects(api.createSarinSession({privateTest:true,fetchImpl:async(url)=>{calls.push(url);return response;}}));
+    assert.deepEqual(calls,['/api/control-sarin/bootstrap']);
+  }
+});
+
+test('timeout privado cancela también bootstrap y nunca inicia un POST',async()=>{
+  const api=await load('sarin-api');const calls=[];
+  await assert.rejects(api.requestSarin('Prueba ficticia',requestId,{privateTest:true,timeoutMs:10,fetchImpl:async(url,options)=>{
+    calls.push(url);
+    return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Cancelado','AbortError')),{once:true}));
+  }}),/tardó demasiado/);
+  assert.deepEqual(calls,['/api/control-sarin/bootstrap']);
+});
+
+test('403 privado explica acceso administrativo sin confundirlo con bloqueo del visitante',async()=>{
+  const api=await load('sarin-api');
+  for(const failBootstrap of [true,false]){
+    await assert.rejects(api.createSarinSession({privateTest:true,fetchImpl:async url=>{
+      if(!failBootstrap && url.endsWith('/bootstrap'))return Response.json({privateTestEnabled:true,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test',purge:{}});
+      return Response.json({error:{code:'forbidden'}},{status:403});
+    }}),error=>error.status===403 && /acceso.*prueba privada.*administración/i.test(error.message));
+  }
+  await assert.rejects(api.checkSarinPrivateTest({fetchImpl:async()=>Response.json({},{status:403})}),/acceso.*prueba privada.*administración/i);
+  await assert.rejects(api.createSarinSession({fetchImpl:async()=>Response.json({},{status:403})}),/bloqueada temporalmente/);
+});
+
 async function pageFor({enableChat = true, ...options} = {}) {
   const context = await browser.newContext(options);
   const page = await context.newPage();
@@ -130,6 +181,64 @@ test('chat apagado por defecto mantiene contacto visible y no inicia API con cli
   await page.locator('#whatsapp-link').scrollIntoViewIfNeeded();
   assert.equal(await page.locator('#whatsapp-link').isVisible(),true);
   assert.match(await page.locator('#whatsapp-link').getAttribute('href'),/^https:\/\/wa\.me\/573146432135/);
+});
+
+test('query privada exige bootstrap autorizado antes de mostrar y abrir chat, conserva consentimiento y rutas privadas',{timeout:7000},async t=>{
+  const {page,context,apiRequests}=await pageFor({enableChat:false});t.after(()=>context.close());await dismiss(page);
+  const requests=[];let release,markStarted;
+  const started=new Promise(resolve=>{markStarted=resolve;});let bootstraps=0;
+  await page.route('**/api/control-sarin/**',async route=>{
+    const request=route.request(),pathname=new URL(request.url()).pathname;
+    requests.push({pathname,method:request.method(),headers:request.headers(),body:request.postDataJSON()});
+    if(pathname.endsWith('/bootstrap')){
+      bootstraps++;if(bootstraps===1){markStarted();await new Promise(resolve=>{release=resolve;});}
+      return route.fulfill({json:{privateTestEnabled:true,csrfToken:`synthetic-private-token-${bootstraps}`,adminEmail:'owner@example.test',purge:{}}});
+    }
+    if(pathname.endsWith('/test/session'))return route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}});
+    return route.fulfill({json:{reply:'Podemos crear una landing para tu café ficticio.',examples:[],brief:{},conversationId,requestId:request.postDataJSON().requestId,turn:1}});
+  });
+  await page.goto(`${origin}/?sarin=prueba`);await started;
+  assert.equal(await page.locator('#sarin-launcher').isVisible(),false);assert.equal(await page.locator('#sarin-chat').isVisible(),false);
+  release();await page.locator('#sarin-chat').waitFor({state:'visible'});
+  assert.equal(await page.locator('#sarin-launcher').getAttribute('data-sarin-enabled'),'false');
+  assert.match(await page.locator('#sarin-chat').textContent(),/Prueba privada.*datos ficticios/s);
+  assert.match(await page.locator('#sarin-chat').textContent(),/panel.*30 días|30 días.*panel/s);
+  assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
+  assert.equal(requests.filter(request=>request.method==='POST').length,0);
+  await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
+  await page.locator('#sarin-message').fill('Una landing para un café ficticio');await page.locator('#sarin-message').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('#sarin-log').textContent.includes('Podemos crear'));
+  assert.deepEqual(requests.filter(request=>request.method==='POST').map(request=>request.pathname),['/api/control-sarin/test/session','/api/control-sarin/test/message']);
+  assert.equal(requests.filter(request=>request.pathname.endsWith('/bootstrap')).length,3);
+  assert.equal(requests.filter(request=>request.method==='POST').every(request=>request.headers['x-sarin-csrf']?.startsWith('synthetic-private-token-')),true);
+  assert.equal(apiRequests.some(url=>new URL(url).pathname.startsWith('/api/sarin')),false);
+  assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('Una landing')),false);
+});
+
+test('query privada sin autorización o activación conserva widget oculto y ofrece acceso administrativo',async t=>{
+  for(const status of [200,401,403,302]){
+    const {page,context,apiRequests}=await pageFor({enableChat:false});t.after(()=>context.close());await dismiss(page);
+    await page.route('**/api/control-sarin/bootstrap',route=>route.fulfill({status,headers:status===302?{location:'/control-sarin/'}:{},json:{privateTestEnabled:false,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test',purge:{}}}));
+    await page.goto(`${origin}/?sarin=prueba`);
+    await page.locator('#sarin-private-access a[href="/control-sarin/"]').waitFor();
+    assert.equal(await page.locator('#sarin-launcher').isVisible(),false);assert.equal(await page.locator('#sarin-chat').isVisible(),false);
+    assert.equal(apiRequests.length,1);assert.match(apiRequests[0],/\/api\/control-sarin\/bootstrap$/);
+    await context.close();
+  }
+});
+
+test('acceso privado vencido al iniciar no crea conversación y permite volver a administración',async t=>{
+  const {page,context}=await pageFor({enableChat:false});t.after(()=>context.close());await dismiss(page);let posts=0;
+  await page.route('**/api/control-sarin/**',route=>{
+    if(route.request().method()==='GET')return route.fulfill({json:{privateTestEnabled:true,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test',purge:{}}});
+    posts++;return route.fulfill({status:401,json:{error:{code:'unauthorized'}}});
+  });
+  await page.goto(`${origin}/?sarin=prueba`);await page.locator('#sarin-chat').waitFor();
+  await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await page.locator('#sarin-status a[href="/control-sarin/"]').waitFor();
+  assert.equal(posts,1);assert.equal(await page.locator('#sarin-message').evaluate(node=>node.readOnly),true);
+  assert.equal(await page.locator('#sarin-log').textContent(),'');
 });
 
 test('autorización previa sin premarcar, sin POST por servicios ni analítica denegada', async()=>{

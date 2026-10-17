@@ -30,12 +30,12 @@ async function pageFor(options={}){
   await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
   return {page,context};
 }
-async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now,lastErrorAt:null,status:'ok',remaining:false},status=200}={}){
+async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now,lastErrorAt:null,status:'ok',remaining:false},status=200,privateTestEnabled=false}={}){
   const requests=[];
   await page.route('**/api/control-sarin/**',async route=>{
     const req=route.request(),url=new URL(req.url());requests.push({url,method:req.method(),body:req.postDataJSON(),headers:req.headers()});
     if(status!==200)return route.fulfill({status,json:{error:{code:'forbidden'}}});
-    if(url.pathname.endsWith('/bootstrap'))return route.fulfill({json:{csrfToken:'synthetic-csrf-token',adminEmail:'operador@example.test',purge}});
+    if(url.pathname.endsWith('/bootstrap'))return route.fulfill({json:{csrfToken:'synthetic-csrf-token',adminEmail:'operador@example.test',purge,privateTestEnabled}});
     if(req.method()==='POST')return route.fulfill({json:{ok:true}});
     return route.fulfill({json:url.pathname.endsWith('/conversations')?{items,nextCursor:null}:detail});
   });
@@ -58,6 +58,16 @@ test('panel privado carga lista/detalle cronológico como texto, señales y auto
   assert.equal(requests.some(req=>req.url.pathname==='/api/sarin'),false);
   assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('Café de prueba')),false);
   await context.close();
+});
+
+test('enlace para probar en la web aparece solo tras bootstrap con permiso privado explícito',async t=>{
+  for(const privateTestEnabled of [false,true,'true']){
+    const {page,context}=await pageFor();t.after(()=>context.close());await mock(page,{privateTestEnabled});
+    await page.locator('[data-conversation-id]').first().waitFor();
+    assert.equal(await page.locator('#admin-test-sarin').isVisible(),privateTestEnabled===true);
+    if(privateTestEnabled===true){assert.equal(await page.locator('#admin-test-sarin').getAttribute('href'),'/?sarin=prueba');assert.match(await page.locator('#admin-test-sarin').textContent(),/Probar Sarin/);}
+    await context.close();
+  }
 });
 
 test('filtros fecha Colombia y acciones CSRF, borrar exige confirmación explícita',async()=>{

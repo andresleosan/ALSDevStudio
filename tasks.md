@@ -1,5 +1,12 @@
 # Tareas — ALS DevStudio
 
+## SARIN-WWW-PRIVADO · Pruebas del titular en el dominio · 2026-10-16
+
+- [x] Preparar prueba privada solicitada para `www`: enlace desde panel, query de presentación, bootstrap del titular y POST Access/CSRF, sin habilitar chat público.
+- [x] Aislar cookie y hash privados, conservar cuotas/presupuesto, contrato y D1 con 30 días; preview/local apagados, sin migraciones ni secretos nuevos.
+- [x] Regresiones RED/GREEN y 282/282 pruebas de Sarin/build; UI 29/29, revisión independiente sin P1/P2, audit sin vulnerabilidades, TSC sin errores nuevos de Sarin y build/Functions correctos.
+- [ ] Publicar candidato aislado y después push autorizado a `main`; comprobar prueba real en `www`, aparición del historial en panel y cierre para visitantes. [Operación y reversión](docs/SARIN-OPERACION.md#candidato-de-prueba-privada-en-el-dominio--16-de-octubre-de-2026).
+
 ## SARIN-QA · Prueba local real y corrección de seguimientos · 2026-10-16
 
 - [x] Preparar vista local `http://127.0.0.1:8792/` con DeepSeek real, historial D1 local y datos ficticios; conservar producción con chat apagado.

@@ -1,10 +1,23 @@
 // @ts-check
 import {NOTICE_TEXT} from './sarin-consent.js';
 /** Vista en memoria; el historial autorizado se conserva en el servidor durante 30 días. */
-export function initSarinChat() {
+export async function initSarinChat() {
   const dialog = document.querySelector('#sarin-chat');
   const launcher = document.querySelector('#sarin-launcher');
-  if (!(dialog instanceof HTMLDialogElement) || !(launcher instanceof HTMLButtonElement) || typeof dialog.showModal !== 'function' || launcher.dataset.sarinEnabled !== 'true') return;
+  if (!(dialog instanceof HTMLDialogElement) || !(launcher instanceof HTMLButtonElement) || typeof dialog.showModal !== 'function') return;
+  const privateTest=new URLSearchParams(location.search).get('sarin')==='prueba';
+  if(launcher.dataset.sarinEnabled!=='true' && !privateTest)return;
+  if(privateTest){
+    try{const api=await import('./sarin-api.js');await api.checkSarinPrivateTest();}
+    catch{
+      const notice=document.createElement('p');notice.id='sarin-private-access';notice.className='wrap';notice.setAttribute('role','status');
+      notice.append('La prueba privada requiere tu acceso de administración. ');
+      const login=document.createElement('a');login.href='/control-sarin/';login.textContent='Abrir administración de Sarin';notice.append(login);
+      document.querySelector('main')?.prepend(notice);return;
+    }
+    const notice=document.createElement('p');notice.className='sarin-notice';notice.textContent='Prueba privada · usa datos ficticios. Estas conversaciones aparecerán en el panel y se conservarán durante 30 días.';
+    dialog.querySelector('#sarin-content')?.prepend(notice);
+  }
   /** @param {string} selector @returns {HTMLElement} */
   const find = selector => {
     const element = dialog.querySelector(selector);
@@ -25,6 +38,10 @@ export function initSarinChat() {
   const consent=/** @type {HTMLInputElement} */(find('#sarin-consent-checkbox'));
   const authorize=/** @type {HTMLButtonElement} */(find('[data-sarin-authorize]'));
   const reference=find('#sarin-reference');
+  const offerPrivateAccess=()=>{
+    if(!privateTest)return;
+    const link=document.createElement('a');link.href='/control-sarin/';link.textContent='Revisar acceso en la administración de Sarin';status.append(' ',link);
+  };
   find('#sarin-consent-text').textContent=NOTICE_TEXT;
   /** @typedef {typeof import('./sarin-api.js') & typeof import('./sarin-summary.js')} ChatModules */
   /** @type {ChatModules|undefined} */
@@ -117,7 +134,7 @@ export function initSarinChat() {
     const current=++generation;controller?.abort();controller=new AbortController();
     creatingSession=true;setBusy(true);status.textContent='Iniciando conversación…';
     try{
-      const api=await load();const result=await api.createSarinSession({signal:controller.signal});
+      const api=await load();const result=await api.createSarinSession({signal:controller.signal,privateTest});
       if(current!==generation)return;
       authorized=true;expired=false;conversationId=result.conversationId;
       messages=[];brief={};service=undefined;turns=0;
@@ -128,6 +145,7 @@ export function initSarinChat() {
       summaryPanel.hidden=true;consentPanel.hidden=true;conversation.hidden=false;form.hidden=false;
     }catch(error){
       status.textContent=error instanceof Error && error.name!=='AbortError'?error.message:'No pudimos iniciar la conversación. Puedes contactar con Andrés.';
+      offerPrivateAccess();
     }finally{
       if(current===generation){creatingSession=false;controller=null;setBusy(false);if(authorized && !expired)input.focus();}
     }
@@ -152,7 +170,7 @@ export function initSarinChat() {
       const api = await load();
       if (current !== generation) return;
       const requestId=crypto.randomUUID();
-      const result = await api.requestSarin(message,requestId,{signal});
+      const result = await api.requestSarin(message,requestId,{signal,privateTest});
       if (current !== generation) return;
       if((result.conversationId && result.conversationId!==conversationId) || (result.requestId && result.requestId!==requestId)) throw new Error('La respuesta no corresponde a esta conversación. Puedes contactar con Andrés.');
       if(result.turn)turns=result.turn;
@@ -167,6 +185,7 @@ export function initSarinChat() {
       // Mensaje fijo para errores de red: no revelar detalles internos del navegador.
       if (error instanceof TypeError) status.textContent = 'No pudimos conectar con Sarin. Puedes contactar con Andrés.';
       if(error instanceof Error && 'status' in error && [401,403,410].includes(Number(error.status)))expired=true;
+      offerPrivateAccess();
     } finally {
       if (current === generation) {setBusy(false); controller = null;}
     }
@@ -200,4 +219,5 @@ export function initSarinChat() {
   });
   find('[data-sarin-back]').addEventListener('click', () => {summaryPanel.hidden = true; conversation.hidden = false; consentPanel.hidden=authorized; form.hidden = false; (authorized?input:consent).focus();});
   setBusy(false);
+  if(privateTest && !analytics())launcher.click();
 }

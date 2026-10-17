@@ -1,6 +1,8 @@
 // @ts-check
 import { authenticateSarinAdmin, AdminError, adminError, adminResponse } from './access.js';
 import { readBoundedJson } from './policy.js';
+import { handleSarinSession, PRIVATE_SESSION_COOKIE } from './sessions.js';
+import { handleSarin } from './handler.js';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SERVICES = ['website', 'store', 'application', 'chatbot'];
@@ -67,16 +69,41 @@ function filters(params) {
   return value;
 }
 
+/** Conserva la cookie HttpOnly del handler y aplica las cabeceras del área privada. */
+function privateChatResponse(response) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of adminResponse({}).headers) headers.set(name, value);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 /**
  * Solo options internas; la petición nunca puede inyectar store/reloj.
  * @param {Request} request
  * @param {Record<string, any>} env
- * @param {{now?:()=>number, store?:any}} [options]
+ * @param {{now?:()=>number, store?:any, fetch?:typeof fetch, quota?:any}} [options]
  */
 export async function handleSarinAdmin(request, env, options = {}) {
   try {
     const admin = await authenticateSarinAdmin(request, env, options);
     const url = new URL(request.url);
+    const privateTest = /^\/api\/control-sarin\/test\/(session|message)\/?$/.exec(url.pathname);
+    if (privateTest) {
+      if (request.method !== 'POST') return adminResponse({ error: { code: 'method_not_allowed', message: 'Método no permitido.' } }, 405, { Allow: 'POST' });
+      if (env.SARIN_PRIVATE_TEST_ENABLED !== 'true') throw new AdminError(503, 'unavailable');
+      if (url.search) throw new AdminError(400, 'invalid_request');
+      if (request.headers.get('Origin') !== url.origin) throw new AdminError(403, 'origin_rejected');
+      if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('Content-Type') || '') || request.headers.has('Content-Encoding')) throw new AdminError(400, 'invalid_request');
+      await verifyCsrf(request.headers.get('X-Sarin-CSRF'), env.SARIN_ADMIN_CSRF_SECRET, admin, (options.now || Date.now)());
+      const length = request.headers.get('Content-Length');
+      if (length && (!/^\d+$/.test(length) || Number(length) > 16384)) throw new AdminError(413, 'body_too_large');
+      // Solo esta invocación autorizada usa el motor. No se mutan flags ni bindings públicos.
+      const privateEnv = { ...env, SARIN_ENABLED: 'true', SARIN_HISTORY_ENABLED: 'true' };
+      const privateOptions = { ...options, sessionCookie: PRIVATE_SESSION_COOKIE };
+      const response = privateTest[1] === 'session'
+        ? await handleSarinSession(request, privateEnv, privateOptions)
+        : await handleSarin(request, privateEnv, privateOptions);
+      return privateChatResponse(response);
+    }
     if (!['GET', 'POST'].includes(request.method)) throw new AdminError(405, 'method_not_allowed');
     const match = /^\/api\/control-sarin\/(bootstrap|conversations)(?:\/([^/]+))?\/?$/.exec(url.pathname);
     if (!match || (match[1] === 'bootstrap' && match[2]) || (match[2] && !UUID.test(match[2]))) throw new AdminError(404, 'not_found');
@@ -90,7 +117,7 @@ export async function handleSarinAdmin(request, env, options = {}) {
     if (request.method === 'GET') {
       if (match[1] === 'bootstrap') {
         const purge = await store.getPurgeStatus();
-        return adminResponse({ csrfToken: await createCsrf(env.SARIN_ADMIN_CSRF_SECRET, admin, now), adminEmail: admin.email,
+        return adminResponse({ csrfToken: await createCsrf(env.SARIN_ADMIN_CSRF_SECRET, admin, now), adminEmail: admin.email, privateTestEnabled: env.SARIN_PRIVATE_TEST_ENABLED === 'true',
           purge: project(purge, ['lastRunAt', 'lastSuccessAt', 'lastErrorAt', 'status', 'remaining']) });
       }
       if (match[2]) {

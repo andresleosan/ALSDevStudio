@@ -96,7 +96,7 @@ async function main() {
     '--ip', '127.0.0.1', '--port', String(options.port), '--inspector-port', '0', '--log-level', 'warn',
     '--binding', `SARIN_ENABLED=${options.live ? 'true' : 'false'}`,
     '--binding', `SARIN_HISTORY_ENABLED=${options.live ? 'true' : 'false'}`,
-    '--binding', 'SARIN_ADMIN_ENABLED=false']);
+    '--binding', 'SARIN_ADMIN_ENABLED=false', '--binding', 'SARIN_PRIVATE_TEST_ENABLED=false']);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

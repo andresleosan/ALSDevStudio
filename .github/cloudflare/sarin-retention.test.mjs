@@ -195,10 +195,13 @@ test('producción comparte D1 con la purga y los previews quedan aislados y apag
   assert.deepEqual(job.triggers.crons, ['0 * * * *']);
   assert.deepEqual(pages.env.preview.d1_databases, []);
   assert.equal(pages.vars.SARIN_ADMIN_ENABLED, 'true', 'El candidato publica solo la administración protegida');
+  assert.equal(pages.vars.SARIN_PRIVATE_TEST_ENABLED, 'true', 'La prueba del titular debe activarse explícitamente en producción');
   for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED']) {
     assert.equal(pages.vars[key], 'false');
   }
-  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED']) assert.equal(pages.env.preview.vars[key], 'false');
+  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED', 'SARIN_PRIVATE_TEST_ENABLED']) assert.equal(pages.env.preview.vars[key], 'false');
+  const local = JSON.parse(await readFile(new URL('../../wrangler.sarin.local.jsonc', import.meta.url), 'utf8'));
+  assert.equal(local.vars.SARIN_PRIVATE_TEST_ENABLED, 'false', 'El lanzador local no abre pruebas administrativas');
 });
 
 test('recuperación exige mantenimiento y drenaje explícitos antes de tocar D1', async () => {

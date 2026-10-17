@@ -49,6 +49,7 @@ function initSarinAdmin(){
       csrf='';listGeneration++;detailGeneration++;listController?.abort();detailController?.abort();
       list.replaceChildren();clearDetail();workspace.hidden=true;confirm.close();
       find('#admin-identity').textContent='Acceso privado';
+      find('#admin-test-sarin').hidden=true;
       announce(code===401?'Tu acceso venció. Vuelve a comprobarlo para continuar.':'Acceso no autorizado o autorización de la acción vencida. Vuelve a comprobar tu acceso.',true);
       retry.hidden=false;
     }else announce(error instanceof Error?error.message:'No pudimos completar la operación. Vuelve a intentarlo.',true);
@@ -203,11 +204,11 @@ function initSarinAdmin(){
   confirm.addEventListener('close',()=>{deleteTrigger?.focus({preventScroll:true});});
   find('[data-admin-confirm-delete]').addEventListener('click',()=>{const id=deleteId;confirm.close();void mutate(id,'delete');});
   async function bootstrap(){
-    const current=++bootstrapGeneration;retry.hidden=true;workspace.hidden=true;csrf='';announce('Verificando acceso…');
+    const current=++bootstrapGeneration;retry.hidden=true;workspace.hidden=true;find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
     try{
       const value=await request('bootstrap');if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
-      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));workspace.hidden=false;clearDetail();await loadList();
+      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;clearDetail();await loadList();
     }catch(error){if(current===bootstrapGeneration){fail(error);retry.hidden=false;}}
   }
   retry.addEventListener('click',()=>{void bootstrap();});void bootstrap();

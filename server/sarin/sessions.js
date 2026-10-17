@@ -4,6 +4,11 @@ import { SarinError, readBoundedJson } from './policy.js';
 import { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION, NOTICE_TEXT } from '../../scripts/modules/sarin-consent.js';
 
 export const SESSION_COOKIE = '__Host-sarin-session';
+export const PRIVATE_SESSION_COOKIE = '__Host-sarin-test-session';
+function sessionCookieName(value = SESSION_COOKIE) {
+  if (value !== SESSION_COOKIE && value !== PRIVATE_SESSION_COOKIE) throw new SarinError(503,'unavailable');
+  return value;
+}
 export const PUBLIC_HEADERS = Object.freeze({
   'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store',
   'X-Content-Type-Options':'nosniff', 'Content-Security-Policy':"default-src 'none'; frame-ancestors 'none'",
@@ -55,12 +60,18 @@ export async function hashText(text) {
   const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
   return Array.from(new Uint8Array(bytes),value=>value.toString(16).padStart(2,'0')).join('');
 }
-export function readSessionToken(request) {
+/** Separa credenciales privadas sin cambiar el hash de las sesiones públicas existentes. */
+export function hashSessionToken(token, selectedCookie) {
+  const cookieName=sessionCookieName(selectedCookie);
+  return hashText(cookieName === PRIVATE_SESSION_COOKIE ? `${PRIVATE_SESSION_COOKIE}\n${token}` : token);
+}
+export function readSessionToken(request, selectedCookie) {
+  const cookieName = sessionCookieName(selectedCookie);
   const cookie=request.headers.get('Cookie')||'';
   if(cookie.length>8192)throw new SarinError(401,'session_invalid');
-  const values=cookie.split(';').map(x=>x.trim()).filter(x=>x.startsWith(`${SESSION_COOKIE}=`));
+  const values=cookie.split(';').map(x=>x.trim()).filter(x=>x.startsWith(`${cookieName}=`));
   if(values.length!==1)throw new SarinError(401,'session_required');
-  const value=values[0].slice(SESSION_COOKIE.length+1);
+  const value=values[0].slice(cookieName.length+1);
   if(!/^[a-f0-9]{64}$/.test(value))throw new SarinError(401,'session_invalid');
   return value;
 }
@@ -78,6 +89,7 @@ export async function historyStore(env,options={}) {
 export async function handleSarinSession(request,env,options={}) {
   try {
     validatePost(request);
+    const cookieName=sessionCookieName(options.sessionCookie);
     const body=await readBoundedJson(request.body,16384,request.signal);
     if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).length!==1 || !Object.hasOwn(body,'consent'))throw new SarinError(400,'invalid_request');
     const consent=body.consent;
@@ -90,11 +102,11 @@ export async function handleSarinSession(request,env,options={}) {
     const identity=await requestIdentity(request,env,now);
     const store=await historyStore(env,options);
     const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),value=>value.toString(16).padStart(2,'0')).join('');
-    const result=await store.createSession({tokenHash:await hashText(token),identity,consent:{
+    const result=await store.createSession({tokenHash:await hashSessionToken(token,cookieName),identity,consent:{
       noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION,
       noticeHash:await hashText(NOTICE_TEXT),acceptedAt:now,method:'checkbox_and_start',
     }});
-    return publicResponse(result,200,{'Set-Cookie':`${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`});
+    return publicResponse(result,200,{'Set-Cookie':`${cookieName}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`});
   } catch(error) {
     const failure=publicFailure(error);
     return publicResponse(failure.body,failure.status,failure.status===405?{Allow:'POST'}:{});

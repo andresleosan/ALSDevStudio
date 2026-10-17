@@ -264,3 +264,128 @@ test('métodos, rutas y errores de DB no filtran datos ni ejecutan acciones', as
   const response = await handleSarinAdmin(request('/api/control-sarin/conversations'), env(), { store });
   assert.equal(response.status, 503); assert.ok(!(await response.text()).includes('fixture-private'));
 }));
+
+async function privateChatFixture(t) {
+  const database = await sqliteFixture({ history: true }); t.after(database.close);
+  const { handleSarinAdmin } = await moduleUnderTest();
+  const { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION } = await import('../../scripts/modules/sarin-consent.js');
+  const clock = Date.now(), calls = [];
+  const token = jwt({ exp: Math.floor(clock / 1000) + 3600 });
+  const config = { ...env(), SARIN_DB: database.db, SARIN_PRIVATE_TEST_ENABLED: 'true', SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'false',
+    SARIN_IP_SECRET: 'fixture-private-ip-secret-at-least-32-characters', DEEPSEEK_API_KEY: 'fixture-private-api-key',
+    SARIN_INPUT_PRICE_MICROS: '300000', SARIN_OUTPUT_PRICE_MICROS: '1200000', SARIN_DAILY_BUDGET_MICROS: '1000000', SARIN_MONTHLY_BUDGET_MICROS: '10000000' };
+  const options = { now: () => clock, fetch: async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    assert.equal(url, 'https://api.deepseek.com/chat/completions');
+    return Response.json({ choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: '{"inScope":false}' } }],
+      usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 } });
+  } };
+  const bootstrap = await handleSarinAdmin(request(undefined, { token }), config, options);
+  assert.equal(bootstrap.status, 200); const data = await bootstrap.json();
+  const consent = { accepted: true, noticeVersion: NOTICE_VERSION, privacyVersion: PRIVACY_VERSION, termsVersion: TERMS_VERSION };
+  const headers = { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1', 'X-Sarin-CSRF': data.csrfToken };
+  const post = (path, body, extra = {}) => handleSarinAdmin(request(path, { token, method: 'POST', body, headers, ...extra }), config, options);
+  const empty = () => {
+    for (const table of ['sarin_conversations','sarin_consents','sarin_turns','sarin_messages','sarin_counters','sarin_reservations']) assert.equal(database.sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, 0, table);
+    assert.equal(calls.length, 0);
+  };
+  return { ...database, handleSarinAdmin, config, options, token, data, headers, consent, calls, post, empty, clock };
+}
+
+test('prueba privada anuncia disponibilidad y exige flag exacto antes de crear sesión o inferir', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  assert.equal(f.data.privateTestEnabled, true);
+  for (const flag of [undefined, 'false', false, true, 'TRUE']) {
+    f.config.SARIN_PRIVATE_TEST_ENABLED = flag;
+    const bootstrap = await f.handleSarinAdmin(request(undefined, { token: f.token }), f.config, f.options);
+    assert.equal((await bootstrap.json()).privateTestEnabled, false);
+    for (const [path, body] of [['session',{ consent: f.consent }],['message',{ message: 'Una tienda', requestId: id }]]) {
+      const response = await f.post(`/api/control-sarin/test/${path}`, body);
+      assert.equal(response.status, 503); assert.equal(response.headers.has('Set-Cookie'), false);
+    }
+  }
+  f.empty();
+}));
+
+test('prueba privada del titular admite sesión y mensaje mayor que 256 bytes con cuotas reales sin activar público', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  const session = await f.post('/api/control-sarin/test/session', { consent: f.consent });
+  assert.equal(session.status, 200);
+  const cookie = session.headers.get('Set-Cookie');
+  assert.match(cookie, /^__Host-sarin-test-session=[a-f0-9]{64};/);
+  for (const attribute of ['HttpOnly','Secure','SameSite=Strict','Path=/','Max-Age=86400']) assert.ok(cookie.includes(attribute));
+  assert.equal(session.headers.get('Cache-Control'), 'no-store');
+  assert.equal(session.headers.get('X-Robots-Tag'), 'noindex, nofollow, noarchive');
+  const created = await session.json(), message = 'Una tienda ficticia. ' + 'a'.repeat(300);
+  assert.equal(f.calls.length, 0);
+  const response = await f.post('/api/control-sarin/test/message', { message, requestId: id }, { headers: { ...f.headers, Cookie: cookie.split(';')[0] } });
+  assert.equal(response.status, 200); const body = await response.json();
+  assert.equal(body.conversationId, created.conversationId); assert.equal(body.turn, 1);
+  assert.equal(f.calls.length, 1); assert.deepEqual(JSON.parse(f.calls[0].body.messages[1].content), { message, history: [] });
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_messages').get().n, 2);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_reservations WHERE actual_micros > 0').get().n, 1);
+  assert.equal(f.config.SARIN_ENABLED, 'false'); assert.equal(f.config.SARIN_HISTORY_ENABLED, 'false');
+  const { handleSarinSession } = await import('../../server/sarin/sessions.js');
+  const publicSession = await handleSarinSession(request('/api/sarin/session', { token: null, method: 'POST', headers: f.headers, body: { consent: f.consent } }), f.config, f.options);
+  assert.equal(publicSession.status, 503); assert.equal(publicSession.headers.has('Set-Cookie'), false);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_conversations').get().n, 1);
+}));
+
+test('prueba privada nunca omite Access ni propietario aunque su flag esté activo', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  for (const token of [null, 'fixture.false.jwt', jwt({ email: 'other@example.test' }), jwt({ exp: 1 })]) {
+    for (const [path, body] of [['session',{ consent: f.consent }],['message',{ message: 'Una tienda', requestId: id }]]) {
+      const response = await f.post(`/api/control-sarin/test/${path}`, body, { token });
+      assert.equal(response.status, 403); assert.equal(response.headers.get('Cache-Control'), 'no-store');
+      assert.equal(response.headers.has('Set-Cookie'), false);
+    }
+  }
+  f.empty();
+}));
+
+test('prueba privada exige CSRF, origen, JSON y límites antes de persistir o llamar al proveedor', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  for (const [headers, expected] of [[{ ...f.headers, 'X-Sarin-CSRF': '' },403],[{ ...f.headers, 'X-Sarin-CSRF': f.data.csrfToken + 'x' },403],
+    [{ ...f.headers, Origin: 'https://evil.test' },403],[{ ...f.headers, 'Content-Type': 'text/plain' },400],
+    [{ ...f.headers, 'Content-Encoding': 'gzip' },400],[{ ...f.headers, 'Content-Length': '16385' },413]]) {
+    for (const [path, body] of [['session',{ consent: f.consent }],['message',{ message: 'Una tienda', requestId: id }]]) assert.equal((await f.post(`/api/control-sarin/test/${path}`, body, { headers })).status, expected);
+  }
+  for (const path of ['session','message']) {
+    const response = await f.handleSarinAdmin(request(`/api/control-sarin/test/${path}`, { token: f.token }), f.config, f.options);
+    assert.equal(response.status, 405); assert.equal(response.headers.get('Allow'), 'POST');
+  }
+  const expired = await f.handleSarinAdmin(request('/api/control-sarin/test/session', { token: f.token, method: 'POST', headers: f.headers, body: { consent: f.consent } }), f.config, { ...f.options, now: () => f.clock + 16 * 60000 });
+  assert.equal(expired.status, 403);
+  assert.equal((await f.post('/api/control-sarin/test/session', '{' + ' '.repeat(16384))).status, 413);
+  f.empty();
+}));
+
+test('prueba privada y chat público rechazan cookies cruzadas aunque ambos motores internos estén habilitados', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  const { handleSarinSession } = await import('../../server/sarin/sessions.js');
+  const { handleSarin } = await import('../../server/sarin/handler.js');
+  const privateSession = await f.post('/api/control-sarin/test/session', { consent: f.consent });
+  assert.equal(privateSession.status, 200); const privateCookie = privateSession.headers.get('Set-Cookie').split(';')[0];
+  const publicEnv = { ...f.config, SARIN_ENABLED: 'true', SARIN_HISTORY_ENABLED: 'true' };
+  const publicSession = await handleSarinSession(request('/api/sarin/session', { token: null, method: 'POST', headers: f.headers, body: { consent: f.consent } }), publicEnv, f.options);
+  assert.equal(publicSession.status, 200); const publicCookie = publicSession.headers.get('Set-Cookie').split(';')[0];
+  assert.match(publicCookie, /^__Host-sarin-session=/);
+  assert.equal((await f.post('/api/control-sarin/test/message', { message: 'Una tienda', requestId: id }, { headers: { ...f.headers, Cookie: publicCookie } })).status, 401);
+  const publicMessage = await handleSarin(request('/api/sarin', { token: null, method: 'POST', headers: { ...f.headers, Cookie: privateCookie }, body: { message: 'Una tienda', requestId: id } }), publicEnv, f.options);
+  assert.equal(publicMessage.status, 401); assert.equal(f.calls.length, 0);
+  const renamedPrivateCookie = '__Host-sarin-session=' + privateCookie.slice(privateCookie.indexOf('=') + 1);
+  const renamedPublicCookie = '__Host-sarin-test-session=' + publicCookie.slice(publicCookie.indexOf('=') + 1);
+  assert.equal((await handleSarin(request('/api/sarin', { token: null, method: 'POST', headers: { ...f.headers, Cookie: renamedPrivateCookie }, body: { message: 'Una tienda', requestId: id } }), publicEnv, f.options)).status, 401);
+  assert.equal((await f.post('/api/control-sarin/test/message', { message: 'Una tienda', requestId: id }, { headers: { ...f.headers, Cookie: renamedPublicCookie } })).status, 401);
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_turns').get().n, 0);
+}));
+
+test('prueba privada mantiene contratos cerrados y no admite configuración desde URL o cuerpo', async t => fixture(async () => {
+  const f = await privateChatFixture(t);
+  for (const [path, body] of [['/api/control-sarin/test/session?sessionCookie=__Host-sarin-session',{ consent: f.consent }],
+    ['/api/control-sarin/test/session',{ consent: f.consent, sessionCookie: '__Host-sarin-session' }],
+    ['/api/control-sarin/test/message',{ message: 'Una tienda', requestId: id, history: [] }]]) assert.equal((await f.post(path, body)).status, 400);
+  assert.equal((await f.post('/api/control-sarin/test/session', { consent: { ...f.consent, accepted: false } })).status, 403);
+  f.empty();
+}));

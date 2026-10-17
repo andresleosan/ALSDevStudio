@@ -3,7 +3,7 @@ import { createQuota } from './quota.js';
 import { CLASSIFICATION_PROMPT, GENERATION_PROMPT, OUT_OF_SCOPE } from './knowledge.js';
 import { SarinError, VALIDATION_REASONS, invalidOutput, readBoundedJson, validateChatRequest, validateInput, validateClassification, validateGeneration, buildPayload } from './policy.js';
 import { callDeepSeek, reservationMicros, verifiedCost } from './deepseek.js';
-import { ensureHistoryConfiguration, validatePost, readSessionToken, hashText, requestIdentity, historyStore, publicResponse, publicFailure } from './sessions.js';
+import { ensureHistoryConfiguration, validatePost, readSessionToken, hashSessionToken, requestIdentity, historyStore, publicResponse, publicFailure } from './sessions.js';
 
 function configuration(env) {
   ensureHistoryConfiguration(env);
@@ -20,7 +20,7 @@ function configuration(env) {
  * El cliente no selecciona proveedor, almacen, reloj, historial o cuotas.
  * @param {Request} request
  * @param {Record<string,any>} env
- * @param {{fetch?:typeof fetch,now?:()=>number,quota?:ReturnType<typeof createQuota>,store?:any}} [options]
+ * @param {{fetch?:typeof fetch,now?:()=>number,quota?:ReturnType<typeof createQuota>,store?:any,sessionCookie?:'__Host-sarin-session'|'__Host-sarin-test-session'}} [options]
  */
 export async function handleSarin(request,env,options={}) {
   let store,turn,tokenHash,submission;
@@ -29,7 +29,7 @@ export async function handleSarin(request,env,options={}) {
     validatePost(request);
     submission=validateChatRequest(await readBoundedJson(request.body,16384,request.signal));
     const config=configuration(env);
-    tokenHash=await hashText(readSessionToken(request));
+    tokenHash=await hashSessionToken(readSessionToken(request,options.sessionCookie),options.sessionCookie);
     if(request.signal.aborted)throw new SarinError(504,'timeout');
     const now=options.now||(()=>Date.now());
     const identity=await requestIdentity(request,env,now());
