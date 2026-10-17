@@ -1,6 +1,7 @@
 import { lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CANONICAL_ORIGIN = 'https://www.alsdevstudio.com';
@@ -118,6 +119,44 @@ function transform(name, content) {
   return content;
 }
 
+function revisionURL(value, documentPath, outputFiles, revision, extension) {
+  let url;
+  try { url = new URL(value, new URL(documentPath, `${CANONICAL_ORIGIN}/`)); }
+  catch { return value; } // La validación de referencias conserva el rechazo correspondiente.
+  if (!['www.alsdevstudio.com', 'alsdevstudio.com'].includes(url.hostname) || !url.pathname.endsWith(extension)) return value;
+  let target;
+  try { target = decodeURIComponent(url.pathname).replace(/^\//, ''); }
+  catch { return value; }
+  if (!outputFiles.has(target)) return value;
+  const fragmentAt = value.indexOf('#');
+  const fragment = fragmentAt < 0 ? '' : value.slice(fragmentAt);
+  const address = fragmentAt < 0 ? value : value.slice(0, fragmentAt);
+  const queryAt = address.indexOf('?');
+  const stem = queryAt < 0 ? address : address.slice(0, queryAt);
+  const parameters = new URLSearchParams(queryAt < 0 ? '' : address.slice(queryAt + 1));
+  parameters.set('v', revision);
+  return `${stem}?${parameters}${fragment}`;
+}
+
+/** Una revisión compartida evita combinar módulos de despliegues distintos en caché. */
+function versionReferences(name, content, outputFiles, revision) {
+  if (name.endsWith('.html')) {
+    const attribute = (tag, key, extension) => tag.replace(new RegExp(`(\\b${key}\\s*=\\s*)(["'])([^"']*)\\2`, 'gi'),
+      (match, prefix, quote, value) => {
+        const decoded = value.replaceAll('&amp;', '&');
+        const revised = revisionURL(decoded, `/${name}`, outputFiles, revision, extension);
+        return revised === decoded ? match : `${prefix}${quote}${revised.replaceAll('&', '&amp;')}${quote}`;
+      });
+    return content.replace(/<script\b[^>]*>/gi, tag => attribute(tag, 'src', '.js'))
+      .replace(/<link\b[^>]*>/gi, tag => /\brel\s*=\s*(["'])[^"']*\bstylesheet\b[^"']*\1/i.test(tag) ? attribute(tag, 'href', '.css') : tag);
+  }
+  if (name.endsWith('.js')) {
+    return content.replace(/(\b(?:from\s+|import\s*(?:\(\s*)?))(["'])([^"']+)\2/g,
+      (match, prefix, quote, value) => /^\.\.?\//.test(value) ? `${prefix}${quote}${revisionURL(value, `/${name}`, outputFiles, revision, '.js')}${quote}` : match);
+  }
+  return content;
+}
+
 function localReference(value, documentPath, outputFiles) {
   if (!value || /^(?:#|data:|mailto:|tel:|javascript:)/i.test(value)) return;
   let url;
@@ -213,19 +252,30 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinCh
   await verifyOwnedOutput(root, output);
   const selected = await collectFiles(root);
   const contents = new Map();
+  const publicHash = createHash('sha256');
   for (const file of selected) {
+    let hashed = await readFile(path.join(root, file.path));
     if (/\.(?:html|xml|css|js|txt)$/.test(file.path) || ['_headers', '_redirects', '_routes.json'].includes(file.path)) {
-      let text = transform(file.path, await readFile(path.join(root, file.path), 'utf8'));
+      let text = transform(file.path, hashed.toString('utf8'));
       if (file.path === 'index.html' && enableSarinChat === true) {
         text = text.replace('data-sarin-enabled="false"', 'data-sarin-enabled="true"');
       }
       contents.set(file.path, text);
-      file.size = Buffer.byteLength(text);
+      hashed = Buffer.from(text);
     }
+    publicHash.update(file.path).update('\0').update(String(hashed.byteLength)).update('\0').update(hashed);
+  }
+  const revision = publicHash.digest('hex').slice(0, 16);
+  const outputFiles = new Set(selected.map(file => file.path));
+  for (const file of selected) {
+    if (!contents.has(file.path)) continue;
+    const text = versionReferences(file.path, contents.get(file.path), outputFiles, revision);
+    contents.set(file.path, text);
+    file.size = Buffer.byteLength(text);
   }
   validateLimits(selected);
   validateFunctionRoutes(contents.get('_routes.json'));
-  validateReferences(contents, new Set(selected.map(file => file.path)));
+  validateReferences(contents, outputFiles);
   // Revalidar la ruta absoluta y propiedad inmediatamente antes de cualquier borrado.
   if (await verifyOwnedOutput(root, output)) await rm(output, { recursive: true });
   await mkdir(output);
@@ -236,13 +286,13 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinCh
     const content = contents.get(file.path) ?? await readFile(path.join(root, file.path));
     await writeFile(destination, content, { flag: 'wx' });
   }
-  return { outputDir: output, files: selected.length, bytes: selected.reduce((sum, file) => sum + file.size, 0) };
+  return { outputDir: output, files: selected.length, bytes: selected.reduce((sum, file) => sum + file.size, 0), revision };
 }
 
 if (process.argv[1] && samePath(path.resolve(process.argv[1]), fileURLToPath(import.meta.url))) {
   try {
     const result = await build();
-    console.log(`Build Pages: ${result.files} archivos públicos, ${result.bytes} bytes; salida ${result.outputDir}`);
+    console.log(`Build Pages: ${result.files} archivos públicos, ${result.bytes} bytes; revisión ${result.revision}; salida ${result.outputDir}`);
   } catch (error) {
     console.error(`Build Pages rechazado: ${error.message}`);
     process.exitCode = 1;

@@ -3,6 +3,7 @@ import { after, test } from 'node:test';
 import { mkdtemp, mkdir, readFile, readdir, rm, symlink, truncate, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 // Estas pruebas crean exclusivamente fixtures locales; nunca usan red ni cuentas.
 const implementation = await import('./build.mjs').catch(error => {
@@ -222,4 +223,64 @@ test('el chat público queda apagado en el artefacto y la vista local requiere h
   await build(root, { enableSarinChat: true });
   assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="true"/);
   assert.match(await readFile(path.join(root, 'index.html'), 'utf8'), /data-sarin-enabled="false"/);
+});
+
+test('cada revisión pública actualiza HTML y el grafo main, chat, API y consentimiento incluso con módulos ya cargados',async()=>{
+  const root=await fixture();
+  await put(root,'package.json','{"type":"module"}');
+  await put(root,'index.html','<link rel="stylesheet" href="styles/main.css"><script type="module" src="scripts/main.js"></script>');
+  await put(root,'scripts/main.js',"export const open = () => import('./modules/sarin-chat.js');");
+  await put(root,'scripts/modules/sarin-chat.js',"export { start } from './sarin-api.js';");
+  await put(root,'scripts/modules/sarin-api.js',"import { NOTICE_VERSION } from './sarin-consent.js'; export const start=NOTICE_VERSION;");
+  await put(root,'scripts/modules/sarin-consent.js',"export const NOTICE_VERSION='notice-v1';");
+  async function emittedGraph(){
+    const result=await build(root);
+    assert.match(result.revision,/^[a-f0-9]{16}$/);
+    const html=await readFile(path.join(root,'dist/index.html'),'utf8');
+    const entry=html.match(/<script[^>]*src="([^"]+)"/)[1];
+    const module=await import(new URL(entry,pathToFileURL(path.join(root,'dist/index.html'))).href);
+    for(const name of ['scripts/main.js','scripts/modules/sarin-chat.js','scripts/modules/sarin-api.js']){
+      const source=await readFile(path.join(root,'dist',name),'utf8');
+      assert.match(source,new RegExp(`\\.js\\?v=${result.revision}`),name);
+    }
+    assert.equal(new URL(entry,'https://www.alsdevstudio.com/').searchParams.get('v'),result.revision);
+    assert.match(html,new RegExp(`styles/main\\.css\\?v=${result.revision}`));
+    return {revision:result.revision,notice:(await module.open()).start};
+  }
+  const first=await emittedGraph();assert.equal(first.notice,'notice-v1');
+  await put(root,'scripts/modules/sarin-consent.js',"export const NOTICE_VERSION='notice-v2';");
+  const second=await emittedGraph();assert.equal(second.notice,'notice-v2');assert.notEqual(second.revision,first.revision);
+});
+
+test('la revisión es determinista y solo depende de archivos públicos permitidos',async()=>{
+  const root=await fixture();const first=await build(root);
+  assert.match(first.revision,/^[a-f0-9]{16}$/);
+  for(const name of ['.dev.vars','server/sarin/private.js','docs/private.md','scripts/internal-tool.js'])await put(root,name,'PRIVATE_FIXTURE_NEVER_PUBLIC');
+  const second=await build(root);assert.equal(second.revision,first.revision);
+  for(const name of await files(path.join(root,'dist'))){
+    assert.equal((await readFile(path.join(root,'dist',name))).includes(Buffer.from('PRIVATE_FIXTURE_NEVER_PUBLIC')),false,name);
+  }
+  await put(root,'assets/projects/demo.jpg','another-public-image');
+  assert.notEqual((await build(root)).revision,first.revision);
+});
+
+test('versiona recursos locales conservando otros parámetros y fragmentos sin cambiar API, enlaces o dominios externos',async()=>{
+  const root=await fixture();
+  const source='<link href="styles/main.css?theme=dark&amp;v=old#sheet" rel="stylesheet">'+
+    '<script src="/scripts/main.js?entry=web&v=old#module"></script>'+
+    '<script src="https://cdn.example/app.js?entry=external"></script>'+
+    '<link rel="stylesheet" href="https://cdn.example/theme.css">'+
+    '<a href="/?sarin=prueba#contacto">Prueba</a><a href="https://project.example/?demo=1">Proyecto</a>'+
+    '<img src="assets/projects/demo.jpg?size=small">';
+  await put(root,'index.html',source);
+  await put(root,'scripts/main.js',"import './modules/env.js?mode=demo#module'; const open=()=>import('./modules/dom.js?lang=es'); const external=()=>import('https://cdn.example/module.js'); fetch('/api/sarin');");
+  const result=await build(root);const html=await readFile(path.join(root,'dist/index.html'),'utf8');
+  assert.match(html,new RegExp(`styles/main\\.css\\?theme=dark&amp;v=${result.revision}#sheet`));
+  assert.match(html,new RegExp(`/scripts/main\\.js\\?entry=web&amp;v=${result.revision}#module`));
+  for(const unchanged of ['https://cdn.example/app.js?entry=external','https://cdn.example/theme.css','/?sarin=prueba#contacto','https://project.example/?demo=1','assets/projects/demo.jpg?size=small'])assert.ok(html.includes(unchanged),unchanged);
+  const module=await readFile(path.join(root,'dist/scripts/main.js'),'utf8');
+  assert.match(module,new RegExp(`env\\.js\\?mode=demo&v=${result.revision}#module`));
+  assert.match(module,new RegExp(`dom\\.js\\?lang=es&v=${result.revision}`));
+  assert.ok(module.includes("import('https://cdn.example/module.js')"));assert.ok(module.includes("fetch('/api/sarin')"));
+  assert.equal(await readFile(path.join(root,'index.html'),'utf8'),source);
 });
