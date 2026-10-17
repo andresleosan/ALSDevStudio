@@ -32,6 +32,14 @@ for(const field of ['privacyVersion','termsVersion'])test(`nuevas sesiones recha
   const api=await load(),s=setup();const response=await api.handleSarinSession(request({consent:{...consent(),[field]:'2026-10-16-sarin-history-v1'}}),env(),s.options);
   assert.equal(response.status,403);assert.equal(response.headers.has('Set-Cookie'),false);assert.equal(s.calls.length,0);
 });
+for(const previous of [
+  {noticeVersion:'sarin-history-2026-10-16-v1'},
+  {privacyVersion:'2026-10-16-sarin-history-v2'},
+  {termsVersion:'2026-10-16-sarin-history-v2'},
+])test(`apertura pública exige nueva autorización: rechaza ${Object.keys(previous)[0]} anterior`,async()=>{
+  const api=await load(),s=setup();const response=await api.handleSarinSession(request({consent:{...consent(),...previous}}),env(),s.options);
+  assert.equal(response.status,403);assert.equal(response.headers.has('Set-Cookie'),false);assert.equal(s.calls.length,0);
+});
 for(const key of Object.keys(env()))test(`sesión cerrada sin ${key}`,async()=>{
   const api=await load(),s=setup(),config=env();delete config[key];assert.equal((await api.handleSarinSession(request(),config,s.options)).status,503);assert.equal(s.calls.length,0);
 });

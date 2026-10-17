@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, symlink, truncate, unlink, write
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 // Estas pruebas crean exclusivamente fixtures locales; nunca usan red ni cuentas.
 const implementation = await import('./build.mjs').catch(error => {
@@ -223,6 +224,45 @@ test('el chat público queda apagado en el artefacto y la vista local requiere h
   await build(root, { enableSarinChat: true });
   assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="true"/);
   assert.match(await readFile(path.join(root, 'index.html'), 'utf8'), /data-sarin-enabled="false"/);
+});
+
+test('el build cerrado normaliza el chat aunque el fuente venga habilitado', async () => {
+  const root = await fixture();
+  const source = '<!DOCTYPE html><button id="sarin-launcher" data-sarin-enabled="true" hidden>Sarin</button>';
+  await put(root, 'index.html', source);
+  for (const enableSarinChat of [undefined, false, 'true', 1]) {
+    await build(root, { enableSarinChat });
+    assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="false"/);
+  }
+  await build(root, { enableSarinChat: true });
+  assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="true"/);
+  assert.equal(await readFile(path.join(root, 'index.html'), 'utf8'), source);
+});
+
+test('la habilitación por entorno requiere las dos flags estrictas y mantiene preview y local cerrados', () => {
+  assert.equal(typeof implementation?.sarinChatEnabledFromEnvironment, 'function');
+  const closed = [{}, { SARIN_ENABLED: 'true' }, { SARIN_HISTORY_ENABLED: 'true' },
+    { SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'false' },
+    { SARIN_ENABLED: 'true', SARIN_HISTORY_ENABLED: 'false' },
+    { SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'true' },
+    { SARIN_ENABLED: true, SARIN_HISTORY_ENABLED: true },
+    { SARIN_ENABLED: 'TRUE', SARIN_HISTORY_ENABLED: 'true' },
+    { SARIN_ENABLED: 'true', SARIN_HISTORY_ENABLED: ' true ' }];
+  for (const env of closed) assert.equal(implementation.sarinChatEnabledFromEnvironment(env), false, JSON.stringify(env));
+  assert.equal(implementation.sarinChatEnabledFromEnvironment({ SARIN_ENABLED: 'true', SARIN_HISTORY_ENABLED: 'true' }), true);
+});
+
+test('el CLI real emite el chat habilitado solo con ambas flags y vuelve a cerrarlo para preview', async () => {
+  const root = await fixture();
+  await put(root, 'index.html', '<!DOCTYPE html><button id="sarin-launcher" data-sarin-enabled="false" hidden>Sarin</button>');
+  const cli = path.join(root, '.github/cloudflare/build.mjs');
+  await put(root, '.github/cloudflare/build.mjs', await readFile(new URL('./build.mjs', import.meta.url), 'utf8'));
+  for (const [enabled, history, expected] of [['true', 'true', 'true'], ['false', 'false', 'false'], ['true', 'false', 'false']]) {
+    const child = spawnSync(process.execPath, [cli], { cwd: root, encoding: 'utf8',
+      env: { ...process.env, SARIN_ENABLED: enabled, SARIN_HISTORY_ENABLED: history } });
+    assert.equal(child.status, 0, child.stderr);
+    assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), new RegExp(`data-sarin-enabled="${expected}"`));
+  }
 });
 
 test('cada revisión pública actualiza HTML y el grafo main, chat, API y consentimiento incluso con módulos ya cargados',async()=>{

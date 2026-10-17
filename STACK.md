@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Apertura pública de Sarin · 2026-10-16
+
+La configuración de producción habilita `SARIN_ENABLED` y `SARIN_HISTORY_ENABLED` juntas. El CLI de build solo muestra el widget cuando ambas variables son exactamente `true`; la API `build()` y el lanzador local siguen cerrados por defecto, y preview conserva sus cuatro flags apagadas, sin D1 ni secretos. Se mantiene Access exclusivo del titular para administración y prueba privada. Consentimiento v3 informa y solicita el envío internacional; no se cambian proveedor, esquema ni topes de gasto. [Estado de publicación y reversión](docs/SARIN-OPERACION.md). Las revisiones inferiores registran las fases anteriores.
+
 ### Revisión actual de privacidad, accesibilidad y caché · 2026-10-16
 
 Producción funcional `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`; políticas v2, flags públicas apagadas y administración/prueba privada activas. No cambia el stack, el esquema, Access, los secretos ni el proveedor DeepSeek. El build propaga una revisión común de recursos públicos a HTML, JS/imports y CSS para evitar módulos legales antiguos en caché; no deriva de datos privados ni identifica visitantes. HSTS de 180 días solo host, correo `mailto` excluido puntualmente de ofuscación, beacon bloqueado en prueba privada, pausa y foco accesibles. Chakra OFL oficial y procedencia comprobadas.

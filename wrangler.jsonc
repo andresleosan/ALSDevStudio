@@ -3,8 +3,8 @@
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-10-13",
   "vars": {
-    "SARIN_ENABLED": "false",
-    "SARIN_HISTORY_ENABLED": "false",
+    "SARIN_ENABLED": "true",
+    "SARIN_HISTORY_ENABLED": "true",
     "SARIN_ADMIN_ENABLED": "true",
     "SARIN_PRIVATE_TEST_ENABLED": "true",
     "SARIN_INPUT_PRICE_MICROS": "300000",

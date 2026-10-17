@@ -1,5 +1,11 @@
 # Auditoría de privacidad, accesibilidad y cumplimiento
 
+## Aclaración y apertura posterior de Sarin · 16 de octubre de 2026
+
+Tras esta auditoría, el titular aclaró que esperaba el chat disponible en la portada. La publicación privada anterior no había fallado: mantenía apagados los dos flags públicos. La nueva apertura incorpora consentimiento v3 con autorización expresa de envío internacional, receptor legal y límites de conservación/mejora del proveedor; también añade acceso visible a la administración sin modificar su protección. [Publicación, pruebas y reversión actuales](SARIN-OPERACION.md).
+
+La consulta al proveedor o revisión profesional recomendadas no equivalen a un permiso de lanzamiento obligatorio encontrado en sus términos. Se mantiene el seguimiento jurídico y contractual, sin certificar cumplimiento ni prometer borrado o ausencia de entrenamiento en DeepSeek. Los hallazgos y estados privados descritos debajo corresponden a la revisión anterior a esta apertura.
+
 ## Revisión de Sarin y del sitio · 16 de octubre de 2026, Colombia
 
 Esta sección actualiza el estado; los apartados inferiores conservan su fecha histórica. Revisión iniciada el 17 de octubre UTC, todavía 16 de octubre en Colombia. Alcance: código versionado, cuatro páginas publicadas, cabeceras HTTP, navegación real en Chrome, pruebas locales y fuentes oficiales. No se inspeccionaron correos, WhatsApp, contratos privados ni documentos de clientes. El informe jurídico complementario está en [revisión y fuentes](legal/REVISION-2026-10-17.md).

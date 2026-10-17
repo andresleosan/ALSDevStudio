@@ -242,6 +242,11 @@ async function verifyOwnedOutput(root, output) {
   return true;
 }
 
+/** Pages configura estas dos flags por separado para producción y preview. */
+export function sarinChatEnabledFromEnvironment(env = {}) {
+  return env.SARIN_ENABLED === 'true' && env.SARIN_HISTORY_ENABLED === 'true';
+}
+
 /** Empaqueta recursos públicos; el servidor se compila por separado y no se copia a dist. */
 export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinChat = false } = {}) {
   const root = path.resolve(sourceDir);
@@ -257,8 +262,9 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinCh
     let hashed = await readFile(path.join(root, file.path));
     if (/\.(?:html|xml|css|js|txt)$/.test(file.path) || ['_headers', '_redirects', '_routes.json'].includes(file.path)) {
       let text = transform(file.path, hashed.toString('utf8'));
-      if (file.path === 'index.html' && enableSarinChat === true) {
-        text = text.replace('data-sarin-enabled="false"', 'data-sarin-enabled="true"');
+      if (file.path === 'index.html') {
+        text = text.replace(/(\bdata-sarin-enabled\s*=\s*)(["'])[^"']*\2/gi,
+          (_match, prefix, quote) => `${prefix}${quote}${enableSarinChat === true}${quote}`);
       }
       contents.set(file.path, text);
       hashed = Buffer.from(text);
@@ -291,7 +297,7 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinCh
 
 if (process.argv[1] && samePath(path.resolve(process.argv[1]), fileURLToPath(import.meta.url))) {
   try {
-    const result = await build();
+    const result = await build({ enableSarinChat: sarinChatEnabledFromEnvironment(process.env) });
     console.log(`Build Pages: ${result.files} archivos públicos, ${result.bytes} bytes; revisión ${result.revision}; salida ${result.outputDir}`);
   } catch (error) {
     console.error(`Build Pages rechazado: ${error.message}`);

@@ -194,10 +194,10 @@ test('producción comparte D1 con la purga y los previews quedan aislados y apag
   assert.equal(job.preview_urls, false);
   assert.deepEqual(job.triggers.crons, ['0 * * * *']);
   assert.deepEqual(pages.env.preview.d1_databases, []);
-  assert.equal(pages.vars.SARIN_ADMIN_ENABLED, 'true', 'El candidato publica solo la administración protegida');
+  assert.equal(pages.vars.SARIN_ADMIN_ENABLED, 'true', 'La administración sigue protegida durante la apertura pública');
   assert.equal(pages.vars.SARIN_PRIVATE_TEST_ENABLED, 'true', 'La prueba del titular debe activarse explícitamente en producción');
   for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED']) {
-    assert.equal(pages.vars[key], 'false');
+    assert.equal(pages.vars[key], 'true', 'La apertura pública debe activar chat e historial juntos');
   }
   for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED', 'SARIN_PRIVATE_TEST_ENABLED']) assert.equal(pages.env.preview.vars[key], 'false');
   const local = JSON.parse(await readFile(new URL('../../wrangler.sarin.local.jsonc', import.meta.url), 'utf8'));

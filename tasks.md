@@ -1,5 +1,12 @@
 # Tareas — ALS DevStudio
 
+## SARIN-PUBLICO · Acceso visible y apertura solicitada · 2026-10-16
+
+- [x] Reproducir ausencia del widget: despliegue correcto con flags públicos apagados; prueba privada y panel sí accesibles.
+- [x] Añadir Administración al pie y consentimiento v3 explícito para envío internacional, sin promesas sobre retención o entrenamiento del proveedor.
+- [x] Preparar ambos flags de producción activos, build coherente y previews/local cerrados; conservar Access, cuotas y retención.
+- [ ] Publicar, comprobar widget y autorización públicos, y verificar que el panel continúa protegido.
+
 ## PRIVACIDAD-SARIN · Revisión y demostración solicitadas · 2026-10-16
 
 - [x] Identificar antes de editar actividad, ubicación, público, canales y datos a partir de la web y confirmaciones previas; no repetir preguntas respondidas ni autenticar documentos no inspeccionados.
