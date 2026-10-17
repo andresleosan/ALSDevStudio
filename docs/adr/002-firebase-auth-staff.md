@@ -25,7 +25,7 @@ La API key web identifica el proyecto y no concede permisos administrativos. No 
 
 Antes de retirar la barrera Access, verificar las pruebas y la compilación de Pages, recuperar la app web existente si corresponde, habilitar únicamente el usuario esperado y autorizar el dominio exacto del sitio. No habilitar previews, nuevas cuentas administrativas o una base distinta. Mantener el servicio antiguo hasta que el nuevo backend cerrado esté desplegado.
 
-Si falla la activación, conservar Access como barrera y cerrar `SARIN_ADMIN_ENABLED`/`SARIN_PRIVATE_TEST_ENABLED`. Para volver al acceso anterior, restaurar primero el enrutamiento Access y su política exclusiva, y después publicar mediante un commit nuevo la autenticación anterior y sus dependencias/configuración. No borrar ni restaurar D1 para revertir autenticación. No eliminar los registros históricos ni credenciales de recuperación durante la transición.
+Si falla la activación antes de retirar Access, conservarlo como barrera y cerrar `SARIN_ADMIN_ENABLED`/`SARIN_PRIVATE_TEST_ENABLED`. El titular autorizó después eliminar únicamente la aplicación Access anterior; la política reutilizable se conserva. Para volver, recrear primero esa aplicación y sus seis destinos con la política exclusiva y TOTP, obtener su nuevo AUD y actualizar la configuración privada correspondiente, y después publicar mediante un commit nuevo la autenticación anterior y sus dependencias. El AUD de una aplicación eliminada no sirve para su reemplazo. No borrar ni restaurar D1 para revertir autenticación. Conservar los registros históricos de la transición.
 
 ## Fuentes verificadas
 

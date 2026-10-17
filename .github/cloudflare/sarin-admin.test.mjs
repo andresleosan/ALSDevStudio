@@ -654,3 +654,44 @@ test('authFetch inyectado conserva this indefinido y no pasa por fetch global', 
   assert.equal(calls.filter(url => url === LOOKUP_URL).length, 2);
   assert.deepEqual(store.calls, []); assert.deepEqual(fetched, []);
 }));
+
+test('transporte Firebase admite runtime que rechaza redirect error antes de I/O', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const delegate = googleFetch(), calls = [];
+  const authFetch = async (url, init) => {
+    if (init.redirect === 'error') throw new TypeError('Unsupported redirect mode');
+    assert.equal(init.redirect, 'manual'); calls.push(String(url));
+    return delegate(url, init);
+  };
+  const response = await handleSarinAdmin(request(), env(), { store, authFetch });
+  assert.equal(response.status, 200); assert.deepEqual(calls, [JWKS_URL, LOOKUP_URL]);
+  assert.deepEqual(store.calls, []);
+}));
+
+test('firma Firebase ajena sigue siendo 403 en runtime sin redirect error y no consulta la cuenta', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const otherPair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const delegate = googleFetch(), calls = [];
+  const authFetch = async (url, init) => {
+    if (init.redirect === 'error') throw new TypeError('Unsupported redirect mode');
+    assert.equal(init.redirect, 'manual'); calls.push(String(url)); return delegate(url, init);
+  };
+  const response = await handleSarinAdmin(request(undefined, { token: jwt({}, { key: otherPair.privateKey }) }), env(), { store, authFetch });
+  assert.equal(response.status, 403); assert.deepEqual(calls, [JWKS_URL]);
+  assert.equal(response.headers.has('Set-Cookie'), false); assert.deepEqual(store.calls, []);
+}));
+
+for (const endpoint of ['jwks', 'lookup']) test(`redirección Firebase ${endpoint} se rechaza sin seguir Location ni emitir cookie`, async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const delegate = googleFetch(), calls = [];
+  const authFetch = async (url, init) => {
+    assert.equal(init.redirect, 'manual'); calls.push(String(url));
+    if ((endpoint === 'jwks' && String(url) === JWKS_URL) || (endpoint === 'lookup' && String(url) === LOOKUP_URL)) {
+      return new Response('', { status: 307, headers: { Location: 'https://unapproved.invalid/' } });
+    }
+    return delegate(url, init);
+  };
+  const response = await handleSarinAdmin(request(), env(), { store, authFetch });
+  assert.equal(response.status, 503); assert.deepEqual(calls, endpoint === 'jwks' ? [JWKS_URL] : [JWKS_URL, LOOKUP_URL]);
+  assert.equal(response.headers.has('Set-Cookie'), false); assert.deepEqual(store.calls, []);
+}));

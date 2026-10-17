@@ -66,7 +66,8 @@ async function remoteJson(url, init, fetchImpl, limit) {
   let response;
   try {
     const fetchOptions = { ...init, headers: { Accept: 'application/json', ...init.headers },
-      redirect: 'error', cache: 'no-store', credentials: 'omit', signal: controller.signal };
+      // Workerd admite manual; el estado 200 obligatorio descarta cualquier 3xx.
+      redirect: 'manual', cache: 'no-store', credentials: 'omit', signal: controller.signal };
     // Algunos runtimes exigen el receptor global. Se conserva la función original
     // como clave de caché; las dependencias inyectadas siguen sin receptor.
     response = await (fetchImpl === globalThis.fetch ? globalThis.fetch(url, fetchOptions) : fetchImpl(url, fetchOptions));
