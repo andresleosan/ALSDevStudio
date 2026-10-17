@@ -64,6 +64,136 @@ async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now
   return requests;
 }
 
+test('el acceso agrupa título, estado y Google en un bloque compacto centrado',async t=>{
+  for(const width of [1440,900,320]){
+    const {page,context}=await pageFor({viewport:{width,height:900},reducedMotion:'reduce'},{signedOut:true});t.after(()=>context.close());
+    const requests=await mock(page);await page.locator('#admin-google-login').waitFor();
+    const login=await page.locator('#admin-login').boundingBox();
+    assert.ok(Math.abs(login.x+login.width/2-width/2)<=2,`acceso centrado a ${width}px`);
+    const panel=page.locator('.admin-access'),bounds=await panel.boundingBox();
+    assert.ok(bounds.width<=560 && bounds.width>=Math.min(480,width-32),`ancho compacto a ${width}px`);
+    for(const selector of ['h1','#admin-status','#admin-google-login']){
+      const box=await panel.locator(selector).boundingBox();
+      assert.ok(box.x>=bounds.x && box.x+box.width<=bounds.x+bounds.width && box.y>=bounds.y && box.y+box.height<=bounds.y+bounds.height,`${selector} dentro del acceso`);
+    }
+    assert.equal(await page.locator('#admin-purge').isVisible(),false);
+    assert.equal(requests.length,0,'sin historial antes de autenticar');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await page.screenshot({path:path.join(root,`test-results/sarin-admin/access-centered-${width}.png`),fullPage:true});
+    await context.close();
+  }
+});
+
+test('la bandeja distribuye lista, mensajes y contexto sin adelantar los datos a la lectura',async t=>{
+  for(const width of [1440,1280,900,768,680,320]){
+    const {page,context}=await pageFor({viewport:{width,height:900},reducedMotion:'reduce'});t.after(()=>context.close());
+    const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    const requests=await mock(page);await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+    const timeline=await page.locator('.admin-timeline').boundingBox(),contact=await page.locator('.admin-contact').boundingBox();
+    if(width>=1280)assert.ok(contact.x>=timeline.x+timeline.width,`contexto lateral a ${width}px`);
+    else assert.ok(contact.y>=timeline.y+timeline.height,`mensajes antes del contexto a ${width}px`);
+    const list=await page.locator('.admin-conversations').boundingBox(),transcript=await page.locator('.admin-transcript').boundingBox();
+    if(width>680)assert.ok(transcript.x>=list.x+list.width,`lista izquierda a ${width}px`);
+    else{
+      assert.ok(transcript.y>=list.y+list.height,`pila móvil a ${width}px`);
+      const title=await page.locator('#admin-detail-title').boundingBox();assert.ok(title.y>=0 && title.y<900,'foco del detalle visible tras seleccionar');
+    }
+    assert.equal(await page.locator('#admin-detail-title').evaluate(el=>el===document.activeElement),true);
+    assert.equal(await page.locator('#admin-count').textContent(),'1 cargadas');
+    assert.equal(requests.filter(req=>req.url.pathname.endsWith('/conversations')).length,1,'un listado, sin precargas N+1');
+    assert.equal(requests.filter(req=>req.url.pathname.endsWith('/'+id)).length,1,'un detalle al seleccionar');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    for(const control of await page.locator('button:visible,input:visible,select:visible').all())assert.ok((await control.boundingBox()).height>=44,'controles de al menos 44px');
+    assert.deepEqual(errors,[]);
+    await page.screenshot({path:path.join(root,`test-results/sarin-admin/inbox-layout-${width}.png`),fullPage:true});
+    await context.close();
+  }
+});
+
+test('contexto y transcript largos permiten desplazamiento y acciones por teclado sin alargar el escritorio',async t=>{
+  const {page,context}=await pageFor({viewport:{width:1440,height:900},reducedMotion:'reduce'});t.after(()=>context.close());
+  await mock(page);await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();await page.evaluate(()=>document.fonts.ready);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight),true,'bandeja y pie dentro del escritorio');
+  const aside=page.locator('.admin-context');
+  assert.equal(await aside.getAttribute('tabindex'),'0','contexto desbordado accesible por teclado');
+  assert.equal(await page.locator('.admin-transcript').getAttribute('tabindex'),null,'sin foco extra si todos los mensajes caben');
+  await aside.focus();await page.keyboard.press('End');
+  await page.waitForFunction(()=>{const region=document.querySelector('.admin-context');return region.scrollTop>=region.scrollHeight-region.clientHeight-1;});
+  for(const selector of ['[data-admin-action="review"]','[data-admin-action="block"]','[data-admin-action="delete"]','.admin-consent summary']){
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator(selector).evaluate(el=>el===document.activeElement),true);
+    await page.waitForFunction(value=>{const control=document.querySelector(value).getBoundingClientRect(),pane=document.querySelector('.admin-context').getBoundingClientRect();return control.y>=pane.y && control.bottom<=pane.bottom;},selector);
+    const pane=await aside.boundingBox(),control=await page.locator(selector).boundingBox();
+    assert.ok(control.y>=pane.y && control.y+control.height<=pane.y+pane.height,`${selector}: foco visible dentro del contexto ${JSON.stringify({pane,control})}`);
+  }
+  await page.keyboard.press('Enter');assert.equal(await page.locator('.admin-consent').getAttribute('open'),'');
+  await page.locator('.admin-consent dd').last().scrollIntoViewIfNeeded();
+  const last=await page.locator('.admin-consent dd').last().boundingBox(),pane=await aside.boundingBox();
+  assert.ok(last.y>=pane.y && last.y+last.height<=pane.y+pane.height,'autorización completa alcanzable');
+  await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.fulfill({json:{...detail,turns:16,messages:Array.from({length:32},(_,index)=>({...detail.messages[index%2],id:`synthetic-${index}`,turn:Math.floor(index/2)+1,content:`Mensaje ficticio ${index+1}.\n${'Contenido de prueba. '.repeat(12)}`}))}}));
+  await page.locator('[data-conversation-id]').first().click();
+  await page.waitForFunction(()=>document.querySelectorAll('.admin-message').length===32);
+  const transcript=page.locator('.admin-transcript');assert.equal(await transcript.getAttribute('tabindex'),'0');
+  await transcript.focus();await page.keyboard.press('End');await page.waitForFunction(()=>document.querySelector('.admin-transcript').scrollTop>0);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight),true);
+  await page.screenshot({path:path.join(root,'test-results/sarin-admin/inbox-long-keyboard-1440.png')});
+  await page.setViewportSize({width:900,height:900});
+  await page.waitForFunction(()=>!document.querySelector('.admin-transcript').hasAttribute('tabindex') && !document.querySelector('.admin-context').hasAttribute('tabindex'));
+});
+
+test('una o varias tarjetas conservan altura natural al crecer la ventana de la bandeja',async t=>{
+  for(const amount of [1,3]){
+    const {page,context}=await pageFor({viewport:{width:1440,height:900},reducedMotion:'reduce'});t.after(()=>context.close());
+    await mock(page,{items:Array.from({length:amount},(_,index)=>({...summary,id:`00000000-0000-4000-8000-00000000000${index+1}`}))});
+    const cards=page.locator('[data-conversation-id]');await cards.last().waitFor();await page.evaluate(()=>document.fonts.ready);
+    const before=await cards.evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
+    await page.setViewportSize({width:1440,height:1200});
+    const after=await cards.evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
+    assert.equal(after.length,amount);
+    assert.ok(after.every((height,index)=>Math.abs(height-before[index])<=1),`${amount} tarjetas no se estiran al aumentar la ventana: ${before} → ${after}`);
+    await context.close();
+  }
+});
+
+test('reflujo equivalente a zoom 200% mantiene mensajes, contexto y foco visibles',async t=>{
+  const {page,context}=await pageFor({viewport:{width:720,height:450},deviceScaleFactor:2,reducedMotion:'reduce'});t.after(()=>context.close());
+  await mock(page);await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  const title=await page.locator('#admin-detail-title').boundingBox();
+  assert.ok(title.y>=0 && title.y+title.height<=450,'foco visible al seleccionar en una ventana ampliada');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  assert.equal(await page.locator('.admin-context').getAttribute('tabindex'),null,'contexto usa scroll natural con el ancho reducido');
+  await page.locator('[data-admin-action="delete"]').focus();
+  assert.equal(await page.locator('[data-admin-action="delete"]').evaluate(el=>el===document.activeElement),true);
+  await page.screenshot({path:path.join(root,'test-results/sarin-admin/inbox-reflow-200.png'),fullPage:true});
+});
+
+test('el foco de las conversaciones no queda recortado por su región desplazable',async t=>{
+  const {page,context}=await pageFor({viewport:{width:1440,height:900}});t.after(()=>context.close());await mock(page);
+  const button=page.locator('[data-conversation-id]').first();await button.focus();
+  const bounds=await button.boundingBox(),clip=await page.locator('#admin-list').boundingBox();
+  const outset=await button.evaluate(node=>{const style=getComputedStyle(node);return Math.max(0,parseFloat(style.outlineWidth)+parseFloat(style.outlineOffset));});
+  assert.ok(outset>0,'foco visible');
+  assert.ok(bounds.x-outset>=clip.x && bounds.y-outset>=clip.y && bounds.x+bounds.width+outset<=clip.x+clip.width,'anillo de foco completo dentro de la región');
+});
+
+test('el observador no conserva regiones privadas retiradas al cambiar conversación o salir',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());
+  await page.addInitScript(()=>{
+    const Original=window.ResizeObserver;
+    window.ResizeObserver=class extends Original{
+      constructor(callback){super(callback);this.targets=new Set();window.observedAdminRegions=this.targets;}
+      observe(target,options){super.observe(target,options);this.targets.add(target);}
+      unobserve(target){super.unobserve(target);this.targets.delete(target);}
+      disconnect(){super.disconnect();this.targets.clear();}
+    };
+  });
+  await mock(page);await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  assert.equal(await page.evaluate(()=>[...window.observedAdminRegions].filter(node=>!node.isConnected).length),0);
+  await page.locator('#admin-logout').click();await page.locator('#admin-google-login').waitFor();
+  assert.equal(await page.evaluate(()=>[...window.observedAdminRegions].filter(node=>!node.isConnected).length),0,'ninguna región privada retirada sigue observada al salir');
+});
+
 test('contacto seguro aparece en lista y detalle como declaración no verificada, sin datos heredados inventados',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());await mock(page);
   await page.locator('[data-conversation-id]').first().waitFor();
@@ -92,16 +222,19 @@ test('contacto HTML nunca se interpreta y salir elimina también nombre y correo
   assert.doesNotMatch(await page.locator('#admin-detail').textContent(),/maria\.contacto|María José/);
 });
 
-test('contacto con nombres y correo extensos conserva lectura a 320 px',async t=>{
-  const {page,context}=await pageFor({viewport:{width:320,height:568},reducedMotion:'reduce'});t.after(()=>context.close());
-  const longLead={firstName:'Á'.repeat(80),lastName:'Ñ'.repeat(80),email:`${'l'.repeat(64)}@${'d'.repeat(63)}.${'e'.repeat(63)}.${'f'.repeat(61)}`};
-  await mock(page,{items:[{...summary,lead:longLead}]});
-  await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.fulfill({json:{...detail,lead:longLead}}));
-  await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  assert.equal(await page.locator('.admin-contact-email').textContent(),longLead.email);
-  assert.match(await page.locator('.admin-contact').textContent(),new RegExp(longLead.email.replaceAll('.','\\.')));
-  await page.screenshot({path:path.join(root,'test-results/sarin-admin/contact-long-320.png'),fullPage:true});
+test('contacto con nombres y correo extensos conserva lectura móvil, intermedia y lateral',async t=>{
+  for(const width of [320,900,1440]){
+    const {page,context}=await pageFor({viewport:{width,height:width===320?568:900},reducedMotion:'reduce'});t.after(()=>context.close());
+    const longLead={firstName:'Á'.repeat(80),lastName:'Ñ'.repeat(80),email:`${'l'.repeat(64)}@${'d'.repeat(63)}.${'e'.repeat(63)}.${'f'.repeat(61)}`};
+    await mock(page,{items:[{...summary,lead:longLead}]});
+    await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.fulfill({json:{...detail,lead:longLead}}));
+    await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    assert.equal(await page.locator('.admin-contact-email').textContent(),longLead.email);
+    assert.match(await page.locator('.admin-contact').textContent(),new RegExp(longLead.email.replaceAll('.','\\.')));
+    await page.screenshot({path:path.join(root,`test-results/sarin-admin/contact-long-${width}.png`),fullPage:true});
+    await context.close();
+  }
 });
 
 test('pantalla de Staff sin sesión no consulta historial y permite acceder con Google',async()=>{
@@ -241,6 +374,9 @@ test('espera y error de red permiten reintentar sin mostrar una autenticación f
   await page.goto(`${origin}/control-sarin/`);
   await started;
   assert.match(await page.locator('#admin-status').textContent(),/acceso|cargando|verificando/i);
+  assert.equal(await page.locator('#admin-workspace').isVisible(),false,'el SDK no abre el espacio antes del bootstrap autorizado');
+  assert.equal(await page.locator('#admin-purge').isVisible(),false,'sin estado operativo antes de verificar permisos');
+  assert.equal(await page.locator('#admin-identity').textContent(),'Acceso privado');
   release();await page.waitForFunction(()=>document.querySelector('#admin-retry').hidden===false);
   assert.match(await page.locator('#admin-status').textContent(),/conectar/i);await context.close();
 });

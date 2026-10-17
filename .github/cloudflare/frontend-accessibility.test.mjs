@@ -6,6 +6,9 @@ import path from 'node:path';
 import {chromium} from '../capturas/node_modules/playwright/index.mjs';
 
 const root=path.resolve(import.meta.dirname,'../..');
+// Las capturas de sección omiten sólo las capas fijas que, al coser una sección
+// mayor que el viewport, se dibujarían encima de su contenido a media altura.
+const isolatedSection='.nav-shell,.nav-menu-toggle,.skip-link{visibility:hidden!important}';
 let server,browser,origin;
 before(async()=>{
   server=createServer(async(req,res)=>{
@@ -25,8 +28,100 @@ async function pageFor({setup,...options}={}){
   await page.goto(origin,{waitUntil:'domcontentloaded',timeout:15000});await page.locator('[data-analytics-choice="denied"]').click();return {page,context};
 }
 
+test('la navegación sigue el recorrido proyectos, alcance y proceso en DOM y por teclado',async t=>{
+  for(const width of [320,1280]){
+    const {page,context}=await pageFor({viewport:{width,height:900}});t.after(()=>context.close());
+    assert.deepEqual(await page.locator('main > section[id]').evaluateAll(sections=>sections.map(section=>section.id)),['inicio','proyectos','alcance','proceso','contacto']);
+    const nav=page.locator(width<=680?'#mobile-menu':'.nav-links');
+    assert.deepEqual(await nav.locator('a').evaluateAll(links=>links.slice(0,3).map(link=>link.getAttribute('href'))),['#proyectos','#alcance','#proceso']);
+    if(width<=680){await page.locator('.nav-menu-toggle').focus();await page.keyboard.press('Enter');}
+    await nav.locator('a').first().focus();await page.keyboard.press('Tab');
+    assert.equal(await nav.locator('a[href="#alcance"]').evaluate(link=>link===document.activeElement),true);
+    await page.keyboard.press('Tab');
+    assert.equal(await nav.locator('a[href="#proceso"]').evaluate(link=>link===document.activeElement),true);
+  }
+});
+
+test('la cabecera compacta del portafolio conserva explicación, filtros y Sarin sin burbuja',async t=>{
+  for(const width of [320,390,768,1280,1440]){
+    const {page,context}=await pageFor({viewport:{width,height:900}});t.after(()=>context.close());
+    await page.locator('#proyectos').scrollIntoViewIfNeeded();
+    const heading=await page.locator('#proyectos .section-heading').boundingBox();
+    assert.ok(heading.height<=(width<=680?190:140),`cabecera compacta ${width}px: ${heading.height}`);
+    const copy=page.locator('#sarin-project-copy');
+    assert.ok((await copy.innerText()).includes('Abre cada proyecto'));
+    assert.deepEqual(await copy.evaluate(el=>({border:getComputedStyle(el).borderTopWidth,background:getComputedStyle(el).backgroundColor,tail:getComputedStyle(el,'::before').content})),{border:'0px',background:'rgba(0, 0, 0, 0)',tail:'none'});
+    const scene=page.locator('[data-mascot-scene="projects"]');
+    assert.equal(await scene.locator('[data-mascot-actor]').isVisible(),true);
+    assert.equal(await scene.locator('[data-mascot-part="typing-a"], [data-mascot-part="typing-b"]').count(),2);
+    assert.equal(await scene.evaluate(el=>el.getAnimations({subtree:true}).filter(animation=>animation.playState==='running').length),0);
+    for(const filter of await page.locator('.project-filters button').all()){
+      const box=await filter.boundingBox();assert.ok(box.width>=44 && box.height>=44 && box.x>=0 && box.x+box.width<=width);
+    }
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    for(const image of await page.locator('.project-card:not(.is-hidden) img').all()){
+      await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode());
+    }
+    await page.locator('#proyectos').screenshot({path:path.join(root,`test-results/sarin-remote/landing-proyectos-${width}.png`),animations:'disabled',style:isolatedSection});
+  }
+});
+
+// Caracterización del sistema existente: la cabecera recompuesta no debe impedir
+// su animación breve ni esconder la explicación cuando termina.
+test('Sarin conserva su secuencia de escritura y devuelve el texto estático sin mover el foco',async t=>{
+  const {page,context}=await pageFor({reducedMotion:'no-preference'});t.after(()=>context.close());
+  const filter=page.locator('[data-filter="all"]');await filter.focus();
+  await page.waitForFunction(()=>document.querySelector('[data-mascot-scene="projects"]').dataset.mascotState==='playing');
+  const scene=page.locator('[data-mascot-scene="projects"]');
+  assert.equal(await scene.locator('[data-mascot-part="typing-a"], [data-mascot-part="typing-b"]').evaluateAll(frames=>frames.every(frame=>frame.getAnimations().some(animation=>animation.playState==='running'))),true);
+  assert.equal(await filter.evaluate(el=>el===document.activeElement),true);
+  await page.waitForFunction(()=>document.querySelector('[data-mascot-scene="projects"]').dataset.mascotState==='finished',null,{timeout:5000});
+  assert.equal(await page.locator('#sarin-project-copy [data-mascot-copy-full]').evaluate(el=>getComputedStyle(el).opacity),'1');
+  assert.equal(await page.locator('#sarin-project-copy [data-mascot-copy-typed]').isVisible(),false);
+  assert.equal(await filter.evaluate(el=>el===document.activeElement),true);
+});
+
+test('contacto tiene un título visible común y conserva selector, WhatsApp y correo en orden',async t=>{
+  for(const width of [320,390,768,1280,1440]){
+    const {page,context}=await pageFor({viewport:{width,height:900}});t.after(()=>context.close());
+    const section=page.locator('#contacto');const title=section.locator('h2');
+    assert.equal(await title.count(),1);assert.equal(await title.innerText(),'Cuéntame qué necesitas construir');
+    assert.equal(await title.isVisible(),true);
+    const titleBox=await title.boundingBox();const selectorBox=await section.locator('.playground-options').boundingBox();
+    const whatsappBox=await page.locator('#whatsapp-link').boundingBox();const emailBox=await section.locator('.contact-email-link').boundingBox();
+    assert.ok(titleBox.height>25 && titleBox.y+titleBox.height<=selectorBox.y);
+    assert.ok(titleBox.y+titleBox.height<=emailBox.y);
+    assert.ok(selectorBox.y+selectorBox.height<=whatsappBox.y);
+    if(width<=900)assert.ok(whatsappBox.y+whatsappBox.height<=emailBox.y,`orden móvil ${width}px`);
+    else assert.ok(titleBox.width>selectorBox.width+200,'título común a ambas columnas');
+    const option=section.locator('[data-result="Tienda virtual"]');await option.focus();await page.keyboard.press('Enter');
+    assert.equal(await option.getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#contact-result').innerText(),'Tienda virtual');
+    assert.match(await page.locator('#whatsapp-link').getAttribute('href'),/tienda%20virtual/);
+    assert.equal(await option.evaluate(el=>el===document.activeElement),true);
+    assert.notEqual(await option.evaluate(el=>getComputedStyle(el).outlineStyle),'none');
+    assert.equal(await section.locator('.contact-privacy a').getAttribute('href'),'privacidad.html');
+    assert.equal(await section.locator('.contact-email-link').getAttribute('href'),'mailto:alsdevstudio@alsdevstudio.com');
+    for(const control of await section.locator('.playground-option,#whatsapp-link,.contact-email-link').all()){
+      const box=await control.boundingBox();assert.ok(box.width>=44 && box.height>=44 && box.x>=0 && box.x+box.width<=width);
+    }
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await section.screenshot({path:path.join(root,`test-results/sarin-remote/landing-contacto-${width}.png`),animations:'disabled',style:isolatedSection});
+  }
+});
+
+test('sin JavaScript la jerarquía de contacto y los veinte proyectos siguen disponibles',async t=>{
+  const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:320,height:900}});t.after(()=>context.close());
+  const page=await context.newPage();await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+  await page.goto(origin,{waitUntil:'domcontentloaded',timeout:15000});
+  const title=page.locator('#contacto h2');assert.equal(await title.innerText(),'Cuéntame qué necesitas construir');
+  assert.ok((await title.boundingBox()).height>25);
+  assert.equal(await page.locator('#whatsapp-link').isVisible(),true);assert.equal(await page.locator('#contacto a[href^="mailto:"]').isVisible(),true);
+  assert.equal(await page.locator('.project-card:visible').count(),20);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+});
+
 test('etiquetas visibles del portafolio y paginación coinciden con sus nombres accesibles',async t=>{
-  for(const width of [320,640,1280]){
+  for(const width of [320,390,768,1280,1440]){
     const {page,context}=await pageFor({viewport:{width,height:900}});t.after(()=>context.close());
     await page.addScriptTag({path:path.join(root,'test-results/axe.min.js')});
     const violations=await page.evaluate(async()=>(await axe.run()).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})));

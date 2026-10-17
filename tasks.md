@@ -1,5 +1,14 @@
 # Tareas — ALS DevStudio
 
+## MOBBIN-ADAPTACION · Acceso, bandeja y landing · 2026-10-17
+
+- [x] El titular retoma y aprueba aplicar la dirección propuesta: acceso compacto, administración tipo bandeja y mejoras puntuales de landing. Sistema visual y referencias anotados en `STACK.md`; sin nuevos servicios, datos o permisos.
+- [x] Implementar con pruebas previas los estados de acceso y bandeja, preservando autorización, borrado del DOM al salir y texto seguro. Staff 25/25; RED de geometría y defectos reproducidos antes de corregir tarjetas estiradas/comprimidas, foco recortado y observador que retenía regiones retiradas. Revisión independiente final Staff + landing 38/38, sin P1/P2 pendientes.
+- [x] Adelantar proyectos al mapa, compactar encabezados y unificar contacto; conservar Sarin, 20 proyectos, orden publicado, carrusel, filtros y avisos. Cuatro pruebas RED previas; verificación independiente de 13/13 pruebas frontend, cinco anchos, teclado, axe, movimiento reducido y sin JavaScript.
+- [x] Verificar móvil/escritorio, teclado, axe, sin JS, límites de autenticación y regresiones; capturas revisadas en escritorio y móvil. Corridas raíz: 408/408 regresiones de servidor/escenas/build/normalizador/respaldo sintético; 46/46 analítica/chat público/lanzador local; 13/13 frontend; 25/25 Staff; 6/6 Pages local. Total 498 pruebas distintas. TSC estricto del módulo administrativo, Functions y build aprobados; auditoría npm de producción sin vulnerabilidades. Base de recuperación: `d6e9460`.
+- [ ] Publicar la adaptación aprobada desde `main` y contrastar artefacto/recursos/rutas privadas y presentación en producción, sin crear chats ni consultar datos reales. No hay cambios de Firebase, API, D1, avisos ni orden del portafolio.
+- Reversión prevista: restaurar mediante un commit nuevo únicamente `index.html`, `styles/main.css`, `control-sarin/index.html`, `styles/sarin-admin.css` y `scripts/modules/sarin-admin.js` desde `d6e9460`, con sus pruebas de presentación. No revertir Firebase, el servidor, D1, datos de contacto, avisos legales ni el orden del portafolio; no hay migración de producción en esta adaptación.
+
 ## ORDEN-PORTAFOLIO · Sarin cuarto y Dialon en lugar de Coco · 2026-10-17
 
 - [x] Intercambiar Sarin Bot/Hampton Estates (puestos 4/19) y Dialon/The Coco Club (7/17), tanto en galería como en carrusel. Conservar los otros 16 puestos, enlaces, imágenes, textos y los 20 proyectos; ajustar IDs y etiquetas de las cuatro diapositivas.

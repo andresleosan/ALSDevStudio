@@ -1,5 +1,15 @@
 # Stack — ALS DevStudio
 
+### Adaptación de referencias Mobbin · 2026-10-17 · verificada, pendiente de publicación
+
+Dirección aprobada al retomar la propuesta acotada: acceso centrado, bandeja administrativa de lista/mensajes/contexto y landing con proyectos antes del mapa, encabezados compactos y un único título de contacto. Referencias estructurales, no copias de contenido: [Gumloop, acceso](https://mobbin.com/screens/4dd9332d-aa55-4cce-a84e-c968ef13f263), [Intercom, bandeja](https://mobbin.com/screens/51e34cc2-3be7-4d97-8cf0-e487b14656a5) y [Cloudstudio, trabajos](https://mobbin.com/sites/sections/48890788-7d16-4887-baaa-5b22583ef055).
+
+- Paleta existente: navy profundo `#041224` como fondo operacional, panel `#0d2746` para jerarquía, menta `#65d49d` para acción/selección, blanco `#f5f8fb` para texto, gris azulado `#b0c1d3` para apoyo y azul claro `#91c2ff` para enlaces legibles. Se conserva el vocabulario visual de ALS, sin tema ni proveedor nuevos.
+- Tipografía: Chakra Petch en títulos y marca, DM Sans en lectura/formularios, IBM Plex Mono sólo en referencias y datos. Jerarquía compacta para dar prioridad a personas y mensajes, no a UUID o encabezados grandes.
+- Composición: acceso de 480–560 px centrado; escritorio administrativo con lista compacta, conversación flexible y contexto lateral; dos/una columna al reducir el ancho, sin texto o datos ocultos por falta de espacio. Controles de 44 px, foco visible y movimiento reducido.
+- Firma: Sarin y las capturas reales existentes. Evitar menús/estadísticas de relleno, métricas globales inferidas de una página parcial, bloques bento ornamentales y cambios de autenticación/API. Mantener 20 proyectos, Sarin cuarto y Dialon séptimo.
+- Implementación vanilla sin dependencias nuevas ni cambios de API, autenticación o datos. Escritorio con regiones desplazables accesibles y tarjetas de altura intrínseca; tablet/móvil con lectura natural. Revisión independiente sin P1/P2 pendientes; corregidos estiramiento/compresión de tarjetas, foco recortado y desconexión de observadores al retirar contexto privado. Recuperación visual desde `d6e9460`, sin reversión de Firebase ni D1.
+
 ### Datos de contacto de Sarin · 2026-10-17 · publicado
 
 Nombre, apellido y correo obligatorios antes de crear nuevas sesiones; datos declarados visibles sólo en Staff, sin verificación de correo y sin añadirlos automáticamente a IA/analítica/resumen. Validador compartido vanilla, tabla D1 1:1 `sarin_leads` con FK/cascada, batch atómico y capacidad UTF-8; retención de la conversación 30 días/24 horas vacía. Históricos `lead:null`, sin backfill; Firebase/Google y cuotas monetarias no cambian. Aviso v6, privacidad v5, términos v4. Sin dependencias ni proveedor nuevo; 429 regresiones, 40 UI, 6 Pages locales y 6 del respaldo aprobadas. Backup privado verificado y `0003` aplicada sin alterar conteos. Código `9011bd8` / Pages `ea44f40a` publicado por autorización expresa; revisión LF `4206991de17e8ec8`. Producción: Pages 5 PASS/1 omitida para no crear sesiones, auditoría HTTP 23/23 y UI cinco anchos 5/5. [Verificaciones, estado y reversión](docs/SARIN-CONTACTO.md).

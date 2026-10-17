@@ -47,12 +47,22 @@ function initSarinAdmin(){
   /** @type {AbortController|null} */let bootstrapController=null;
   /** @param {string} message @param {boolean} [error] */
   const announce=(message,error=false)=>{status.textContent=message;status.toggleAttribute('data-error',error);};
-  const clearDetail=()=>{detail.replaceChildren(element('p','Elige una conversación para ver sus mensajes.','admin-note'));selected='';};
+  const updateScrollRegions=()=>{
+    detail.querySelectorAll('.admin-transcript,.admin-context').forEach(region=>{
+      if(!(region instanceof HTMLElement))return;
+      const scrollable=matchMedia('(min-width:1280px)').matches && region.scrollHeight>region.clientHeight+1;
+      region.toggleAttribute('data-scrollable',scrollable);
+      if(scrollable)region.tabIndex=0;else region.removeAttribute('tabindex');
+    });
+  };
+  const scrollObserver=typeof ResizeObserver==='function'?new ResizeObserver(updateScrollRegions):null;
+  window.addEventListener('resize',updateScrollRegions);
+  const clearDetail=()=>{scrollObserver?.disconnect();detail.replaceChildren(element('p','Elige una conversación para ver sus mensajes.','admin-note'));selected='';};
   const clearWorkspace=()=>{
     csrf='';cursor='';operationGeneration++;bootstrapGeneration++;listGeneration++;detailGeneration++;
     listController?.abort();detailController?.abort();mutationController?.abort();bootstrapController?.abort();
     listPending=false;detailPending=false;mutationPending=false;deleteTrigger=null;deleteId='';
-    list.replaceChildren();clearDetail();workspace.hidden=true;confirm.close();more.hidden=true;more.disabled=false;
+    list.replaceChildren();clearDetail();workspace.hidden=true;document.body.dataset.adminState='access';confirm.close();more.hidden=true;more.disabled=false;
     list.setAttribute('aria-busy','false');detail.setAttribute('aria-busy','false');
     find('#admin-count').textContent='';find('#admin-delete-reference').textContent='';
     find('#admin-purge').textContent='Comprobando la limpieza automática…';
@@ -155,9 +165,12 @@ function initSarinAdmin(){
   /** @param {Record<string,any>} value */
   function renderDetail(value){
     const usage=record(value.usage),consent=record(value.consent);
-    detail.replaceChildren();
+    scrollObserver?.disconnect();detail.replaceChildren();
+    const transcript=element('div','','admin-transcript'),context=element('aside','','admin-context');
+    transcript.setAttribute('role','region');transcript.setAttribute('aria-labelledby','admin-detail-title');
+    context.setAttribute('aria-label','Contexto de la conversación');detail.append(transcript,context);
     const title=element('h2',service(value.service,'Conversación con Sarin'));title.id='admin-detail-title';title.tabIndex=-1;
-    detail.append(title,element('p',`Referencia: ${value.id}`,'admin-reference'));
+    transcript.append(title);
     const contact=validateSarinLead(value.lead),contactSection=element('section','','admin-contact');
     contactSection.append(element('h3','Datos de contacto'));
     if(contact.ok){
@@ -165,11 +178,13 @@ function initSarinAdmin(){
       definition('Nombre',contact.lead.firstName,contactList);definition('Apellido',contact.lead.lastName,contactList);definition('Correo no verificado',contact.lead.email,contactList);
       contactSection.append(contactList,element('p','Datos declarados por el visitante; no acreditan su identidad.','admin-note'));
     }else contactSection.append(element('p','Sin datos de contacto','admin-note'));
-    detail.append(contactSection);
+    context.append(contactSection);
+    const information=element('section','','admin-information');information.append(element('h3','Información de la conversación'),element('p',`Referencia: ${value.id}`,'admin-reference'));
     const meta=element('dl','','admin-detail-meta');
     for(const [label,valueText] of [['Estado',state(value.status)],['Turnos',String(count(value.turns))],['Inicio',date(value.createdAt)],['Última actividad',date(value.updatedAt)],['Vence',date(value.expiresAt)],['Revisión',value.reviewedAt?date(value.reviewedAt):'Sin revisar']])definition(label,valueText,meta);
     if(value.blockedUntil && value.blockedUntil>Date.now())definition('Bloqueada hasta',date(value.blockedUntil),meta);
-    detail.append(meta);
+    information.append(meta);context.append(information);
+    const actionSection=element('section','','admin-action-section');actionSection.append(element('h3','Acciones'));
     const actions=element('div','','admin-actions');
     const blocked=value.blockedUntil>Date.now();
     for(const [action,label] of [['review',value.reviewedAt?'Revisada':'Marcar revisión'],[blocked?'unblock':'block',blocked?'Desbloquear sesión':'Bloquear 24 horas'],['delete','Eliminar conversación']]){
@@ -178,12 +193,12 @@ function initSarinAdmin(){
         if(action==='delete'){deleteTrigger=button;deleteId=selected;find('#admin-delete-reference').textContent=deleteId;confirm.showModal();}
         else void mutate(selected,action);
       });actions.append(button);
-    }detail.append(actions);
+    }actionSection.append(actions);context.append(actionSection);
     const usageSection=element('section','','admin-usage'),usageTitle=element('h3','Consumo registrado'),usageList=element('dl');
     definition('Uso verificado',money(usage.verifiedMicros),usageList);definition('Reservas retenidas',money(usage.retainedMicros),usageList);definition('Total reservado',money(usage.reservedMicros),usageList);
-    usageSection.append(usageTitle,usageList,element('p','Las reservas retenidas reflejan incertidumbre. Estos contadores no equivalen a una factura del proveedor.','admin-note'));detail.append(usageSection);
-    const signals=element('div','','admin-signals');signals.append(element('p',`${count(value.outOfScopeCount)} consultas fuera de alcance · ${count(value.errorCount)} errores.`),element('p','Son señales para revisar el contexto; una consulta aislada no demuestra abuso.'));detail.append(signals);
-    detail.append(element('h3','Mensajes y eventos','admin-timeline-title'));
+    usageSection.append(usageTitle,usageList,element('p','Las reservas retenidas reflejan incertidumbre. Estos contadores no equivalen a una factura del proveedor.','admin-note'));context.append(usageSection);
+    const signals=element('div','','admin-signals');signals.append(element('p',`${count(value.outOfScopeCount)} consultas fuera de alcance · ${count(value.errorCount)} errores.`),element('p','Son señales para revisar el contexto; una consulta aislada no demuestra abuso.'));context.append(signals);
+    transcript.append(element('h3','Mensajes y eventos','admin-timeline-title'));
     const timeline=element('ol','','admin-timeline');
     const messages=/** @type {unknown[]} */(value.messages),events=/** @type {unknown[]} */(value.events);
     /** @type {Array<Record<string,any>&{event:boolean,index:number}>} */
@@ -198,19 +213,20 @@ function initSarinAdmin(){
       }timeline.append(item);
     }
     if(!entries.length)timeline.append(element('li','Esta sesión todavía no tiene mensajes ni eventos.','admin-note'));
-    detail.append(timeline,element('p','El historial se conserva 30 días desde el primer mensaje aceptado. Una respuesta emitida no acredita que el visitante la haya leído.','admin-note'));
+    transcript.append(timeline,element('p','El historial se conserva 30 días desde el primer mensaje aceptado. Una respuesta emitida no acredita que el visitante la haya leído.','admin-note'));
     const consentSection=element('details','','admin-consent');consentSection.append(element('summary','Autorización registrada'));
     const consentList=element('dl');
     definition('Fecha de aceptación',date(consent.acceptedAt),consentList);
     definition('Aviso',text(consent.noticeVersion)||'Sin registro',consentList);definition('Privacidad',text(consent.privacyVersion)||'Sin registro',consentList);definition('Términos',text(consent.termsVersion)||'Sin registro',consentList);
-    definition('Manifestación',consent.method==='checkbox_and_start'?'Casilla y acción de iniciar':'Sin registro',consentList);consentSection.append(consentList);detail.append(consentSection);
+    definition('Manifestación',consent.method==='checkbox_and_start'?'Casilla y acción de iniciar':'Sin registro',consentList);consentSection.append(consentList);context.append(consentSection);
+    consentSection.addEventListener('toggle',updateScrollRegions);scrollObserver?.observe(transcript);scrollObserver?.observe(context);updateScrollRegions();
     title.focus({preventScroll:true});if(matchMedia('(max-width:680px)').matches)detail.scrollIntoView({block:'start',behavior:'instant'});
   }
   /** @param {string} id */
   async function loadDetail(id){
     if(!csrf || !uuid.test(id) || mutationPending)return;
     const current=++detailGeneration;detailController?.abort();detailController=new AbortController();
-    selected=id;detailPending=true;detail.setAttribute('aria-busy','true');detail.replaceChildren(element('p','Cargando conversación…','admin-note'));
+    selected=id;detailPending=true;scrollObserver?.disconnect();detail.setAttribute('aria-busy','true');detail.replaceChildren(element('p','Cargando conversación…','admin-note'));
     list.querySelectorAll('[data-conversation-id]').forEach(button=>button.setAttribute('aria-pressed',String(/** @type {HTMLElement} */(button).dataset.conversationId===id)));
     try{
       const value=await request(`conversations/${encodeURIComponent(id)}`,{signal:detailController.signal});
@@ -245,11 +261,11 @@ function initSarinAdmin(){
   find('[data-admin-confirm-delete]').addEventListener('click',()=>{const id=deleteId;confirm.close();void mutate(id,'delete');});
   async function bootstrap(){
     const current=++bootstrapGeneration;bootstrapController?.abort();bootstrapController=new AbortController();
-    retry.hidden=true;workspace.hidden=true;find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
+    retry.hidden=true;workspace.hidden=true;document.body.dataset.adminState='access';find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
     try{
       const value=await request('bootstrap',{signal:bootstrapController.signal});if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
-      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;clearDetail();await loadList();
+      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';clearDetail();await loadList();
     }catch(error){if(current===bootstrapGeneration && record(error).name!=='AbortError'){fail(error);login.hidden=false;retry.hidden=([401,403].includes(Number(record(error).status)));}}
   }
   loginButton.addEventListener('click',()=>{clearWorkspace();retry.hidden=true;void authentication.login().then(()=>bootstrap()).catch(()=>{});});
