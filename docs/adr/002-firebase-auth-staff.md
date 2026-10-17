@@ -1,6 +1,6 @@
 # ADR-002: Firebase Authentication para Staff
 
-Fecha: 17 de octubre de 2026. Estado: implementación solicitada; activación remota pendiente de verificación.
+Fecha: 17 de octubre de 2026. Estado: publicada por autorización del titular; verificación final de su inicio de sesión pendiente.
 
 ## Contexto y decisión
 
@@ -23,7 +23,7 @@ La API key web identifica el proyecto y no concede permisos administrativos. No 
 
 ## Transición y recuperación
 
-Antes de retirar la barrera Access, verificar las pruebas y la compilación de Pages, recuperar la app web existente si corresponde, habilitar únicamente el usuario esperado y autorizar el dominio exacto del sitio. No habilitar previews, nuevas cuentas administrativas o una base distinta. Mantener el servicio antiguo hasta que el nuevo backend cerrado esté desplegado.
+Secuencia aplicada: pruebas y compilación de Pages, recuperación de la app web existente, rehabilitación sólo del usuario esperado, autorización del dominio exacto y despliegue del backend cerrado antes de retirar Access. No se habilitaron previews, nuevas cuentas administrativas o una base distinta. La verificación con el motor Workerd detectó después una incompatibilidad de transporte y se publicó su corrección; ver registro de operación.
 
 Si falla la activación antes de retirar Access, conservarlo como barrera y cerrar `SARIN_ADMIN_ENABLED`/`SARIN_PRIVATE_TEST_ENABLED`. El titular autorizó después eliminar únicamente la aplicación Access anterior; la política reutilizable se conserva. Para volver, recrear primero esa aplicación y sus seis destinos con la política exclusiva y TOTP, obtener su nuevo AUD y actualizar la configuración privada correspondiente, y después publicar mediante un commit nuevo la autenticación anterior y sus dependencias. El AUD de una aplicación eliminada no sirve para su reemplazo. No borrar ni restaurar D1 para revertir autenticación. Conservar los registros históricos de la transición.
 

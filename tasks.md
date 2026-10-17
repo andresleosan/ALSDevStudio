@@ -3,10 +3,11 @@
 ## SARIN-FIREBASE-AUTH · Regreso a Google con Firebase · 2026-10-17
 
 - [x] Confirmar alcance: sólo autenticación de Staff; conservar D1 e historial, sin restaurar el panel Firebase retirado.
-- [x] Sustituir Access en código y retirar plugin obsoleto. Candidato: 111 pruebas administrativas, incluida rotación de claves, 15 UI (login/salida/renovación/carreras, cinco anchos y axe), 6 Pages locales y regresiones aprobadas; Functions y tipos estrictos del panel compilan. Auditoría npm sin vulnerabilidades, revisiones independientes sin P1/P2 abiertos.
-- [ ] Configurar la app/usuario/dominio existentes y activar tras verificación del candidato; comprobar acceso real y rechazo anónimo.
+- [x] Sustituir Access en código y retirar plugin obsoleto. Verificación final: 117 pruebas administrativas, incluida rotación de claves y compatibilidad Workerd, 15 UI (login/salida/renovación/carreras, cinco anchos y axe), 6 Pages locales y regresiones aprobadas; Functions y tipos estrictos del panel compilan. Auditoría npm sin vulnerabilidades. Backend completo en Workerd con identidad sintética válido 200 / firma ajena 403, sin D1 ni IA.
+- [x] Configurar app/usuario/dominio existentes y publicar Firebase; retirar sólo la aplicación Access autorizada. Revisión remota 30/30 y probe final de firma ajena/consentimiento anterior 403 sin cookie; datos administrativos anónimos 403.
+- [ ] Confirmar inicio de sesión real del titular tras corregir el error de transporte reportado; flujo Google abierto y nueva prueba solicitada.
 - [x] Autorización expresa de producción recibida: rehabilitar el único usuario, autorizar el dominio y sustituir Access, informando que no se conserva su TOTP. App web existente restaurada, usuario habilitado y `www.alsdevstudio.com` autorizado; Hosting antiguo sigue retirado, sin cambios de D1 ni facturación.
-- [ ] Registrar despliegue, limpieza final y reversión. El TOTP de Access no se traslada a Firebase.
+- [x] Registrar despliegues, limpieza de dependencia y reversión. El TOTP de Access no se traslada a Firebase. Conservar la evidencia de acceso real pendiente.
 
 ## SARIN-AVISO-ACCESO · Aviso breve y entrada con Google · 2026-10-17
 

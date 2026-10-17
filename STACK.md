@@ -1,8 +1,8 @@
 # Stack — ALS DevStudio
 
-### Firebase Authentication para Staff · 2026-10-17 · candidato
+### Firebase Authentication para Staff · 2026-10-17 · publicado
 
-Por nueva solicitud del titular, el candidato sustituye Cloudflare Access por Firebase Authentication con Google únicamente en la administración. SDK modular aislado de la portada, firma/claims y UID/correo exclusivo comprobados por el servidor, estado actual de usuario consultado por petición, cookie HttpOnly/Strict y límite de seis horas desde autenticación. D1, retención, cuotas y APIs del chat no se migran. No se restaura el antiguo sistema Firebase ni su facturación. La verificación TOTP de Access deja de formar parte del nuevo flujo: los desafíos de Google dependen de su cuenta. [Decisión, controles y reversión](docs/adr/002-firebase-auth-staff.md). Activación remota pendiente; las secciones inferiores son registros históricos.
+Por nueva solicitud y autorización de producción del titular, Firebase Authentication con Google sustituye Access únicamente en la administración. Publicación inicial `5247000`; corrección de transporte `de87219`. SDK modular aislado de la portada, firma/claims y UID/correo exclusivo comprobados por el servidor, estado actual del usuario consultado por petición, cookie HttpOnly/Strict y límite de seis horas desde autenticación. App web existente recuperada, usuario rehabilitado y dominio `www` autorizado; aplicación Access de Sarin eliminada tras confirmación, otras dos y política reutilizable conservadas. D1, retención, cuotas y APIs del chat no se migran. No se restaura el antiguo sistema Firebase ni su facturación. La verificación TOTP de Access deja de formar parte del nuevo flujo: los desafíos de Google dependen de su cuenta. [Estado, comprobaciones y acceso real pendiente](docs/SARIN-OPERACION.md), [decisión y reversión](docs/adr/002-firebase-auth-staff.md). Las secciones inferiores son registros históricos.
 
 ### Apertura pública de Sarin · 2026-10-16
 
