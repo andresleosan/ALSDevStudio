@@ -94,6 +94,47 @@ test('pageshow restaura la preferencia borrada al salir sin anular movimiento re
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('als:hero-autoplay-paused:v1')),null);
 });
 
+test('Sarin aparece cuarto y Dialon séptimo al paginar sin perder los otros proyectos',async t=>{
+  const expected=['laparada','tecnifullgas','bpt-jersey','sarinbotsaas','multiogar','siliconesolutions','dialon','mundocelular','hachi-greciaspa','pintumaster','coctelsops','ledgerharbour','field-hours','jobsitejedi','mercadointeligente','donacionesvenezuela','thecococlub','vigia','hampton-estates','semancontrol'];
+  for(const width of [320,1440]){
+    const {page,context}=await pageFor({viewport:{width,height:900}});t.after(()=>context.close());
+    await page.locator('.pagination-number').first().waitFor();
+    assert.deepEqual(await page.locator('.project-card').evaluateAll(cards=>cards.map(card=>card.dataset.projectKey)),expected);
+    assert.deepEqual(await page.locator('.project-card:not(.is-hidden)').evaluateAll(cards=>cards.map(card=>card.dataset.projectKey)),['laparada','tecnifullgas','bpt-jersey','sarinbotsaas']);
+    assert.equal(await page.locator('.pagination-number').count(),5);
+    // Recorrer las tarjetas carga sus imágenes lazy antes de la captura completa.
+    for(const image of await page.locator('.project-card:not(.is-hidden) img').all()){
+      await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode());
+    }
+    await page.locator('#proyectos').screenshot({path:path.join(root,`test-results/sarin-remote/orden-proyectos-pagina1-${width}.png`),animations:'disabled'});
+    await page.locator('.pagination-next').click();
+    assert.deepEqual(await page.locator('.project-card:not(.is-hidden)').evaluateAll(cards=>cards.map(card=>card.dataset.projectKey)),['multiogar','siliconesolutions','dialon','mundocelular']);
+    assert.equal(await page.locator('[data-project-key="thecococlub"].project-card').getAttribute('href'),'https://thecococlub.vercel.app');
+    assert.equal(await page.locator('[data-project-key="hampton-estates"].project-card').getAttribute('href'),'https://hamptonestatesjersey.pages.dev/');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    for(const image of await page.locator('.project-card:not(.is-hidden) img').all()){
+      await image.scrollIntoViewIfNeeded();await image.evaluate(img=>img.decode());
+    }
+    await page.locator('#proyectos').screenshot({path:path.join(root,`test-results/sarin-remote/orden-proyectos-pagina2-${width}.png`),animations:'disabled'});
+  }
+});
+
+test('el carrusel conserva número, imagen y enlace de Sarin cuarto y Dialon séptimo',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());
+  for(let step=0;step<3;step++)await page.locator('[data-hero-step="1"]').click();
+  assert.equal(await page.locator('.hero-slide.is-active').getAttribute('data-project-key'),'sarinbotsaas');
+  assert.equal(await page.locator('#hero-slide-current').innerText(),'04');
+  assert.equal(await page.locator('#hero-project-link').getAttribute('href'),'https://sarinbotsaas.pages.dev/');
+  assert.match(await page.locator('.hero-slide.is-active img').getAttribute('src'),/sarinbotsaas\.jpg/);
+  for(let step=0;step<3;step++)await page.locator('[data-hero-step="1"]').click();
+  assert.equal(await page.locator('.hero-slide.is-active').getAttribute('data-project-key'),'dialon');
+  assert.equal(await page.locator('#hero-slide-current').innerText(),'07');
+  assert.equal(await page.locator('#hero-project-link').getAttribute('href'),'https://dialon.pages.dev/');
+  assert.match(await page.locator('.hero-slide.is-active img').getAttribute('src'),/dialon\.jpg/);
+  const ids=await page.locator('.hero-slide').evaluateAll(slides=>slides.map(slide=>slide.id));
+  assert.deepEqual(ids,Array.from({length:20},(_,index)=>`hero-slide-${index+1}`));
+});
+
 test('correo de contacto y derechos sigue disponible sin JavaScript con exclusión explícita de ofuscación',async t=>{
   const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:320,height:900}});t.after(()=>context.close());
   const page=await context.newPage();let protectedLinks=0;
