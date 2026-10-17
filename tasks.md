@@ -7,7 +7,7 @@
 - [x] Verificar UI/sesiones 39/39 y build/sesiones/administración 107/107. Cinco anchos 320–1440 px, teclado, objetivos de 44 px, axe sin hallazgos y contacto sin JavaScript. Revisión independiente sin P1/P2; capturas locales en `test-results/sarin/empty-390.png` y `empty-1440.png`.
 - [x] Identificar causa de Firebase inhabilitado: retirada expresa del panel anterior el 15/10; usuario deshabilitado, sesiones revocadas y claim retirado. Consola actual confirma Google habilitado, usuario inhabilitado y plan Spark. Sarin usa un panel distinto con Access.
 - [ ] Conectar Google al Access existente, opción elegida por el titular; conservar el correo exclusivo, sesión de seis horas y TOTP. Verificar cliente OAuth, aplicación/política y acceso real antes de darlo por operativo.
-- [ ] Publicar el cambio revisado y comprobar el aviso v4 y el acceso en el dominio canónico.
+- [x] Publicar el cambio revisado en `f76d3db` / Pages `5560c540` y comprobar aviso v4, acceso visible y cierre privado: 12/12 comprobaciones HTTP, build remoto correcto y Chrome con recarga normal. Google conserva el paso de secreto pendiente del titular.
 
 ## SARIN-PUBLICO · Acceso visible y apertura solicitada · 2026-10-16
 
