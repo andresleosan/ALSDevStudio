@@ -1,6 +1,6 @@
 # Stack — ALS DevStudio
 
-### Adaptación de referencias Mobbin · 2026-10-17 · verificada, pendiente de publicación
+### Adaptación de referencias Mobbin · 2026-10-17 · publicado
 
 Dirección aprobada al retomar la propuesta acotada: acceso centrado, bandeja administrativa de lista/mensajes/contexto y landing con proyectos antes del mapa, encabezados compactos y un único título de contacto. Referencias estructurales, no copias de contenido: [Gumloop, acceso](https://mobbin.com/screens/4dd9332d-aa55-4cce-a84e-c968ef13f263), [Intercom, bandeja](https://mobbin.com/screens/51e34cc2-3be7-4d97-8cf0-e487b14656a5) y [Cloudstudio, trabajos](https://mobbin.com/sites/sections/48890788-7d16-4887-baaa-5b22583ef055).
 
@@ -9,6 +9,9 @@ Dirección aprobada al retomar la propuesta acotada: acceso centrado, bandeja ad
 - Composición: acceso de 480–560 px centrado; escritorio administrativo con lista compacta, conversación flexible y contexto lateral; dos/una columna al reducir el ancho, sin texto o datos ocultos por falta de espacio. Controles de 44 px, foco visible y movimiento reducido.
 - Firma: Sarin y las capturas reales existentes. Evitar menús/estadísticas de relleno, métricas globales inferidas de una página parcial, bloques bento ornamentales y cambios de autenticación/API. Mantener 20 proyectos, Sarin cuarto y Dialon séptimo.
 - Implementación vanilla sin dependencias nuevas ni cambios de API, autenticación o datos. Escritorio con regiones desplazables accesibles y tarjetas de altura intrínseca; tablet/móvil con lectura natural. Revisión independiente sin P1/P2 pendientes; corregidos estiramiento/compresión de tarjetas, foco recortado y desconexión de observadores al retirar contexto privado. Recuperación visual desde `d6e9460`, sin reversión de Firebase ni D1.
+- Medición de peso con el build de archivos LF de Git: 222 recursos y 5.401.740 bytes frente a 222 y 5.396.586 en la versión anterior (+5.154 bytes, aproximadamente 0,096 %). Sin imágenes, fuentes ni dependencias nuevas; no se atribuye mejora de velocidad a esta medición de tamaño.
+- Publicación funcional `1ef2a01` / Pages `0d68cc02-b520-41ec-b02a-75a821b875dd`, revisión LF `6421d4e1892f0a14`. Producción: Pages 5 aprobadas / 1 omitida para no crear sesiones; HTML/CSS/JS de Staff contrastados 3/3 con el artefacto revisado y API anónima cerrada. Sin acceso a conversaciones reales durante QA.
+- QA visual independiente en producción 320/1440: navegación, páginas 1/2/5, carrusel 04/07, contacto y acceso anónimo correctos, sin desbordamientos ni errores JS; axe estable sin incidencias y sin P1/P2 pendientes. Autenticación real previa conservada, sin volver a abrir la cuenta ni consultar datos privados para esta revisión visual.
 
 ### Datos de contacto de Sarin · 2026-10-17 · publicado
 
