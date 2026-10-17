@@ -4,12 +4,15 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { after, before, test } from 'node:test';
 import { chromium } from '../capturas/node_modules/playwright/index.mjs';
+import { normalizePagesResponse } from './pages-response.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
+// Permite contrastar el artefacto de un checkout limpio del commit publicado.
+const publicDist = process.env.PAGES_QA_DIST ? path.resolve(process.env.PAGES_QA_DIST) : path.join(root, 'dist');
 const base = (process.env.PAGES_QA_BASE || 'http://127.0.0.1:8788').replace(/\/$/, '');
 const origin = new URL(base).origin;
 const preview = new URL(base).hostname === 'alsdevstudio.pages.dev' || new URL(base).hostname.endsWith('.alsdevstudio.pages.dev');
-const normalize = text => text.replace(/\r\n/g, '\n');
+const normalize = (text, file) => file.endsWith('.html') ? normalizePagesResponse(text) : text.replace(/\r\n/g, '\n');
 let browser;
 before(async () => { browser = await chromium.launch(); await mkdir(path.join(root, 'test-results'), { recursive: true }); });
 after(async () => { await browser?.close(); });
@@ -19,7 +22,7 @@ test('Pages sirve el artefacto revisado, sus cabeceras y las imágenes sociales'
     ['/scripts/analytics.js', 'scripts/analytics.js'], ['/styles/main.css', 'styles/main.css'], ['/sitemap.xml', 'sitemap.xml'], ['/robots.txt', 'robots.txt']]) {
     const response = await fetch(base + route);
     assert.equal(response.status, 200, route);
-    assert.equal(normalize(await response.text()), normalize(await readFile(path.join(root, 'dist', file), 'utf8')), `artefacto publicado: ${route}`);
+    assert.equal(normalize(await response.text(), file), normalize(await readFile(path.join(publicDist, file), 'utf8'), file), `artefacto publicado: ${route}`);
     assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(response.headers.get('strict-transport-security'), 'max-age=15552000');
@@ -31,7 +34,7 @@ test('Pages sirve el artefacto revisado, sus cabeceras y las imágenes sociales'
   const image = await fetch(base + '/assets/brand/og-image.jpg');
   assert.equal(image.status, 200);
   assert.match(image.headers.get('content-type') || '', /image\/jpeg/);
-  assert.deepEqual(Buffer.from(await image.arrayBuffer()), await readFile(path.join(root, 'dist/assets/brand/og-image.jpg')));
+  assert.deepEqual(Buffer.from(await image.arrayBuffer()), await readFile(path.join(publicDist, 'assets/brand/og-image.jpg')));
 });
 
 test('las URLs históricas redirigen y las rutas desconocidas o internas devuelven 404', async () => {

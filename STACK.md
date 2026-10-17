@@ -1,8 +1,8 @@
 # Stack — ALS DevStudio
 
-### Datos de contacto de Sarin · 2026-10-17 · candidato aprobado
+### Datos de contacto de Sarin · 2026-10-17 · publicado
 
-Nombre, apellido y correo obligatorios antes de crear nuevas sesiones; datos declarados visibles sólo en Staff, sin verificación de correo y sin añadirlos automáticamente a IA/analítica/resumen. Validador compartido vanilla, tabla D1 1:1 `sarin_leads` con FK/cascada, batch atómico y capacidad UTF-8; retención de la conversación 30 días/24 horas vacía. Históricos `lead:null`, sin backfill; Firebase/Google y cuotas monetarias no cambian. Aviso v6, privacidad v5, términos v4. Sin dependencias ni proveedor nuevo; 429 regresiones, 40 UI, 6 Pages locales y 6 del respaldo aprobadas. Backup privado verificado; publicación expresamente autorizada. [Verificaciones, estado y reversión](docs/SARIN-CONTACTO.md).
+Nombre, apellido y correo obligatorios antes de crear nuevas sesiones; datos declarados visibles sólo en Staff, sin verificación de correo y sin añadirlos automáticamente a IA/analítica/resumen. Validador compartido vanilla, tabla D1 1:1 `sarin_leads` con FK/cascada, batch atómico y capacidad UTF-8; retención de la conversación 30 días/24 horas vacía. Históricos `lead:null`, sin backfill; Firebase/Google y cuotas monetarias no cambian. Aviso v6, privacidad v5, términos v4. Sin dependencias ni proveedor nuevo; 429 regresiones, 40 UI, 6 Pages locales y 6 del respaldo aprobadas. Backup privado verificado y `0003` aplicada sin alterar conteos. Código `9011bd8` / Pages `ea44f40a` publicado por autorización expresa; revisión LF `4206991de17e8ec8`. Producción: Pages 5 PASS/1 omitida para no crear sesiones, auditoría HTTP 23/23 y UI cinco anchos 5/5. [Verificaciones, estado y reversión](docs/SARIN-CONTACTO.md).
 
 ### Firebase Authentication para Staff · 2026-10-17 · publicado
 

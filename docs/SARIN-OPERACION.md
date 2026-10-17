@@ -1,5 +1,11 @@
 # Operación de Sarin
 
+## Contacto obligatorio al iniciar Sarin · 17 de octubre de 2026 · publicado
+
+Por aprobación expresa «Sí, aplicar y publicar», cada conversación nueva requiere nombre, apellido y correo antes de autorizar. Staff muestra datos declarados y correo no verificado; los históricos siguen sin contacto. Los campos no se añaden automáticamente a IA, analítica ni resumen. Firebase/Google del titular se conserva. Aviso v6, privacidad v5 y términos v4 informan finalidad y retención: 30 días desde primer mensaje o 24 horas sin mensajes.
+
+Respaldo privado restaurado/verificado antes de aplicar `0003_leads.sql`; inserción atómica, capacidad UTF-8 y FK/cascada. Conteos existentes conservados y cero contactos sintéticos remotos. Publicado `9011bd8` / Pages `ea44f40a`, revisión pública LF `4206991de17e8ec8`. 481 comprobaciones locales distintas previas; producción Pages 5 PASS/1 omitida (alta sintética sólo local), revisión HTTP 23/23 y UI cinco anchos 5/5. Sin lectura de conversaciones, login de producción automatizado ni inferencias durante el cierre. [Evidencias, respaldo, límites y reversión](SARIN-CONTACTO.md).
+
 ## Regreso de Staff a Firebase Authentication · 17 de octubre de 2026 · publicado
 
 La nueva instrucción y autorización de producción del titular sustituyen la elección anterior de Google dentro de Access. Staff usa Firebase Authentication con Google y autorización exclusiva por UID/correo en el servidor. Se retiró el plugin Access del código; no se recuperan Hosting publicado, Firestore, Functions ni el panel antiguo. El historial sigue en D1. Publicación técnica y rechazo anónimo comprobados; el titular confirmó el inicio de sesión real tras la corrección indicada abajo.

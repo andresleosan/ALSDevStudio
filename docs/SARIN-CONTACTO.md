@@ -1,6 +1,6 @@
 # Contacto al iniciar Sarin · 17 de octubre de 2026
 
-Estado: candidato verificado; publicación expresamente aprobada por el titular después de pruebas y respaldo.
+Estado: publicado y verificado en producción; autorización expresa del titular después de pruebas y respaldo.
 
 ## Alcance aprobado
 
@@ -38,4 +38,12 @@ Aviso `sarin-history-2026-10-17-v6`, privacidad `2026-10-17-sarin-history-v5`, t
 
 Migración remota `0003_leads.sql` aplicada correctamente el 17/10/2026 antes de publicar: cuatro sentencias DDL, sin cambiar filas anteriores. Recuento posterior: 8 conversaciones, 32 mensajes, 8 consentimientos, 30 reservas, 23 contadores y 0 contactos, iguales a la copia. No se crean contactos sintéticos en producción. Total de comprobaciones distintas previas: 481 (429 + 40 UI + 6 Pages local + 6 respaldo), sin sumar repeticiones.
 
-Base funcional anterior: `de87219` / Pages `b0414971`, cierre documental `6fcdebd`. Publicación de aplicación y comprobación final pendientes.
+## Publicación comprobada
+
+Código funcional `9011bd8`, Pages `ea44f40a-39a7-4204-9087-93624ea20905`, producción `www`, 17/10/2026. Artefacto de Git limpio LF: 222 archivos / 5.396.586 bytes, revisión `4206991de17e8ec8`, coincidente con el publicado. El hash del build de desarrollo anterior difiere por los finales de línea de Windows: para reproducir el remoto se usó `git -c core.autocrlf=false archive 9011bd8`, sin modificar el checkout ni el sitio.
+
+Pages en producción: 5 aprobadas / 1 omitida intencionadamente (la creación sintética de sesión se limita a loopback), sin fallos. Comprobación HTTP independiente 23/23 y UI real en cinco anchos 5/5, sin errores, API/POST ni cookies de conversación. Contacto obligatorio, `autocomplete` y límites correctos; vacío enfoca el campo y muestra error. Configuración Firebase pública 200; listado/bootstrap anónimos 403 sin caché; seis internos 404; entradas inválidas 400 y consentimiento anterior 403 sin cookie. No se abrió historial ni se simuló una autorización válida en producción, y no se llamó a IA.
+
+La comparación inicial literal de HTML detectó transformaciones conocidas del edge, no cambios de producto: Cloudflare elimina marcadores `email_off` y ofusca el correo público del responsable. El harness ahora normaliza sólo esos marcadores y el anchor/decoder CF de forma exacta, únicamente para HTML; conserva los demás cambios como diferencias. Tres pruebas nuevas cubren límites, texto/cifrado inválido y atributos/scripts ajenos. `PAGES_QA_DIST` permite comparar el artefacto LF limpio; la lógica del sitio no se alteró para pasar las pruebas.
+
+Reversión de código: volver a la base funcional `de87219` / Pages `b0414971` (cierre documental `6fcdebd`) con un commit nuevo o despliegue anterior, conservando `0003` y sus datos. No restaurar la copia ni ejecutar los DROP del rollback total para revertir esta interfaz. Retirar manualmente el respaldo de intervención antes del 24/10/2026; no hay tarea automática.

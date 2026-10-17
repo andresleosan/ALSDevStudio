@@ -6,7 +6,7 @@
 - [x] Implementar validación compartida, formulario accesible, DTO administrativo y migración aditiva atómica con contabilidad y borrado en cascada. Actualizar aviso v6, privacidad v5, términos v4 y recuperación.
 - [x] Terminar pruebas: 481 distintas (429 regresiones, 40 UI, 6 Pages locales y 6 respaldo), sin P1/P2; cinco anchos/axe/tipos/Functions/build correctos. Respaldo privado restaurado en memoria y verificado antes de migrar D1.
 - [x] Aplicar únicamente `0003_leads.sql` a producción; conteos originales 8 conversaciones/32 mensajes/8 consentimientos/30 reservas/23 contadores conservados, 0 contactos.
-- [ ] Publicar desde `main`, comprobar producción y registrar reversión sin pérdida de historial ni reinicio del presupuesto.
+- [x] Publicar `9011bd8` / Pages `ea44f40a` desde `main`; producción Pages 5 PASS/1 omitida para evitar sesiones sintéticas, revisión HTTP 23/23 y UI 5/5. Artefacto LF `4206991de17e8ec8`, tres pruebas del normalizador edge y reversión documentada en `docs/SARIN-CONTACTO.md`; historial y presupuesto conservados.
 
 ## SARIN-FIREBASE-AUTH · Regreso a Google con Firebase · 2026-10-17
 
