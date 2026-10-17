@@ -5,7 +5,9 @@
 - [x] Intercambiar Sarin Bot/Hampton Estates (puestos 4/19) y Dialon/The Coco Club (7/17), tanto en galería como en carrusel. Conservar los otros 16 puestos, enlaces, imágenes, textos y los 20 proyectos; ajustar IDs y etiquetas de las cuatro diapositivas.
 - [x] TDD: dos fallos por posiciones anteriores y dos pruebas nuevas aprobadas. Regresión build/accesibilidad/normalización 32/32; primera y segunda página a 320/1440 px, avance del carrusel, enlaces y numeración correctos; build 222 recursos y diff limpio. Capturas diarias usan claves y no reescriben el HTML.
 - [x] Autorización expresa recibida: «Sí, publicar sólo este cambio de orden». El rediseño administrativo y los ajustes de landing propuestos con Mobbin siguen pendientes de aprobación; no están implementados.
-- [ ] Publicar y comprobar el orden en producción. Reversión: volver sólo al orden anterior de `index.html` mediante un commit nuevo tomando `6f97eb0` como base; conservar autenticación, contactos, datos y todos los demás cambios.
+- [x] Publicado en `ad5e6fa` / Pages `f01d5ff4-53a4-485c-a16e-4c989f15c6af`, revisión LF `97068be5c564222b`, 222 recursos / 5.396.586 bytes. Producción Pages: 5 aprobadas / 1 omitida deliberadamente para no crear sesiones sintéticas, sin fallos; artefacto coincidente, internos y APIs privadas protegidos. Sin cambios de Firebase, D1 ni IA.
+- [x] QA independiente en la web publicada a 320/1440 px: páginas 1, 2 y 5, carrusel 04/07, imágenes y URLs correctas; 20 proyectos/5 páginas, sin desbordamientos, errores JS, llamadas privadas/IA ni orígenes externos. Sin P1/P2.
+- Reversión: volver sólo al orden anterior de `index.html` mediante un commit nuevo tomando `6f97eb0` como base; conservar autenticación, contactos, datos y todos los demás cambios.
 
 ## SARIN-CONTACTO · Identificar nuevas conversaciones · 2026-10-17
 
