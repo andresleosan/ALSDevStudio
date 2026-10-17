@@ -14,7 +14,7 @@
   <a class="admin-skip" href="#admin-main">Saltar a las conversaciones</a>
   <header class="admin-header">
     <a class="admin-brand" href="/" aria-label="ALS DevStudio, ir al sitio"><span>ALS</span> DevStudio</a>
-    <p id="admin-identity">Acceso privado</p>
+    <div class="admin-account"><p id="admin-identity">Acceso privado</p><button id="admin-logout" type="button" hidden>Cerrar sesión</button></div>
   </header>
   <main id="admin-main" class="admin-main">
     <div class="admin-intro">
@@ -22,6 +22,12 @@
       <img src="/assets/brand/mascot-welcome.png" width="92" height="92" alt="" decoding="async">
     </div>
     <div class="admin-notification"><p id="admin-status" role="status" aria-live="polite">Verificando acceso…</p><button id="admin-retry" type="button" hidden>Volver a comprobar acceso</button></div>
+    <section id="admin-login" class="admin-login" aria-labelledby="admin-login-title" hidden>
+      <h2 id="admin-login-title">Accede a tu panel</h2>
+      <p>Inicia sesión con la cuenta de Google autorizada de ALS DevStudio.</p>
+      <button id="admin-google-login" class="admin-primary" type="button">Acceder con Google</button>
+      <p class="admin-note">La sesión se conserva en esta pestaña. Cierra sesión al terminar.</p>
+    </section>
     <noscript><p class="admin-note">Este panel necesita JavaScript y acceso autorizado. Puedes <a href="mailto:alsdevstudio@alsdevstudio.com">contactar con ALS DevStudio por correo</a>.</p></noscript>
     <div id="admin-workspace" hidden>
       <p class="admin-note"><a id="admin-test-sarin" href="/?sarin=prueba" hidden>Probar Sarin en la web</a></p>

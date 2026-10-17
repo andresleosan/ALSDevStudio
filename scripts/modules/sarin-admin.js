@@ -1,4 +1,5 @@
 // @ts-check
+import {createSarinAdminAuth} from './sarin-admin-auth.js';
 /** Panel privado. Los mensajes permanecen en el DOM y nunca se interpretan como HTML. */
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const dateFormat=new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'});
@@ -30,37 +31,62 @@ function initSarinAdmin(){
   const find=selector=>{const node=document.querySelector(selector);if(!(node instanceof HTMLElement))throw new Error('Falta un control del panel.');return node;};
   const workspace=find('#admin-workspace'),status=find('#admin-status'),list=find('#admin-list'),detail=find('#admin-detail');
   const retry=/** @type {HTMLButtonElement} */(find('#admin-retry'));
+  const login=find('#admin-login'),loginButton=/** @type {HTMLButtonElement} */(find('#admin-google-login')),logoutButton=/** @type {HTMLButtonElement} */(find('#admin-logout'));
   const filters=/** @type {HTMLFormElement} */(find('#admin-filters'));
   const more=/** @type {HTMLButtonElement} */(find('#admin-more'));
   const confirm=/** @type {HTMLDialogElement} */(find('#admin-delete-confirm'));
   let csrf='',selected='',cursor='',listGeneration=0,detailGeneration=0,bootstrapGeneration=0;
   let listPending=false,detailPending=false,mutationPending=false;
+  let operationGeneration=0;
   /** @type {HTMLButtonElement|null} */let deleteTrigger=null;
   let deleteId='';
   /** @type {AbortController|null} */let listController=null;
   /** @type {AbortController|null} */let detailController=null;
+  /** @type {AbortController|null} */let mutationController=null;
+  /** @type {AbortController|null} */let bootstrapController=null;
   /** @param {string} message @param {boolean} [error] */
   const announce=(message,error=false)=>{status.textContent=message;status.toggleAttribute('data-error',error);};
   const clearDetail=()=>{detail.replaceChildren(element('p','Elige una conversación para ver sus mensajes.','admin-note'));selected='';};
+  const clearWorkspace=()=>{
+    csrf='';cursor='';operationGeneration++;bootstrapGeneration++;listGeneration++;detailGeneration++;
+    listController?.abort();detailController?.abort();mutationController?.abort();bootstrapController?.abort();
+    listPending=false;detailPending=false;mutationPending=false;deleteTrigger=null;deleteId='';
+    list.replaceChildren();clearDetail();workspace.hidden=true;confirm.close();more.hidden=true;more.disabled=false;
+    list.setAttribute('aria-busy','false');detail.setAttribute('aria-busy','false');
+    find('#admin-count').textContent='';find('#admin-delete-reference').textContent='';
+    find('#admin-purge').textContent='Comprobando la limpieza automática…';
+    find('#admin-identity').textContent='Acceso privado';find('#admin-test-sarin').hidden=true;
+  };
+  const authentication=createSarinAdminAuth({onState:value=>{
+    const busy=value.status==='busy';loginButton.disabled=busy;login.setAttribute('aria-busy',String(busy));
+    if(value.status==='signed-in'){login.hidden=true;logoutButton.hidden=false;return;}
+    if(value.status==='signed-out' || value.status==='error'){
+      clearWorkspace();login.hidden=false;logoutButton.hidden=true;retry.hidden=true;
+      announce(value.message || 'Sesión cerrada. Accede con Google para continuar.',value.status==='error');
+      loginButton.focus({preventScroll:true});
+      return;
+    }
+    if(value.message)announce(value.message);
+  }});
   /** @param {unknown} error */
   const fail=error=>{
     const code=Number(record(error).status);
     if(code===401 || code===403){
-      csrf='';listGeneration++;detailGeneration++;listController?.abort();detailController?.abort();
-      list.replaceChildren();clearDetail();workspace.hidden=true;confirm.close();
-      find('#admin-identity').textContent='Acceso privado';
-      find('#admin-test-sarin').hidden=true;
-      announce(code===401?'Tu acceso venció. Vuelve a comprobarlo para continuar.':'Acceso no autorizado o autorización de la acción vencida. Vuelve a comprobar tu acceso.',true);
-      retry.hidden=false;
+      authentication.forget(code===401?'Tu acceso venció. Accede de nuevo con Google para continuar.':'Acceso no autorizado o autorización vencida. Accede con la cuenta de Google autorizada.');
     }else announce(error instanceof Error?error.message:'No pudimos completar la operación. Vuelve a intentarlo.',true);
   };
   /** @param {string} path @param {{action?:string,signal?:AbortSignal}} [options] */
   async function request(path,{action,signal}={}){
+    const current=operationGeneration;
     const controller=new AbortController();
     const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
     if(signal?.aborted)controller.abort();
     let timedOut=false;const timer=setTimeout(()=>{timedOut=true;controller.abort();},15000);
     try{
+      try{await authentication.ensureSession();}
+      catch(error){if(current===operationGeneration)authentication.forget();throw error;}
+      if(current!==operationGeneration)throw new DOMException('Solicitud cancelada','AbortError');
+      if(controller.signal.aborted)throw new DOMException('Solicitud cancelada','AbortError');
       const response=await fetch(`/api/control-sarin/${path}`,{method:action?'POST':'GET',headers:action?{'Accept':'application/json','Content-Type':'application/json','X-Sarin-CSRF':csrf}:{'Accept':'application/json'},body:action?JSON.stringify({action}):undefined,credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
       if(!response.ok){
         const message=([401,403].includes(response.status))?'Tu acceso necesita verificarse de nuevo.':response.status===404 || response.status===410?'La conversación venció o fue eliminada. Actualiza el listado.':response.status===409?'La conversación está cambiando. Actualiza el listado antes de continuar.':'No pudimos completar la operación. Vuelve a intentarlo.';
@@ -185,32 +211,38 @@ function initSarinAdmin(){
   /** @param {string} id @param {string} action */
   async function mutate(id,action){
     if(!csrf || mutationPending || detailPending || !uuid.test(id))return;
+    const current=operationGeneration;mutationController?.abort();mutationController=new AbortController();
     mutationPending=true;detail.querySelectorAll('button').forEach(button=>{button.disabled=true;});announce('Aplicando acción…');
     try{
-      const value=await request(`conversations/${encodeURIComponent(id)}`,{action});
+      const value=await request(`conversations/${encodeURIComponent(id)}`,{action,signal:mutationController.signal});
+      if(current!==operationGeneration || !csrf)return;
       if(value.ok!==true)throw new Error('La acción no pudo confirmarse. Actualiza el listado.');
       if(action==='delete'){detailGeneration++;detailController?.abort();clearDetail();}
       mutationPending=false;
-      await loadList();if(!csrf)return;
+      await loadList();if(current!==operationGeneration || !csrf)return;
       if(action!=='delete')await loadDetail(id);
-      if(!csrf)return;
+      if(current!==operationGeneration || !csrf)return;
       announce(action==='delete'?'Conversación eliminada.':action==='review'?'Conversación marcada como revisada.':action==='block'?'Sesión bloqueada durante 24 horas.':'Sesión desbloqueada.');
       if(action==='delete')find('#admin-list-title').setAttribute('tabindex','-1'),find('#admin-list-title').focus();
-    }catch(error){fail(error);detail.querySelectorAll('button').forEach(button=>{button.disabled=false;});}
-    finally{mutationPending=false;}
+    }catch(error){if(current===operationGeneration && record(error).name!=='AbortError'){fail(error);detail.querySelectorAll('button').forEach(button=>{button.disabled=false;});}}
+    finally{if(current===operationGeneration)mutationPending=false;}
   }
   filters.addEventListener('submit',event=>{event.preventDefault();void loadList();});more.addEventListener('click',()=>{void loadList(true);});
   find('[data-admin-cancel-delete]').addEventListener('click',()=>confirm.close());
   confirm.addEventListener('close',()=>{deleteTrigger?.focus({preventScroll:true});});
   find('[data-admin-confirm-delete]').addEventListener('click',()=>{const id=deleteId;confirm.close();void mutate(id,'delete');});
   async function bootstrap(){
-    const current=++bootstrapGeneration;retry.hidden=true;workspace.hidden=true;find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
+    const current=++bootstrapGeneration;bootstrapController?.abort();bootstrapController=new AbortController();
+    retry.hidden=true;workspace.hidden=true;find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
     try{
-      const value=await request('bootstrap');if(current!==bootstrapGeneration)return;
+      const value=await request('bootstrap',{signal:bootstrapController.signal});if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
       csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;clearDetail();await loadList();
-    }catch(error){if(current===bootstrapGeneration){fail(error);retry.hidden=false;}}
+    }catch(error){if(current===bootstrapGeneration && record(error).name!=='AbortError'){fail(error);login.hidden=false;retry.hidden=([401,403].includes(Number(record(error).status)));}}
   }
-  retry.addEventListener('click',()=>{void bootstrap();});void bootstrap();
+  loginButton.addEventListener('click',()=>{clearWorkspace();retry.hidden=true;void authentication.login().then(()=>bootstrap()).catch(()=>{});});
+  logoutButton.addEventListener('click',()=>{logoutButton.disabled=true;void authentication.logout().catch(()=>{logoutButton.hidden=false;}).finally(()=>{logoutButton.disabled=false;});});
+  retry.addEventListener('click',()=>{void bootstrap();});
+  void authentication.restore().then(restored=>{if(restored)return bootstrap();}).catch(()=>{});
 }
 try{initSarinAdmin();}catch{const status=document.querySelector('#admin-status');if(status)status.textContent='El panel no está disponible. Recarga la página para volver a comprobar tu acceso.';}

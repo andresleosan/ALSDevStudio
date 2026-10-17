@@ -53,14 +53,21 @@ test('las URLs históricas redirigen y las rutas desconocidas o internas devuelv
   }
 });
 
-test('panel y API privados deniegan el acceso en Pages incluso en rutas alternativas', async () => {
+test('el panel sólo publica la pantalla de acceso y la API deniega peticiones anónimas', async () => {
   for (const path of ['/control-sarin','/control-sarin/','/control-sarin/index.html','/control-sarin/index','/api/control-sarin','/api/control-sarin/','/api/control-sarin/bootstrap']) {
     for (const search of ['', '?qa=fixture']) {
       const r=await fetch(base+path+search,{redirect:'manual'});
-      assert.ok([401,403,503].includes(r.status),path+search);
+      const shell=path.startsWith('/control-sarin');
+      assert.ok((shell?[200,301,308]:[401,403,503]).includes(r.status),path+search);
+      if(shell&&[301,308].includes(r.status))continue;
       assert.equal(r.headers.get('Cache-Control'),'no-store');
       assert.match(r.headers.get('X-Robots-Tag')||'',/noindex/);
-      assert.doesNotMatch(await r.text(),/id="admin-list"|id="admin-workspace"/);
+      const text=await r.text();
+      if(shell){
+        assert.match(text,/Acceder con Google/);
+        assert.match(text,/id="admin-workspace"[^>]*hidden/);
+        assert.doesNotMatch(text,/andres\.san1404@gmail\.com|uWeBDCOz/);
+      }else assert.doesNotMatch(text,/id="admin-list"|id="admin-workspace"/);
     }
   }
 });

@@ -15,7 +15,7 @@ const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-admin'].map(name => `modules/${name}.js`)];
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-admin', 'sarin-admin-auth'].map(name => `modules/${name}.js`)];
 const functionRoutes = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
   '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
@@ -80,7 +80,7 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
     'assets/projects/source.png', 'wrangler.jsonc', 'internal/.env', 'internal/functions/src/index.mjs',
     'internal/dist/index.html', 'internal/config/public.json', 'server/sarin/knowledge.js',
     'functions/api/sarin.js', 'migrations/sarin/0001_usage.sql', '.dev.vars',
-    '.github/sarin/access-plugin.js','workers/sarin-retention/index.js','control-sarin/private.html']) await put(root, name, 'NO PUBLICAR');
+    '.github/sarin/firebase-jwt.js','workers/sarin-retention/index.js','control-sarin/private.html']) await put(root, name, 'NO PUBLICAR');
   await build(root);
   assert.deepEqual(await files(path.join(root, 'dist')), [
     '404.html', '_headers', '_redirects', '_routes.json', 'cookies.html', 'favicon.svg', 'index.html',

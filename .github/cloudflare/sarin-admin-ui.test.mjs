@@ -24,15 +24,35 @@ before(async()=>{
   await mkdir(path.join(root,'test-results/sarin-admin'),{recursive:true});
 });
 after(async()=>{await browser?.close();await new Promise(resolve=>server?.close(resolve));});
-async function pageFor(options={}){
+async function pageFor(options={},authOptions={}){
   const context=await browser.newContext(options),page=await context.newPage();
   page.setDefaultTimeout(2500);
   await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
-  return {page,context};
+  const authRequests=[];
+  await page.route('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js',route=>route.fulfill({contentType:'text/javascript',headers:{'Access-Control-Allow-Origin':'*'},body:'export const initializeApp=(options,name)=>({options,name});'}));
+  await page.route('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js',route=>route.fulfill({contentType:'text/javascript',headers:{'Access-Control-Allow-Origin':'*'},body:`
+    let token='synthetic-firebase-id-token-initial',callback=()=>{};
+    const user={getIdToken:async()=>token};
+    let auth={currentUser:${authOptions.signedOut?'null':'user'},authStateReady:async()=>{}};
+    export const browserSessionPersistence={type:'SESSION'},inMemoryPersistence={type:'NONE'},browserPopupRedirectResolver={};
+    export const initializeAuth=(app,options)=>{if(options.persistence[0]!==browserSessionPersistence||options.persistence[1]!==inMemoryPersistence)throw Error('Persistence');return auth;};
+    export const onIdTokenChanged=(value,cb)=>{callback=cb;queueMicrotask(()=>cb(value.currentUser));return()=>{};};
+    export class GoogleAuthProvider{setCustomParameters(value){if(value.prompt!=='select_account')throw Error('Account selection');}}
+    export const signInWithPopup=async()=>{${authOptions.popupError?"throw Object.assign(Error('private-sdk-error'),{code:'auth/popup-closed-by-user'});":"auth.currentUser=user;callback(user);return{user};"}};
+    export const signOut=async()=>{auth.currentUser=null;callback(null);};
+    export const refreshForTest=()=>{token='synthetic-firebase-id-token-refreshed';callback(user);};
+  `}));
+  await page.route('**/api/control-sarin/auth/**',route=>{
+    const req=route.request(),name=new URL(req.url()).pathname.split('/').at(-1);
+    authRequests.push({name,method:req.method(),body:req.postDataJSON()});
+    return route.fulfill({json:name==='config'?{firebase:{apiKey:'synthetic-public-key',projectId:'alsdevstudio',authDomain:'alsdevstudio.firebaseapp.com'}}:{ok:true}});
+  });
+  return {page,context,authRequests};
 }
 async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now,lastErrorAt:null,status:'ok',remaining:false},status=200,privateTestEnabled=false}={}){
   const requests=[];
   await page.route('**/api/control-sarin/**',async route=>{
+    if(new URL(route.request().url()).pathname.includes('/auth/'))return route.fallback();
     const req=route.request(),url=new URL(req.url());requests.push({url,method:req.method(),body:req.postDataJSON(),headers:req.headers()});
     if(status!==200)return route.fulfill({status,json:{error:{code:'forbidden'}}});
     if(url.pathname.endsWith('/bootstrap'))return route.fulfill({json:{csrfToken:'synthetic-csrf-token',adminEmail:'operador@example.test',purge,privateTestEnabled}});
@@ -42,6 +62,71 @@ async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now
   await page.goto(`${origin}/control-sarin/`);
   return requests;
 }
+
+test('pantalla de Staff sin sesión no consulta historial y permite acceder con Google',async()=>{
+  const {page,context,authRequests}=await pageFor({}, {signedOut:true});
+  try{
+    const requests=await mock(page);
+    await page.locator('#admin-google-login').waitFor();
+    assert.equal(await page.locator('#admin-workspace').isVisible(),false);
+    assert.equal(requests.length,0,'ningún dato privado antes de autenticar');
+    await page.locator('#admin-google-login').click();
+    await page.locator('[data-conversation-id]').first().waitFor();
+    assert.equal(authRequests.filter(r=>r.name==='session').length,1,'un único intercambio deduplicado');
+    const exchange=authRequests.find(r=>r.name==='session');
+    assert.equal(exchange.method,'POST');
+    assert.deepEqual(Object.keys(exchange.body),['idToken']);
+    assert.equal(await page.locator('#admin-logout').isVisible(),true);
+  }finally{await context.close();}
+});
+
+test('cancelar Google mantiene el panel cerrado y no revela errores internos',async()=>{
+  const {page,context,authRequests}=await pageFor({}, {signedOut:true,popupError:true});
+  try{
+    const requests=await mock(page);await page.locator('#admin-google-login').waitFor();
+    await page.locator('#admin-google-login').click();
+    await page.waitForFunction(()=>document.querySelector('#admin-status').textContent.includes('No pudimos completar'));
+    assert.equal(await page.locator('#admin-workspace').isVisible(),false);
+    assert.equal(requests.length,0);assert.equal(authRequests.some(r=>r.name==='session'),false);
+    assert.doesNotMatch(await page.locator('body').textContent(),/private-sdk-error|auth\/popup-closed/);
+    assert.equal(await page.locator('#admin-google-login').isEnabled(),true);
+  }finally{await context.close();}
+});
+
+test('renovación de token actualiza cookie una vez y salir vacía todos los datos visibles',async()=>{
+  const {page,context,authRequests}=await pageFor();
+  try{
+    const requests=await mock(page);await page.locator('[data-conversation-id]').first().click();
+    await page.locator('#admin-detail-title').waitFor();
+    await page.evaluate(async()=>{const sdk=await import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js');sdk.refreshForTest();});
+    await page.waitForFunction(()=>document.querySelector('#admin-workspace').hidden===false);
+    await page.locator('#admin-filters').evaluate(form=>form.requestSubmit());
+    await page.waitForFunction(()=>document.querySelector('#admin-list').getAttribute('aria-busy')==='false');
+    assert.equal(authRequests.filter(r=>r.name==='session').length,2,'inicial y renovación, sin intercambio por cada GET');
+    await page.locator('#admin-logout').click();await page.locator('#admin-google-login').waitFor();
+    assert.equal(await page.locator('#admin-workspace').isVisible(),false);
+    assert.equal(await page.locator('[data-conversation-id]').count(),0);
+    assert.doesNotMatch(await page.locator('#admin-detail').textContent(),/Café de prueba/);
+    assert.equal(authRequests.filter(r=>r.name==='logout').length,1);
+    const before=requests.length;await page.waitForTimeout(50);assert.equal(requests.length,before);
+    assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('Café de prueba')),false);
+  }finally{await context.close();}
+});
+
+test('respuesta privada tardía tras salir no vuelve a mostrar conversaciones',async()=>{
+  const {page,context}=await pageFor();let release;
+  try{
+    await mock(page);await page.locator('[data-conversation-id]').first().waitFor();
+    const started=new Promise(resolve=>{
+      page.route('**/api/control-sarin/conversations?*',async route=>{resolve();await new Promise(done=>{release=done;});await route.fulfill({json:{items:[summary],nextCursor:null}}).catch(()=>{});});
+    });
+    await page.locator('#admin-filters').evaluate(form=>form.requestSubmit());await started;
+    await page.locator('#admin-logout').click();await page.locator('#admin-google-login').waitFor();release();
+    await page.waitForTimeout(50);
+    assert.equal(await page.locator('#admin-workspace').isVisible(),false);
+    assert.equal(await page.locator('[data-conversation-id]').count(),0);
+  }finally{release?.();await context.close();}
+});
 
 test('panel privado carga lista/detalle cronológico como texto, señales y autorización',async()=>{
   const {page,context}=await pageFor();const requests=await mock(page);
@@ -119,6 +204,7 @@ test('espera y error de red permiten reintentar sin mostrar una autenticación f
 
 test('paginación añade conversaciones y una acción con acceso vencido retira el detalle',async()=>{
   const {page,context}=await pageFor();await mock(page);
+  await page.locator('[data-conversation-id]').first().waitFor();
   const nextId='00000000-0000-4000-8000-000000000003',cursors=[];
   await page.route('**/api/control-sarin/conversations?*',route=>{
     const cursor=new URL(route.request().url()).searchParams.get('cursor');cursors.push(cursor);
@@ -130,10 +216,10 @@ test('paginación añade conversaciones y una acción con acceso vencido retira 
   assert.equal(await page.locator('#admin-more').isVisible(),false);
   await page.locator(`[data-conversation-id="${id}"]`).click();await page.locator('#admin-detail-title').waitFor();
   await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.request().method()==='POST'?route.fulfill({status:403,json:{error:{code:'csrf_rejected'}}}):route.fulfill({json:detail}));
-  await page.locator('[data-admin-action="review"]').click();await page.locator('#admin-retry').waitFor();
+  await page.locator('[data-admin-action="review"]').click();await page.locator('#admin-google-login').waitFor();
   assert.equal(await page.locator('#admin-workspace').isVisible(),false);
   assert.equal(await page.locator('#admin-detail').textContent(),'Elige una conversación para ver sus mensajes.');
-  await page.locator('#admin-retry').click();await page.locator('#admin-workspace').waitFor();await page.locator('[data-conversation-id]').first().waitFor();
+  await page.locator('#admin-google-login').click();await page.locator('#admin-workspace').waitFor();await page.locator('[data-conversation-id]').first().waitFor();
   await context.close();
 });
 
@@ -179,7 +265,7 @@ test('el vencimiento al refrescar después de una acción mantiene el aviso de a
     return route.fulfill({json:detail});
   });
   await page.locator('[data-conversation-id]').first().click();await page.locator('[data-admin-action="review"]').click();
-  await page.locator('#admin-retry').waitFor();await page.waitForTimeout(30);
+  await page.locator('#admin-google-login').waitFor();await page.waitForTimeout(30);
   assert.match(await page.locator('#admin-status').textContent(),/acceso/i);
   assert.equal(await page.locator('#admin-workspace').isVisible(),false);await context.close();
 });
@@ -222,6 +308,14 @@ test('cinco anchos, foco teclado, axe, movimiento reducido y contacto sin JS',as
     const violations=await page.evaluate(async()=>(await axe.run()).violations.map(v=>({id:v.id,impact:v.impact})));
     assert.deepEqual(violations,[]);
     await page.screenshot({path:path.join(root,`test-results/sarin-admin/detail-${width}.png`),fullPage:true});await context.close();
+    const loggedOut=await pageFor({viewport:{width,height:1000},reducedMotion:'reduce'},{signedOut:true});await mock(loggedOut.page);
+    await loggedOut.page.locator('#admin-google-login').waitFor();
+    assert.equal(await loggedOut.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await loggedOut.page.addScriptTag({path:path.join(root,'test-results/axe.min.js')});
+    assert.deepEqual(await loggedOut.page.evaluate(async()=>(await axe.run()).violations.map(v=>({id:v.id,impact:v.impact}))),[]);
+    await loggedOut.page.locator('#admin-google-login').focus();
+    assert.equal(await loggedOut.page.locator('#admin-google-login').evaluate(el=>el===document.activeElement),true);
+    await loggedOut.page.screenshot({path:path.join(root,`test-results/sarin-admin/login-${width}.png`),fullPage:true});await loggedOut.context.close();
   }
   const {page,context}=await pageFor({javaScriptEnabled:false});await page.goto(`${origin}/control-sarin/`);
   assert.equal(await page.locator('noscript a[href^="mailto:"]').count(),1);await context.close();

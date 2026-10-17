@@ -1,5 +1,13 @@
 # Tareas — ALS DevStudio
 
+## SARIN-FIREBASE-AUTH · Regreso a Google con Firebase · 2026-10-17
+
+- [x] Confirmar alcance: sólo autenticación de Staff; conservar D1 e historial, sin restaurar el panel Firebase retirado.
+- [x] Sustituir Access en código y retirar plugin obsoleto. Candidato: 111 pruebas administrativas, incluida rotación de claves, 15 UI (login/salida/renovación/carreras, cinco anchos y axe), 6 Pages locales y regresiones aprobadas; Functions y tipos estrictos del panel compilan. Auditoría npm sin vulnerabilidades, revisiones independientes sin P1/P2 abiertos.
+- [ ] Configurar la app/usuario/dominio existentes y activar tras verificación del candidato; comprobar acceso real y rechazo anónimo.
+- [x] Autorización expresa de producción recibida: rehabilitar el único usuario, autorizar el dominio y sustituir Access, informando que no se conserva su TOTP. App web existente restaurada, usuario habilitado y `www.alsdevstudio.com` autorizado; Hosting antiguo sigue retirado, sin cambios de D1 ni facturación.
+- [ ] Registrar despliegue, limpieza final y reversión. El TOTP de Access no se traslada a Firebase.
+
 ## SARIN-AVISO-ACCESO · Aviso breve y entrada con Google · 2026-10-17
 
 - [x] Retirar el enlace administrativo del chat y renombrar únicamente el enlace del pie como «Staff», por solicitud posterior. Publicado `866c330` / Pages `c27ab819`; UI 18/18, build correcto, revisión sin hallazgos, cinco comprobaciones HTTP y Chrome. Ruta protegida y consentimiento v5 conservados.
@@ -8,7 +16,7 @@
 - [x] Añadir «Panel administrativo» al chat y al pie; retirar la sobrescritura JavaScript del aviso para conservar su marcado semántico.
 - [x] Verificar UI/sesiones 39/39 y build/sesiones/administración 107/107. Cinco anchos 320–1440 px, teclado, objetivos de 44 px, axe sin hallazgos y contacto sin JavaScript. Revisión independiente sin P1/P2; capturas locales en `test-results/sarin/empty-390.png` y `empty-1440.png`.
 - [x] Identificar causa de Firebase inhabilitado: retirada expresa del panel anterior el 15/10; usuario deshabilitado, sesiones revocadas y claim retirado. Consola actual confirma Google habilitado, usuario inhabilitado y plan Spark. Sarin usa un panel distinto con Access.
-- [ ] Conectar Google al Access existente, opción elegida por el titular; conservar el correo exclusivo, sesión de seis horas y TOTP. Verificar cliente OAuth, aplicación/política y acceso real antes de darlo por operativo.
+- Sustituido por SARIN-FIREBASE-AUTH: el titular cambió la elección y solicitó Firebase. No completar la integración Google/Access ni generar el secreto que quedó pendiente.
 - [x] Publicar el cambio revisado en `f76d3db` / Pages `5560c540` y comprobar aviso v4, acceso visible y cierre privado: 12/12 comprobaciones HTTP, build remoto correcto y Chrome con recarga normal. Google conserva el paso de secreto pendiente del titular.
 
 ## SARIN-PUBLICO · Acceso visible y apertura solicitada · 2026-10-16

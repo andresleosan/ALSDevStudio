@@ -3,33 +3,48 @@ import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
 
-// Claves efímeras y datos sintéticos: nunca contacta Access ni una cuenta real.
+// Claves efímeras y datos sintéticos: nunca contacta Google ni una cuenta real.
 const pair = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const publicJwk = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'fixture-key', alg: 'RS256', use: 'sig' };
+const JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+const LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=fixture-firebase-public-key';
 const env = () => ({
-  SARIN_ADMIN_ENABLED: 'true', SARIN_ACCESS_DOMAIN: 'https://fixture.cloudflareaccess.com',
-  SARIN_ACCESS_AUD: 'fixture-admin-audience', SARIN_ADMIN_EMAIL: 'owner@example.test',
+  SARIN_ADMIN_ENABLED: 'true', SARIN_FIREBASE_API_KEY: 'fixture-firebase-public-key',
+  SARIN_FIREBASE_PROJECT_ID: 'alsdevstudio', SARIN_ADMIN_UID: 'fixture-owner', SARIN_ADMIN_EMAIL: 'owner@example.test',
   SARIN_ADMIN_CSRF_SECRET: 'fixture-csrf-secret-with-at-least-32-characters', SARIN_DB: { prepare() {} },
 });
 const id = '89a256b7-53ac-49ce-8ab8-4645c22952ff';
-function jwt(overrides = {}, { alg = 'RS256', key = pair.privateKey } = {}) {
+function jwt(overrides = {}, { alg = 'RS256', kid = 'fixture-key', key = pair.privateKey } = {}) {
   const now = Math.floor(Date.now() / 1000);
-  const claims = { iss: env().SARIN_ACCESS_DOMAIN, aud: [env().SARIN_ACCESS_AUD], exp: now + 600, iat: now - 5, nbf: now - 5, email: 'owner@example.test', sub: 'fixture-owner', type: 'app', ...overrides };
+  const claims = { iss: 'https://securetoken.google.com/alsdevstudio', aud: 'alsdevstudio', exp: now + 600, iat: now - 5, nbf: now - 5,
+    auth_time: now - 5, email: 'owner@example.test', email_verified: true, sub: 'fixture-owner', firebase: { sign_in_provider: 'google.com' }, ...overrides };
   for (const name of Object.keys(claims)) if (claims[name] === undefined) delete claims[name];
-  const input = `${Buffer.from(JSON.stringify({ alg, kid: 'fixture-key' })).toString('base64url')}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}`;
+  const input = `${Buffer.from(JSON.stringify({ alg, kid })).toString('base64url')}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}`;
   return `${input}.${sign('RSA-SHA256', Buffer.from(input), key).toString('base64url')}`;
 }
 function request(path = '/api/control-sarin/bootstrap', { token = jwt(), headers = {}, method = 'GET', body, origin = 'https://alsdevstudio.com' } = {}) {
-  return new Request(`${origin}${path}`, { method, headers: { ...(token ? { 'Cf-Access-Jwt-Assertion': token } : {}), ...headers }, ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
+  const combined = new Headers(headers);
+  if (token) combined.set('Cookie', [combined.get('Cookie'), `__Host-sarin_admin=${token}`].filter(Boolean).join('; '));
+  return new Request(`${origin}${path}`, { method, headers: combined, ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
+}
+const account = (overrides = {}) => ({ localId: 'fixture-owner', email: 'owner@example.test', emailVerified: true,
+  disabled: false, providerUserInfo: [{ providerId: 'google.com', email: 'owner@example.test' }], ...overrides });
+function googleFetch({ user = account(), lookup } = {}) {
+  return async (url, options) => {
+    const address = String(url);
+    if (address === JWKS_URL) return Response.json({ keys: [publicJwk] }, { headers: { 'Cache-Control': 'public, max-age=300' } });
+    assert.equal(address, LOOKUP_URL, 'ninguna red remota');
+    assert.equal(options.method, 'POST');
+    const value = JSON.parse(options.body);
+    assert.equal(typeof value.idToken, 'string');
+    return lookup ? lookup(options) : Response.json({ users: [user] });
+  };
 }
 async function fixture(run) {
   const original = globalThis.fetch;
   const fetched = [];
-  globalThis.fetch = async url => {
-    fetched.push(String(url));
-    assert.equal(String(url), 'https://fixture.cloudflareaccess.com/cdn-cgi/access/certs', 'ninguna red remota');
-    return Response.json({ keys: [publicJwk] });
-  };
+  const authFetch = googleFetch();
+  globalThis.fetch = async (...args) => { fetched.push(String(args[0])); return authFetch(...args); };
   try { return await run(fetched); } finally { globalThis.fetch = original; }
 }
 const summary = () => ({ id, createdAt: 1792152000000, updatedAt: 1792152001000, expiresAt: 1794744000000, service: 'website', turns: 1, reviewedAt: null, blockedUntil: null, status: 'completed', outOfScopeCount: 0, errorCount: 0, usage: { reservedMicros: 100, verifiedMicros: 40, retainedMicros: 0 } });
@@ -45,7 +60,7 @@ function storeFixture() {
 }
 const moduleUnderTest = () => import('../../server/sarin/admin.js');
 
-test('bootstrap privado usa el plugin real y entrega CSRF sin caché', async () => fixture(async fetched => {
+test('bootstrap privado verifica firma y cuenta Firebase y entrega CSRF sin caché', async () => fixture(async fetched => {
   const { handleSarinAdmin } = await moduleUnderTest();
   const response = await handleSarinAdmin(request(), env(), { store: storeFixture() });
   assert.equal(response.status, 200);
@@ -55,17 +70,22 @@ test('bootstrap privado usa el plugin real y entrega CSRF sin caché', async () 
   assert.equal(data.purge.status, 'never');
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow, noarchive');
-  assert.equal(fetched.length, 1);
+  assert.ok(fetched.includes(JWKS_URL)); assert.ok(fetched.includes(LOOKUP_URL));
 }));
 
 for (const [name, token] of [
   ['ausente', null], ['falso', 'fixture.false.jwt'], ['firma ajena', jwt({}, { key: generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey })],
-  ['algoritmo ajeno', jwt({}, { alg: 'HS256' })], ['vencido', jwt({ exp: 1 })], ['exp ausente', jwt({ exp: undefined })],
-  ['aud ajena', jwt({ aud: ['another-audience'] })], ['aud substring', jwt({ aud: 'prefix-fixture-admin-audience-suffix' })], ['aud ausente', jwt({ aud: undefined })],
-  ['iss ajeno', jwt({ iss: 'https://other.cloudflareaccess.com' })], ['iss ausente', jwt({ iss: undefined })],
+  ['algoritmo ajeno', jwt({}, { alg: 'HS256' })], ['clave no publicada por Google', jwt({}, { kid: 'unknown-key' })], ['vencido', jwt({ exp: 1 })], ['exp ausente', jwt({ exp: undefined })],
+  ['aud ajena', jwt({ aud: 'another-project' })], ['aud substring', jwt({ aud: 'prefix-alsdevstudio-suffix' })], ['aud ausente', jwt({ aud: undefined })],
+  ['iss ajeno', jwt({ iss: 'https://securetoken.google.com/other-project' })], ['iss ausente', jwt({ iss: undefined })],
   ['otro propietario', jwt({ email: 'other@example.test' })], ['email ausente', jwt({ email: undefined })], ['sub vacío', jwt({ sub: '' })],
+  ['UID ajeno', jwt({ sub: 'another-owner' })], ['correo sin verificar', jwt({ email_verified: false })], ['correo verificado ausente', jwt({ email_verified: undefined })],
+  ['proveedor ajeno', jwt({ firebase: { sign_in_provider: 'password' } })], ['proveedor ausente', jwt({ firebase: undefined })],
+  ['auth_time ausente', jwt({ auth_time: undefined })], ['auth_time texto', jwt({ auth_time: String(Math.floor(Date.now() / 1000) - 5) })],
+  ['auth_time futuro', jwt({ auth_time: Math.floor(Date.now() / 1000) + 120 })],
+  ['autenticación mayor de seis horas', jwt({ auth_time: Math.floor(Date.now() / 1000) - 21601 })],
   ['exp texto', jwt({ exp: String(Math.floor(Date.now() / 1000) + 600) })], ['iat futuro', jwt({ iat: Math.floor(Date.now() / 1000) + 120 })], ['nbf futuro', jwt({ nbf: Math.floor(Date.now() / 1000) + 120 })],
-]) test(`Access rechaza JWT ${name}`, async () => fixture(async () => {
+]) test(`Firebase rechaza JWT ${name}`, async () => fixture(async () => {
   const { handleSarinAdmin } = await moduleUnderTest();
   const store = storeFixture();
   const response = await handleSarinAdmin(request(undefined, { token }), env(), { store });
@@ -75,28 +95,35 @@ for (const [name, token] of [
   assert.deepEqual(store.calls, []);
 }));
 
-for (const name of ['SARIN_ADMIN_ENABLED', 'SARIN_ACCESS_DOMAIN', 'SARIN_ACCESS_AUD', 'SARIN_ADMIN_EMAIL', 'SARIN_ADMIN_CSRF_SECRET']) test(`configuración ausente ${name} cierra antes de red`, async () => fixture(async fetched => {
+for (const name of ['SARIN_ADMIN_ENABLED', 'SARIN_FIREBASE_API_KEY', 'SARIN_FIREBASE_PROJECT_ID', 'SARIN_ADMIN_UID', 'SARIN_ADMIN_EMAIL', 'SARIN_ADMIN_CSRF_SECRET']) test(`configuración ausente ${name} cierra antes de red`, async () => fixture(async fetched => {
   const { handleSarinAdmin } = await moduleUnderTest();
   const config = env(); delete config[name];
   assert.equal((await handleSarinAdmin(request(), config, { store: storeFixture() })).status, 503);
   assert.equal(fetched.length, 0);
 }));
 
-test('pages.dev y HTML alternativo exigen JWT; nunca confían en email de cabecera', async () => fixture(async () => {
+test('pages.dev sirve solo el shell de acceso con cabeceras privadas y sin identidad precargada', async () => fixture(async fetched => {
   const { protectSarinAdmin } = await import('../../server/sarin/access.js');
   for (const path of ['/control-sarin', '/control-sarin/', '/control-sarin/index.html', '/control-sarin/extra']) {
     let delivered = false;
-    const context = { request: request(path, { origin: 'https://fixture.pages.dev', token: null, headers: { 'Cf-Access-Authenticated-User-Email': 'owner@example.test' } }), env: env(), data: {}, functionPath: '/control-sarin', waitUntil() {}, passThroughOnException() {}, next: async () => { delivered = true; return new Response('private fixture'); } };
+    const context = { request: request(path, { origin: 'https://fixture.pages.dev', token: null, headers: { 'Cf-Access-Authenticated-User-Email': 'owner@example.test' } }), env: env(), data: {}, functionPath: '/control-sarin', waitUntil() {}, passThroughOnException() {}, next: async () => { delivered = true; return new Response('<html>login shell</html>'); } };
     const response = await protectSarinAdmin(context);
-    assert.equal(response.status, 403); assert.equal(delivered, false);
+    assert.equal(response.status, 200); assert.equal(delivered, true);
+    assert.equal(await response.text(), '<html>login shell</html>');
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.match(response.headers.get('X-Robots-Tag'), /noindex/);
+    assert.equal(context.data.sarinAdmin, undefined);
   }
+  assert.equal(fetched.length, 0);
 }));
 
-test('HTML autorizado conserva CSP funcional pero añade cabeceras privadas', async () => fixture(async () => {
+test('HTML de acceso aplica CSP Firebase y cabeceras privadas aun con CSP heredada', async () => fixture(async () => {
   const { protectSarinAdmin } = await import('../../server/sarin/access.js');
   const response = await protectSarinAdmin({ request: request('/control-sarin/'), env: env(), data: {}, functionPath: '/control-sarin', waitUntil() {}, passThroughOnException() {}, next: async () => new Response('<html>fixture</html>', { headers: { 'Content-Security-Policy': "default-src 'self'" } }) });
   assert.equal(response.status, 200); assert.equal(response.headers.get('Cache-Control'), 'no-store');
-  assert.equal(response.headers.get('Content-Security-Policy'), "default-src 'self'");
+  const policy = response.headers.get('Content-Security-Policy');
+  assert.match(policy, /frame-ancestors 'none'/); assert.match(policy, /identitytoolkit\.googleapis\.com/);
+  assert.match(policy, /alsdevstudio\.firebaseapp\.com/); assert.ok(!policy.includes("script-src 'unsafe-inline'"));
 }));
 
 test('lista y detalle proyectan solo campos públicos; el contenido XSS sigue siendo JSON inerte', async () => fixture(async () => {
@@ -135,7 +162,11 @@ test('CSRF caduca, depende de la identidad y no usa SARIN_IP_SECRET', async () =
   const csrf = (await (await handleSarinAdmin(request(undefined, { token }), env(), { store, now: () => clock })).json()).csrfToken;
   const options = { token, method: 'POST', headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json', 'X-Sarin-CSRF': csrf }, body: { action: 'review' } };
   assert.equal((await handleSarinAdmin(request(`/api/control-sarin/conversations/${id}`, options), env(), { store, now: () => clock + 16 * 60 * 1000 })).status, 403);
-  assert.equal((await handleSarinAdmin(request(`/api/control-sarin/conversations/${id}`, { ...options, token: jwt({ sub: 'another-sub' }) }), env(), { store })).status, 403);
+  const alternateConfig = { ...env(), SARIN_ADMIN_UID: 'another-sub' }, alternateToken = jwt({ sub: 'another-sub' });
+  const alternateOptions = { store, authFetch: googleFetch({ user: account({ localId: 'another-sub' }) }) };
+  assert.equal((await handleSarinAdmin(request(undefined, { token: alternateToken }), alternateConfig, alternateOptions)).status, 200);
+  assert.equal((await handleSarinAdmin(request(`/api/control-sarin/conversations/${id}`, { ...options, token: alternateToken }), alternateConfig, alternateOptions)).status, 403);
+  assert.deepEqual(store.calls, []);
 }));
 
 test('firma CSRF rechaza payload alterado, secreto ajeno y cuerpo fuera del límite', async () => fixture(async () => {
@@ -166,15 +197,15 @@ test('fechas epochms conservan el intervalo Colombia definido por la UI', async 
 }));
 
 for (const [name, changes] of [
-  ['apagada', { SARIN_ADMIN_ENABLED: 'false' }], ['dominio arbitrario', { SARIN_ACCESS_DOMAIN: 'https://evil.test' }],
-  ['ruta en dominio', { SARIN_ACCESS_DOMAIN: 'https://fixture.cloudflareaccess.com/path' }], ['secreto CSRF corto', { SARIN_ADMIN_CSRF_SECRET: 'short' }],
-]) test(`configuración ${name} nunca consulta Access`, async () => fixture(async fetched => {
+  ['apagada', { SARIN_ADMIN_ENABLED: 'false' }], ['proyecto malformado', { SARIN_FIREBASE_PROJECT_ID: 'https://evil.test' }],
+  ['UID vacío', { SARIN_ADMIN_UID: '' }], ['secreto CSRF corto', { SARIN_ADMIN_CSRF_SECRET: 'short' }],
+]) test(`configuración ${name} nunca consulta Google`, async () => fixture(async fetched => {
   const { handleSarinAdmin } = await moduleUnderTest();
   assert.equal((await handleSarinAdmin(request(), { ...env(), ...changes }, { store: storeFixture() })).status, 503);
   assert.equal(fetched.length, 0);
 }));
 
-for (const [name, value] of [['service token', { sub: '', email: undefined }], ['tipo service', { type: 'service' }], ['iat ausente', { iat: undefined }], ['nbf texto', { nbf: '0' }], ['aud objeto', { aud: { includes: true } }]]) test(`claims inválidos con firma real: ${name}`, async () => fixture(async () => {
+for (const [name, value] of [['service token', { sub: '', email: undefined }], ['Google verificado como texto', { email_verified: 'true' }], ['iat ausente', { iat: undefined }], ['nbf texto', { nbf: '0' }], ['aud objeto', { aud: { includes: true } }]]) test(`claims inválidos con firma real: ${name}`, async () => fixture(async () => {
   const { handleSarinAdmin } = await moduleUnderTest();
   assert.equal((await handleSarinAdmin(request(undefined, { token: jwt(value) }), env(), { store: storeFixture() })).status, 403);
 }));
@@ -185,7 +216,7 @@ test('caída de JWKS falla cerrada sin exponer excepción', async () => {
   try {
     const { handleSarinAdmin } = await moduleUnderTest();
     const response = await handleSarinAdmin(request(), env(), { store: storeFixture() });
-    assert.equal(response.status, 403); assert.ok(!(await response.text()).includes('fixture-private-network'));
+    assert.equal(response.status, 503); assert.ok(!(await response.text()).includes('fixture-private-network'));
   } finally { globalThis.fetch = original; }
 });
 
@@ -202,7 +233,7 @@ test('administración habilitada funciona vacía con chat e historial apagados s
   const { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION } = await import('../../scripts/modules/sarin-consent.js');
   const config = { ...env(), SARIN_DB: database.db, SARIN_ADMIN_ENABLED: 'true',
     SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'false', SARIN_IP_SECRET: 'fixture-ip-secret-with-at-least-32-characters' };
-  // Sin clave de inferencia: el panel solo requiere identidad Access, CSRF y D1.
+  // Sin clave de inferencia: el panel solo requiere identidad Firebase, CSRF y D1.
   const bootstrap = await handleSarinAdmin(request(), config);
   assert.equal(bootstrap.status, 200);
   assert.equal(bootstrap.headers.get('Cache-Control'), 'no-store');
@@ -222,7 +253,7 @@ test('administración habilitada funciona vacía con chat e historial apagados s
     assert.equal(database.sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, 0, table);
   }
   assert.ok(fetched.length > 0);
-  assert.ok(fetched.every(url => url === 'https://fixture.cloudflareaccess.com/cdn-cgi/access/certs'));
+  assert.ok(fetched.every(url => url === JWKS_URL || url === LOOKUP_URL));
 }));
 
 test('API integra SQL real: lista paginada, detalle fiel, revisión, bloqueo 24h, desbloqueo y borrado', async t => fixture(async () => {
@@ -274,7 +305,7 @@ async function privateChatFixture(t) {
   const config = { ...env(), SARIN_DB: database.db, SARIN_PRIVATE_TEST_ENABLED: 'true', SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'false',
     SARIN_IP_SECRET: 'fixture-private-ip-secret-at-least-32-characters', DEEPSEEK_API_KEY: 'fixture-private-api-key',
     SARIN_INPUT_PRICE_MICROS: '300000', SARIN_OUTPUT_PRICE_MICROS: '1200000', SARIN_DAILY_BUDGET_MICROS: '1000000', SARIN_MONTHLY_BUDGET_MICROS: '10000000' };
-  const options = { now: () => clock, fetch: async (url, init) => {
+  const options = { now: () => clock, authFetch: globalThis.fetch, fetch: async (url, init) => {
     calls.push({ url, body: JSON.parse(init.body) });
     assert.equal(url, 'https://api.deepseek.com/chat/completions');
     return Response.json({ choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: '{"inScope":false}' } }],
@@ -331,7 +362,7 @@ test('prueba privada del titular admite sesión y mensaje mayor que 256 bytes co
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_conversations').get().n, 1);
 }));
 
-test('prueba privada nunca omite Access ni propietario aunque su flag esté activo', async t => fixture(async () => {
+test('prueba privada nunca omite Firebase ni propietario aunque su flag esté activo', async t => fixture(async () => {
   const f = await privateChatFixture(t);
   for (const token of [null, 'fixture.false.jwt', jwt({ email: 'other@example.test' }), jwt({ exp: 1 })]) {
     for (const [path, body] of [['session',{ consent: f.consent }],['message',{ message: 'Una tienda', requestId: id }]]) {
@@ -388,4 +419,206 @@ test('prueba privada mantiene contratos cerrados y no admite configuración desd
     ['/api/control-sarin/test/message',{ message: 'Una tienda', requestId: id, history: [] }]]) assert.equal((await f.post(path, body)).status, 400);
   assert.equal((await f.post('/api/control-sarin/test/session', { consent: { ...f.consent, accepted: false } })).status, 403);
   f.empty();
+}));
+
+test('configuración de acceso Google pública no entrega identidad, secretos ni consultas al historial', async () => fixture(async fetched => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const response = await handleSarinAdmin(request('/api/control-sarin/auth/config', { token: null }), env(), { store });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { firebase: { apiKey: 'fixture-firebase-public-key', authDomain: 'alsdevstudio.firebaseapp.com', projectId: 'alsdevstudio' } });
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.match(response.headers.get('X-Robots-Tag'), /noindex/);
+  assert.deepEqual(store.calls, []); assert.deepEqual(fetched, []);
+}));
+
+test('entrada Google valida JWT y cuenta antes de emitir cookie HttpOnly y permite bootstrap sin bearer', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture(); const token = jwt();
+  const response = await handleSarinAdmin(request('/api/control-sarin/auth/session', { token: null, method: 'POST',
+    headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, body: { idToken: token } }), env(), { store });
+  assert.equal(response.status, 200); assert.deepEqual(await response.json(), { ok: true });
+  const cookie = response.headers.get('Set-Cookie'); assert.ok(cookie.startsWith(`__Host-sarin_admin=${token};`));
+  for (const attribute of ['HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/']) assert.ok(cookie.includes(attribute));
+  assert.equal(/Domain=/i.test(cookie), false);
+  const maxAge = Number(/Max-Age=(\d+)/.exec(cookie)?.[1]); assert.ok(maxAge > 0 && maxAge <= 600);
+  assert.deepEqual(store.calls, []);
+  const bootstrap = await handleSarinAdmin(request(undefined, { token: null, headers: { Cookie: cookie.split(';')[0] } }), env(), { store });
+  assert.equal(bootstrap.status, 200); assert.equal((await bootstrap.json()).adminEmail, 'owner@example.test');
+}));
+
+test('renovación admite token nuevo con auth_time reciente pero no extiende autenticación mayor de seis horas', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const clock = Date.now(); const seconds = Math.floor(clock / 1000);
+  const headers = { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' };
+  const send = token => handleSarinAdmin(request('/api/control-sarin/auth/session', { token: null, method: 'POST', headers, body: { idToken: token } }), env(), { now: () => clock });
+  for (const iat of [seconds - 120, seconds]) {
+    const response = await send(jwt({ iat, auth_time: seconds - 300, exp: seconds + 3600 }));
+    assert.equal(response.status, 200); assert.ok(response.headers.has('Set-Cookie'));
+  }
+  const stale = await send(jwt({ iat: seconds, auth_time: seconds - 21601, exp: seconds + 3600 }));
+  assert.equal(stale.status, 403); assert.equal(stale.headers.has('Set-Cookie'), false);
+}));
+
+for (const [name, options, expected] of [
+  ['origen ajeno', { headers: { Origin: 'https://evil.test', 'Content-Type': 'application/json' }, body: { idToken: jwt() } }, 403],
+  ['sin origen', { headers: { 'Content-Type': 'application/json' }, body: { idToken: jwt() } }, 403],
+  ['tipo incorrecto', { headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'text/plain' }, body: { idToken: jwt() } }, 400],
+  ['JSON roto', { body: '{' }, 400], ['campo ajeno', { body: { idToken: jwt(), uid: 'fixture-owner' } }, 400],
+  ['token ausente', { body: {} }, 400], ['JWT falso', { body: { idToken: 'fixture.false.jwt' } }, 403],
+  ['cuerpo demasiado grande', { body: '{' + ' '.repeat(16384) }, 413],
+  ['codificación ajena', { headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json', 'Content-Encoding': 'gzip' }, body: { idToken: jwt() } }, 400],
+]) test(`entrada Google rechaza ${name} sin crear cookie ni tocar historial`, async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const response = await handleSarinAdmin(request('/api/control-sarin/auth/session', { token: null, method: 'POST',
+    headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, ...options }), env(), { store });
+  assert.equal(response.status, expected); assert.equal(response.headers.has('Set-Cookie'), false); assert.deepEqual(store.calls, []);
+}));
+
+test('salida borra cookie con sesión ausente o inválida aun si la administración no está configurada', async () => fixture(async fetched => {
+  const { handleSarinAdmin } = await moduleUnderTest();
+  for (const token of [null, 'fixture.false.jwt']) {
+    const response = await handleSarinAdmin(request('/api/control-sarin/auth/logout', { token, method: 'POST',
+      headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, body: {} }), {});
+    assert.equal(response.status, 200); assert.deepEqual(await response.json(), { ok: true });
+    const cookie = response.headers.get('Set-Cookie'); assert.match(cookie, /^__Host-sarin_admin=;/); assert.match(cookie, /Max-Age=0/);
+    for (const attribute of ['HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/']) assert.ok(cookie.includes(attribute));
+  }
+  assert.deepEqual(fetched, []);
+}));
+
+test('salida exige origen propio y cuerpo cerrado sin exigir que el token siga válido', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest();
+  for (const [headers, body, expected] of [
+    [{ Origin: 'https://evil.test', 'Content-Type': 'application/json' }, {}, 403],
+    [{ 'Content-Type': 'application/json' }, {}, 403],
+    [{ Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, { extra: true }, 400],
+    [{ Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, '{' + ' '.repeat(256), 413],
+  ]) {
+    const response = await handleSarinAdmin(request('/api/control-sarin/auth/logout', { token: null, method: 'POST', headers, body }), {});
+    assert.equal(response.status, expected); assert.equal(response.headers.has('Set-Cookie'), false);
+  }
+}));
+
+test('endpoints de autenticación rechazan métodos ajenos y parámetros no previstos', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest();
+  for (const [path, method] of [['config', 'POST'], ['session', 'GET'], ['logout', 'GET']]) {
+    const response = await handleSarinAdmin(request(`/api/control-sarin/auth/${path}`, { token: null, method }), env());
+    assert.equal(response.status, 405); assert.equal(response.headers.has('Set-Cookie'), false);
+  }
+  for (const [path, body] of [['config', undefined], ['session', { idToken: jwt() }], ['logout', {}]]) {
+    const response = await handleSarinAdmin(request(`/api/control-sarin/auth/${path}?uid=another-owner`, { token: null,
+      method: path === 'config' ? 'GET' : 'POST', headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json' }, body }), env());
+    assert.equal(response.status, 400); assert.equal(response.headers.has('Set-Cookie'), false);
+  }
+}));
+
+test('cabeceras Access o bearer nunca sustituyen la cookie Firebase del administrador en ningún dominio', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  for (const origin of ['https://alsdevstudio.com', 'https://www.alsdevstudio.com', 'https://fixture.alsdevstudio.pages.dev']) {
+    const response = await handleSarinAdmin(request(undefined, { token: null, origin, headers: { 'Cf-Access-Jwt-Assertion': jwt(),
+      'Cf-Access-Authenticated-User-Email': 'owner@example.test', Authorization: `Bearer ${jwt()}` } }), env(), { store });
+    assert.equal(response.status, 403);
+  }
+  assert.deepEqual(store.calls, []);
+}));
+
+test('cookie administrativa rechaza duplicados, nombres parecidos y valores demasiado grandes', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture(); const token = jwt();
+  for (const cookie of [`__Host-sarin_admin=${token}; __Host-sarin_admin=${token}`, `sarin_admin=${token}`, `__Host-sarin_admin=${'a'.repeat(3801)}`]) {
+    const response = await handleSarinAdmin(request(undefined, { token: null, headers: { Cookie: cookie } }), env(), { store });
+    assert.equal(response.status, 403);
+  }
+  assert.deepEqual(store.calls, []);
+}));
+
+for (const [name, user] of [
+  ['deshabilitada', account({ disabled: true })], ['disabled malformado', account({ disabled: 'false' })],
+  ['UID diferente', account({ localId: 'another-owner' })], ['correo diferente', account({ email: 'other@example.test' })],
+  ['correo sin verificar', account({ emailVerified: false })], ['verificación de correo ausente', account({ emailVerified: undefined })],
+  ['validSince malformado', account({ validSince: 'invalid' })],
+  ['sesión revocada', () => account({ validSince: String(Math.floor(Date.now() / 1000)) })],
+]) test(`estado Firebase ${name} cierra antes de consultar historial`, async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const response = await handleSarinAdmin(request(), env(), { store, authFetch: googleFetch({ user: typeof user === 'function' ? user() : user }) });
+  assert.equal(response.status, 403); assert.deepEqual(store.calls, []); assert.equal(response.headers.has('Set-Cookie'), false);
+}));
+
+test('lookup permite disabled y validSince omitidos y vuelve a comprobar revocación en cada consulta', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  let lookupCount = 0;
+  const user = account(); delete user.disabled;
+  const authFetch = googleFetch({ lookup: async () => { lookupCount++; return Response.json({ users: [{ ...user, ...(lookupCount > 1 ? { disabled: true } : {}) }] }); } });
+  const options = { store, authFetch };
+  assert.equal((await handleSarinAdmin(request(), env(), options)).status, 200);
+  assert.equal((await handleSarinAdmin(request('/api/control-sarin/conversations'), env(), options)).status, 403);
+  assert.equal(lookupCount, 2); assert.deepEqual(store.calls, []);
+}));
+
+test('revocación compara auth_time y no acepta renovación con iat posterior al cierre de sesiones', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const seconds = Math.floor(Date.now() / 1000); const authFetch = googleFetch({ user: account({ validSince: String(seconds - 60) }) });
+  const refreshed = jwt({ auth_time: seconds - 120, iat: seconds, exp: seconds + 3600 });
+  assert.equal((await handleSarinAdmin(request(undefined, { token: refreshed }), env(), { store, authFetch })).status, 403);
+  const signedInAgain = jwt({ auth_time: seconds - 30, iat: seconds, exp: seconds + 3600 });
+  assert.equal((await handleSarinAdmin(request(undefined, { token: signedInAgain }), env(), { store, authFetch })).status, 200);
+  assert.deepEqual(store.calls, []);
+}));
+
+// La indisponibilidad es reintentable; una identidad inválida sigue siendo 403.
+for (const [name, lookup, expected] of [
+  ['sin cuenta', () => Response.json({ users: [] }), 403], ['cuerpo malformado', () => Response.json({ users: 'not-an-array' }), 403],
+  ['JSON roto', () => new Response('{', { headers: { 'Content-Type': 'application/json' } }), 503],
+  ['servicio caído', () => Response.json({ error: { message: 'fixture-private-error' } }, { status: 503 }), 503],
+  ['respuesta excesiva', () => new Response(' '.repeat(65537), { headers: { 'Content-Type': 'application/json' } }), 503],
+  ['error de transporte', () => { throw new Error('fixture-private-network'); }, 503],
+]) test(`lookup ${name} falla cerrado y no filtra errores ni mensajes`, async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const response = await handleSarinAdmin(request(), env(), { store, authFetch: googleFetch({ lookup }) });
+  assert.equal(response.status, expected); assert.deepEqual(store.calls, []); assert.ok(!(await response.text()).includes('fixture-private'));
+}));
+
+test('lookup con timeout cancela la petición y falla cerrado antes de consultar historial', { timeout: 15000 }, async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture(); let aborted = false;
+  const authFetch = googleFetch({ lookup: options => new Promise((resolve, reject) => {
+    const stop = () => { aborted = true; reject(new DOMException('fixture-private-timeout', 'AbortError')); };
+    if (options.signal?.aborted) stop(); else options.signal?.addEventListener('abort', stop, { once: true });
+  }) });
+  const response = await handleSarinAdmin(request(), env(), { store, authFetch });
+  assert.equal(response.status, 503); assert.equal(aborted, true); assert.deepEqual(store.calls, []);
+  assert.ok(!(await response.text()).includes('fixture-private'));
+}));
+
+test('rotación JWKS respeta cooldown, recarga una vez por kid desconocido y no recarga por firma inválida', async () => fixture(async fetched => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const rotatedPair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const rotatedJwk = { ...rotatedPair.publicKey.export({ format: 'jwk' }), kid: 'fixture-rotated-key', alg: 'RS256', use: 'sig' };
+  const start = Math.floor(Date.now() / 1000);
+  const claims = { iat: start - 5, auth_time: start - 5, nbf: start - 5, exp: start + 600 };
+  let clock = start, published = [publicJwk], downloads = 0, lookups = 0;
+  const authFetch = async (url, options) => {
+    if (String(url) === JWKS_URL) {
+      downloads++;
+      return Response.json({ keys: published }, { headers: { 'Cache-Control': 'public, max-age=300' } });
+    }
+    assert.equal(String(url), LOOKUP_URL, 'ninguna red remota');
+    assert.equal(options.method, 'POST'); lookups++;
+    return Response.json({ users: [account()] });
+  };
+  const bootstrap = token => handleSarinAdmin(request(undefined, { token }), env(), { store, authFetch, now: () => clock * 1000 });
+  assert.equal((await bootstrap(jwt(claims))).status, 200); assert.equal(downloads, 1); assert.equal(lookups, 1);
+
+  published = [rotatedJwk];
+  const rotatedToken = jwt(claims, { kid: rotatedJwk.kid, key: rotatedPair.privateKey });
+  clock = start + 29;
+  assert.equal((await bootstrap(rotatedToken)).status, 403); assert.equal(downloads, 1); assert.equal(lookups, 1);
+  clock = start + 30;
+  assert.equal((await bootstrap(rotatedToken)).status, 200); assert.equal(downloads, 2); assert.equal(lookups, 2);
+
+  // Tras el cooldown, una firma incorrecta con kid conocido sigue sin provocar red adicional.
+  clock = start + 61;
+  assert.equal((await bootstrap(jwt(claims, { kid: rotatedJwk.kid }))).status, 403);
+  assert.equal(downloads, 2); assert.equal(lookups, 2);
+  const missingToken = jwt(claims, { kid: 'fixture-unpublished-key', key: rotatedPair.privateKey });
+  assert.equal((await bootstrap(missingToken)).status, 403); assert.equal(downloads, 3);
+  // La nueva descarga no contiene ese kid: se rechaza sin bucle y reinicia el cooldown.
+  assert.equal((await bootstrap(missingToken)).status, 403); assert.equal(downloads, 3); assert.equal(lookups, 2);
+  assert.deepEqual(store.calls, []); assert.deepEqual(fetched, []);
 }));

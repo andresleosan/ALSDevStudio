@@ -1,5 +1,5 @@
 // @ts-check
-import { authenticateSarinAdmin, AdminError, adminError, adminResponse } from './access.js';
+import { authenticateSarinAdmin, handleSarinAdminAuth, AdminError, adminError, adminResponse } from './access.js';
 import { readBoundedJson } from './policy.js';
 import { handleSarinSession, PRIVATE_SESSION_COOKIE } from './sessions.js';
 import { handleSarin } from './handler.js';
@@ -80,10 +80,12 @@ function privateChatResponse(response) {
  * Solo options internas; la petición nunca puede inyectar store/reloj.
  * @param {Request} request
  * @param {Record<string, any>} env
- * @param {{now?:()=>number, store?:any, fetch?:typeof fetch, quota?:any}} [options]
+ * @param {{now?:()=>number, store?:any, fetch?:typeof fetch, authFetch?:typeof fetch, quota?:any}} [options]
  */
 export async function handleSarinAdmin(request, env, options = {}) {
   try {
+    const authResponse = await handleSarinAdminAuth(request, env, options);
+    if (authResponse) return authResponse;
     const admin = await authenticateSarinAdmin(request, env, options);
     const url = new URL(request.url);
     const privateTest = /^\/api\/control-sarin\/test\/(session|message)\/?$/.exec(url.pathname);
