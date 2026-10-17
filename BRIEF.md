@@ -1,10 +1,17 @@
 # Brief — ALS DevStudio
 
+## Sarin: preparación remota con chat apagado · 2026-10-16
+
+- D1 exclusiva `alsdevstudio-sarin` creada en jurisdicción `us`/ubicación ENAM, migraciones 0001/0002 aplicadas, cero conversaciones/mensajes y respaldo vacío restaurado en prueba. Producción vincula esa base y sus secretos; preview no tiene D1 ni secretos. [ADR-001](docs/adr/001-sarin-d1-y-entornos.md).
+- Access configurado para interfaz y API en `www`, `pages.dev` y previews, solo para el titular, con sesión de 6 h y TOTP requerido cada 6 h. CNAME `www` pasó a Proxied sin cambiar destino ni los demás registros. Portada 200 y rutas privadas 302 hacia Access verificadas; falta que el titular registre TOTP y complete su login.
+- Worker de retención desplegado, cron horario, sin HTTP público ni URLs de preview y compartiendo la base de producción; primera ejecución remota todavía no observada. Pruebas focales de build/desarrollo/retención: 27/27 aprobadas.
+- **Código web nuevo sin publicar ni push**: Pages permanece en `38c298b7` y conserva su comando de build actual. Chat, historial y administración siguen apagados en producción y preview. La revisión del perfil DeepSeek no mostró controles API específicos de entrenamiento/retención/DPA; las condiciones contractuales e internacionales siguen pendientes. La preparación técnica no habilita conversaciones públicas. [Estado, verificación y pasos restantes](docs/SARIN-OPERACION.md).
+
 ## Sarin: administración e historial · solicitud del 16-10-2026
 
 - El titular solicita un panel privado para consultar cada conversación y su historial y revisar posibles abusos. Confirma conservar las conversaciones completas durante **30 días** con borrado automático; los contactos que siguen por WhatsApp mantienen su política aparte.
 - Ampliación aprobada e implementada en local: panel nuevo protegido con Cloudflare Access, historial fiable del servidor, señales técnicas de uso y autorización informada antes del primer mensaje. El panel anterior permanece retirado; no se restaura Firebase.
-- Investigación y textos preparados; historial del servidor, autorización previa, panel privado y purga horaria implementados y verificados localmente. **Sin publicar**: Access, D1/cron remotos y condiciones contractuales/internacionales pendientes antes de activar. [Diseño](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).
+- Investigación y textos preparados; historial del servidor, autorización previa, panel privado y purga horaria implementados y verificados localmente. **Código web sin publicar**; infraestructura remota preparada después, según el registro superior. Condiciones contractuales/internacionales, login TOTP del titular y verificación del cron remoto pendientes antes de activar. [Diseño](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).
 
 ## Sarin comercial · entrega inicial previa al historial · 2026-10-16
 

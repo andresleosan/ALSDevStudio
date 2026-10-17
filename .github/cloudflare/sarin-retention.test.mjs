@@ -181,6 +181,25 @@ test('scheduled espera la purga real y el Worker no ofrece handler HTTP', async 
   assert.equal(config.d1_databases[0].database_id, '00000000-0000-0000-0000-000000000002');
 });
 
+test('producción comparte D1 con la purga y los previews quedan aislados y apagados', async () => {
+  const pages = JSON.parse(await readFile(new URL('../../wrangler.jsonc', import.meta.url), 'utf8'));
+  const purge = JSON.parse(await readFile(new URL('../../workers/sarin-retention/wrangler.jsonc', import.meta.url), 'utf8'));
+  const operational = pages.d1_databases.find(entry => entry.binding === 'SARIN_DB');
+  const job = purge.env?.production;
+  assert.ok(job, 'Producción de purga debe elegirse explícitamente');
+  assert.equal(job.vars.SARIN_RETENTION_ENABLED, 'true');
+  assert.equal(job.d1_databases[0].database_id, operational.database_id);
+  assert.notEqual(operational.database_id, purge.d1_databases[0].database_id, 'Desarrollo no usa el identificador operativo');
+  assert.equal(job.workers_dev, false);
+  assert.equal(job.preview_urls, false);
+  assert.deepEqual(job.triggers.crons, ['0 * * * *']);
+  assert.deepEqual(pages.env.preview.d1_databases, []);
+  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED']) {
+    assert.equal(pages.vars[key], 'false');
+    assert.equal(pages.env.preview.vars[key], 'false');
+  }
+});
+
 test('recuperación exige mantenimiento y drenaje explícitos antes de tocar D1', async () => {
   const reset = clear();
   for (const [maintenanceConfirmed, requestsDrained] of [[false, false], [true, false], [false, true], ['true', true], [true, 'true']]) {

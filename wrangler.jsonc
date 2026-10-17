@@ -10,5 +10,27 @@
     "SARIN_OUTPUT_PRICE_MICROS": "1200000",
     "SARIN_DAILY_BUDGET_MICROS": "1000000",
     "SARIN_MONTHLY_BUDGET_MICROS": "10000000"
+  },
+  "d1_databases": [
+    {
+      "binding": "SARIN_DB",
+      "database_name": "alsdevstudio-sarin",
+      "database_id": "ba6d723c-57fb-472d-b9c0-1308c24912e3",
+      "migrations_dir": "migrations/sarin"
+    }
+  ],
+  "env": {
+    "preview": {
+      "vars": {
+        "SARIN_ENABLED": "false",
+        "SARIN_HISTORY_ENABLED": "false",
+        "SARIN_ADMIN_ENABLED": "false",
+        "SARIN_INPUT_PRICE_MICROS": "300000",
+        "SARIN_OUTPUT_PRICE_MICROS": "1200000",
+        "SARIN_DAILY_BUDGET_MICROS": "1000000",
+        "SARIN_MONTHLY_BUDGET_MICROS": "10000000"
+      },
+      "d1_databases": []
+    }
   }
 }

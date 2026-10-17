@@ -1,5 +1,17 @@
 # Tareas — ALS DevStudio
 
+## SARIN-INFRA · Preparación remota con funciones públicas apagadas · 2026-10-16
+
+- Estado: infraestructura preparada; **código web nuevo sin publicar ni push**, chat/historial/admin en `false`. Pages conserva despliegue `38c298b7` y build `node .github/cloudflare/build.mjs`; cambiar al build con `npm ci --prefix .github/sarin` solo al publicar el código nuevo.
+- [x] Crear D1 exclusiva `alsdevstudio-sarin`, UUID `ba6d723c-57fb-472d-b9c0-1308c24912e3`, jurisdicción `us`/ubicación ENAM; aplicar 0001/0002, verificar cero conversaciones/mensajes y restaurar un respaldo vacío en prueba. [ADR-001](docs/adr/001-sarin-d1-y-entornos.md).
+- [x] Provisionar privadamente secretos API/IP/CSRF y configuración Access de Pages en producción; preview sin D1 ni secretos, con los tres flags apagados.
+- [x] Configurar Access exclusivo del titular en los seis destinos de interfaz/API (`www`, `pages.dev` y previews), sesión de 6 h y TOTP requerido cada 6 h. Activar Proxied solo en CNAME `www`, conservando destino y demás DNS. Verificar portada 200 e interfaz/API privadas 302 hacia Access, también en preview.
+- [x] Desplegar Worker `als-sarin-retention`, versión `fc6b4b0f-3aad-4559-a3fc-17a0aae1be9c`, misma D1 y cron `0 * * * *`, sin HTTP público, `workers.dev` ni URLs de preview. Perfil predeterminado local apagado con UUID simulado.
+- [x] Repetir pruebas focales build/launcher/retención 27/27 y preparación local sin migraciones pendientes; confirmar cron configurado mediante API, sin acreditar todavía una ejecución. Revisar el perfil real de DeepSeek sin encontrar controles específicos API de entrenamiento, retención o DPA; mantener chat apagado y documentar condiciones pendientes.
+- [ ] Registrar credencial TOTP del titular y completar login real; verificar administración con identidad válida, ajena y vencida cuando el código web esté publicado.
+- [ ] Observar primera ejecución remota del cron y comprobar heartbeat D1; no se sustituye por el scheduled local aprobado.
+- [ ] Completar condiciones efectivas del proveedor y tratamiento internacional; revisar/publicar el código web y verificar controles antes de habilitar chat, historial o administración. [Operación actual](docs/SARIN-OPERACION.md).
+
 ## SARIN-ADMIN · Historial y revisión de datos · 2026-10-16
 
 - [x] Confirmar intención y retención: cada conversación para revisar uso/abuso; el titular elige 30 días para historial completo y borrado automático.
@@ -8,7 +20,7 @@
 - [x] Implementar panel privado, sesiones e historial del servidor, autorización previa y purga programada; actualizar avisos y guía. Pruebas con datos ficticios, sin publicar.
 - [x] Verificar: 259/259 principales, analítica/escenas 80/80, Pages local 6/6. Migración incremental repetible; cookie real segura; todas las rutas/alias privados cerrados. Worker scheduled local 200 y heartbeat D1 ok; dry-run sin despliegue.
 - [x] Revisiones independientes de integración, UI/legal y retención/recuperación. Corregidos lease con más de 100 pendientes, metadatos SQL, filtro inválido durante carga y descripciones de auditoría/purga. Sin hallazgos medios/altos pendientes. TSC mantiene 12 errores previos de analítica/proyectos; ninguno nuevo de Sarin.
-- [x] Preparar activación, costos y restauración en [operación](docs/SARIN-OPERACION.md) y [runbook](docs/SARIN-RESTAURACION.md). Solo main/commit local, sin push ni recursos remotos.
+- [x] Preparar activación, costos y restauración en [operación](docs/SARIN-OPERACION.md) y [runbook](docs/SARIN-RESTAURACION.md). Entrega inicial solo main/commit local, sin push ni recursos remotos entonces; la preparación posterior se registra en SARIN-INFRA.
 - [ ] Verificar configuración y contratos de los proveedores y tratamiento internacional, antes de una activación pública autorizada.
 
 ## SARIN-WEB · Entrega inicial anterior a SARIN-ADMIN · 2026-10-16
@@ -20,7 +32,7 @@
 - [x] Verificar interfaz con dobles: `node --test .github/cloudflare/sarin-ui.test.mjs`, 7/7 PASS; cinco anchos 320/390/680/900/1440, axe sin violaciones en el diálogo, teclado/IME/foco/analítica prioritaria, cancelación, resumen y no-JS. Botón cerrar mínimo 44 × 44 px, con regresión RED/GREEN; capturas en `test-results/sarin/`.
 - [x] Completar prueba integrada local con DeepSeek real y cuotas activas: landing, tienda, chatbot y pregunta ajena con 200; navegador móvil con dos ejemplos, resumen editable exacto para WhatsApp y cero errores. Corregidos redirect incompatible de `workerd` y reformulación del borrador; solo metadatos técnicos en logs.
 - [x] Cerrar QA local: suite conjunta 120/120, Pages/escenas 64/64, capturas revisadas y revisión independiente sin bloqueantes. TypeScript conserva doce errores previos fuera de Sarin. Muestra D1 local: 2110 microUSD verificados + 12196 retenidos, sin bloqueo global; no representa la factura de la cuenta.
-- [ ] Publicación y activación posteriores: revisión, recursos/configuración remotos, condiciones del proveedor y límites/alertas de cuenta; no se afirma un límite de facturación verificado.
+- [ ] Publicación y activación posteriores: recursos/configuración remotos preparados después en SARIN-INFRA; siguen pendientes revisión del código web publicado, condiciones del proveedor y límites/alertas de cuenta. No se afirma un límite de facturación verificado.
 - [Diseño](docs/superpowers/specs/2026-10-16-sarin-chat-web-design.md), [plan](docs/superpowers/plans/2026-10-16-sarin-chat-web.md) y [operación](docs/SARIN-OPERACION.md).
 
 ## ADMIN-RETIRADA · Volver a la landing sin panel · 2026-10-15
