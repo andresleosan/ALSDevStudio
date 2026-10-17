@@ -1,5 +1,14 @@
 # Tareas — ALS DevStudio
 
+## SARIN-AVISO-ACCESO · Aviso breve y entrada con Google · 2026-10-17
+
+- [x] Aplicar aviso breve con ALS DevStudio como marca principal, identificación legal secundaria visible, proveedor enlazado y autorización internacional expresa. Conservar privacidad y términos v3; versionar el aviso completo como v4.
+- [x] Añadir «Panel administrativo» al chat y al pie; retirar la sobrescritura JavaScript del aviso para conservar su marcado semántico.
+- [x] Verificar UI/sesiones 39/39 y build/sesiones/administración 107/107. Cinco anchos 320–1440 px, teclado, objetivos de 44 px, axe sin hallazgos y contacto sin JavaScript. Revisión independiente sin P1/P2; capturas locales en `test-results/sarin/empty-390.png` y `empty-1440.png`.
+- [x] Identificar causa de Firebase inhabilitado: retirada expresa del panel anterior el 15/10; usuario deshabilitado, sesiones revocadas y claim retirado. Consola actual confirma Google habilitado, usuario inhabilitado y plan Spark. Sarin usa un panel distinto con Access.
+- [ ] Conectar Google al Access existente, opción elegida por el titular; conservar el correo exclusivo, sesión de seis horas y TOTP. Verificar cliente OAuth, aplicación/política y acceso real antes de darlo por operativo.
+- [ ] Publicar el cambio revisado y comprobar el aviso v4 y el acceso en el dominio canónico.
+
 ## SARIN-PUBLICO · Acceso visible y apertura solicitada · 2026-10-16
 
 - [x] Reproducir ausencia del widget: despliegue correcto con flags públicos apagados; prueba privada y panel sí accesibles.

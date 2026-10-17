@@ -253,6 +253,14 @@ test('autorización previa sin premarcar, sin POST por servicios ni analítica d
   await page.locator('#sarin-form').dispatchEvent('submit');
   assert.equal(requests.length,0);
   assert.match(await page.locator('#sarin-consent').textContent(),/30 días/);
+  const {NOTICE_TEXT}=await load('sarin-consent');
+  const informed=await page.locator('#sarin-consent [data-sarin-notice]').allTextContents();
+  assert.equal(informed.map(text=>text.replace(/\s+/g,' ').trim()).join(' '),NOTICE_TEXT,'La huella debe incluir todo el aviso, la identidad, la autorización y las alternativas');
+  assert.equal(await page.locator('#sarin-consent-text a[href="privacidad.html#sarin"]').textContent(),'DeepSeek');
+  assert.equal(await page.locator('.sarin-toolbar a[href="/control-sarin/"]').isVisible(),true);
+  await page.locator('[data-sarin-close]').focus();
+  await page.keyboard.press('Tab');await page.keyboard.press('Tab');
+  assert.equal(await page.locator('.sarin-toolbar a[href="/control-sarin/"]').evaluate(el=>el===document.activeElement),true);
   assert.match(await page.locator('label[for="sarin-consent-checkbox"]').textContent(),/Autorizo.*acepto los Términos de Sarin/s);
   await authorize(page);
   assert.equal(requests.length,0); // autorización usa el mock específico, nunca inferencia
@@ -389,6 +397,11 @@ test('320/390/680/900/1440, axe, movimiento reducido y contacto sin JavaScript',
     await open(page);
     const rect = await page.locator('#sarin-chat').boundingBox();
     assert.ok(rect.width <= width && rect.x >= 0);
+    assert.equal(await page.locator('.sarin-toolbar').evaluate(el=>el.scrollWidth<=el.clientWidth),true,'La barra no debe desbordar en móvil');
+    for(const link of await page.locator('.sarin-toolbar a').all()){
+      const target=await link.boundingBox();
+      assert.ok(target.height>=44 && target.x>=rect.x && target.x+target.width<=rect.x+rect.width);
+    }
     assert.equal(await page.locator('#sarin-message').isVisible(),true);
     await page.addScriptTag({path:path.join(root,'test-results/axe.min.js')});
     const failures = await page.evaluate(async () => (await axe.run(document.querySelector('#sarin-chat'))).violations.map(v=>({id:v.id,impact:v.impact})));

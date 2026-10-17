@@ -1,5 +1,4 @@
 // @ts-check
-import {NOTICE_TEXT} from './sarin-consent.js';
 /** Vista en memoria; el historial autorizado se conserva en el servidor durante 30 días. */
 export async function initSarinChat() {
   const dialog = document.querySelector('#sarin-chat');
@@ -42,7 +41,6 @@ export async function initSarinChat() {
     if(!privateTest)return;
     const link=document.createElement('a');link.href='/control-sarin/';link.textContent='Revisar acceso en la administración de Sarin';status.append(' ',link);
   };
-  find('#sarin-consent-text').textContent=NOTICE_TEXT;
   /** @typedef {typeof import('./sarin-api.js') & typeof import('./sarin-summary.js')} ChatModules */
   /** @type {ChatModules|undefined} */
   let modules;

@@ -34,6 +34,7 @@ for(const field of ['privacyVersion','termsVersion'])test(`nuevas sesiones recha
 });
 for(const previous of [
   {noticeVersion:'sarin-history-2026-10-16-v1'},
+  {noticeVersion:'sarin-history-2026-10-16-v3'},
   {privacyVersion:'2026-10-16-sarin-history-v2'},
   {termsVersion:'2026-10-16-sarin-history-v2'},
 ])test(`apertura pública exige nueva autorización: rechaza ${Object.keys(previous)[0]} anterior`,async()=>{
