@@ -1,6 +1,13 @@
 # Brief — ALS DevStudio
 
-## Sarin: prueba privada publicada y chat público apagado · 2026-10-16
+## Revisión publicada de privacidad y accesibilidad · 2026-10-16
+
+- Estado actual: commit funcional `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`. Chat público apagado; administración y prueba privada conservadas con la misma D1, secretos y Access.
+- Políticas v2 ajustadas al uso real, cookie privada y administración; revisión de cancelación/garantía, inventario de recursos y OFL Chakra oficial. Analítica excluida de la prueba privada, HSTS, correo sin JavaScript, pausa y foco corregidos. No se acreditan licencias de proyectos ni se cierran condiciones de DeepSeek para visitantes.
+- Verificación: 370 pruebas iniciales, regresión adicional de correo, 18 de build y 6 de Pages versionadas; 12 escaneos axe limpios y 14 HTTP finales. Chrome comprueba módulos de la misma revisión y consentimiento v2 con caché normal, más tres turnos ficticios de café/Mundial/retorno al negocio, seis mensajes y una señal fuera de alcance, sin errores. Resumen revisado manualmente; ningún envío a WhatsApp.
+- [Auditoría, evidencias, fuentes y pendientes](docs/PRIVACIDAD-Y-CUMPLIMIENTO.md). Video de 73,5 s fuera del repositorio en `../Entregables/Sarin-Promo/entrega/`, con datos ficticios y sin exponer el panel. Voz colombiana para revisión, permiso comercial pendiente de acreditar o sustituir; se incluye copia sin voz, subtítulos y textos de redes.
+
+## Primera publicación de la prueba privada · 2026-10-16
 
 - El titular autorizó publicar la prueba privada para probar Sarin en la misma web con datos ficticios. Pages publicó correctamente el despliegue canónico `03625efb-fe06-4678-b847-b7cbfac6ebe1`, commit `828bdd5`, con build `npm ci --prefix .github/sarin && node .github/cloudflare/build.mjs`. La fase anterior de panel vacío quedó publicada en `658f002` / `9ab95b55-6214-4b76-a0b8-126b468cc537`.
 - D1 exclusiva `alsdevstudio-sarin`, jurisdicción `us`/ubicación ENAM, migraciones 0001/0002 aplicadas y respaldo vacío restaurado en prueba. Producción conserva su enlace D1 y seis secretos privados. Lectura de metadatos anterior a la prueba privada: cero conversaciones y mensajes. Preview mantiene cuatro flags apagadas y no tiene D1 ni secretos. [ADR-001](docs/adr/001-sarin-d1-y-entornos.md).

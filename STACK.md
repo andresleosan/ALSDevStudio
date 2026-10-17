@@ -1,6 +1,12 @@
 # Stack — ALS DevStudio
 
-### Sarin · prueba privada publicada y chat público apagado · 2026-10-16
+### Revisión actual de privacidad, accesibilidad y caché · 2026-10-16
+
+Producción funcional `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`; políticas v2, flags públicas apagadas y administración/prueba privada activas. No cambia el stack, el esquema, Access, los secretos ni el proveedor DeepSeek. El build propaga una revisión común de recursos públicos a HTML, JS/imports y CSS para evitar módulos legales antiguos en caché; no deriva de datos privados ni identifica visitantes. HSTS de 180 días solo host, correo `mailto` excluido puntualmente de ofuscación, beacon bloqueado en prueba privada, pausa y foco accesibles. Chakra OFL oficial y procedencia comprobadas.
+
+Verificación inicial 370/370, nueva regresión de correo, build 18/18 y Pages versionadas 6/6; 12/12 axe y 14/14 HTTP finales. Chrome normal confirma v2 y sesión lista, y el panel conserva seis mensajes de la prueba ficticia café/Mundial/retorno con una señal fuera de alcance y cero errores. La revisión jurídica de proveedores para visitantes y los permisos documentales de recursos siguen pendientes. [Cierre, límites y fuentes](docs/PRIVACIDAD-Y-CUMPLIMIENTO.md).
+
+### Primera publicación privada · registro anterior de 2026-10-16
 
 - Estado: el titular autorizó la prueba privada en la misma web con datos ficticios. Pages publicó correctamente el despliegue canónico `03625efb-fe06-4678-b847-b7cbfac6ebe1`, commit `828bdd5`; chat e historial públicos permanecen apagados. Sesión real del titular, inferencia e historial privados comprobados en Chrome. Candidato aprobado con 282/282 pruebas, 6/6 de Pages, compilación y 14/14 HTTP independientes en preview y 14/14 en producción. La fase anterior de panel vacío corresponde a `658f002` / `9ab95b55-6214-4b76-a0b8-126b468cc537`. [Operación y activación](docs/SARIN-OPERACION.md).
 - Frontend HTML/CSS/JS Vanilla, diálogo nativo, tokens y fuentes existentes; autorización previa sin premarcar, referencia y resumen editable hasta 1800 caracteres para WhatsApp manual. No persistir contenido en el navegador ni enviarlo a analítica. Chat público oculto por defecto en fuente y artefacto; el atributo explícito `true` habilita su vista pública solo en build local `--live`. La query privada exige primero bootstrap autorizado con permiso exacto; por sí sola no muestra el chat ni crea sesión. Es un control visual; las flags y validaciones del servidor mantienen el límite de acceso.

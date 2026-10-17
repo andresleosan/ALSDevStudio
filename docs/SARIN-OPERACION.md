@@ -1,5 +1,7 @@
 # Operación de Sarin
 
+**Actualización posterior de la misma fecha:** revisión de políticas v2 y accesibilidad publicada en `81784d3`, Pages `7f36ae7e-7543-49cb-ae17-3ec5bbc2515c`. Build con revisión común de módulos y estilos; HSTS, exclusión de analítica privada, correo sin JavaScript y controles accesibles verificados. Chrome normal inicia con v2; prueba ficticia café/Mundial/retorno conserva tres turnos y seis mensajes en el panel. Se mantienen el cierre público, Access, D1 y cuotas. [Auditoría final y fuentes](PRIVACIDAD-Y-CUMPLIMIENTO.md). Los despliegues descritos en la preparación inferior son el registro previo de la primera prueba.
+
 Fecha: 16 de octubre de 2026. Estado: **panel y prueba privada publicados con autorización expresa; sesión del titular, DeepSeek real e historial comprobados en el dominio**. `SARIN_ADMIN_ENABLED=true` y `SARIN_PRIVATE_TEST_ENABLED=true`; `SARIN_ENABLED=false` y `SARIN_HISTORY_ENABLED=false` públicos. La portada normal mantiene el chat oculto para visitantes. El titular puede probar con datos ficticios en `https://www.alsdevstudio.com/?sarin=prueba`; el historial aparece en el panel protegido. La activación comercial con datos de visitantes sigue pendiente de sus condiciones efectivas.
 
 ## Preparación remota realizada
