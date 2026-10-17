@@ -1,6 +1,6 @@
 # ADR-002: Firebase Authentication para Staff
 
-Fecha: 17 de octubre de 2026. Estado: publicada por autorización del titular; verificación final de su inicio de sesión pendiente.
+Fecha: 17 de octubre de 2026. Estado: publicada por autorización del titular; inicio de sesión real confirmado por él tras la corrección de transporte.
 
 ## Contexto y decisión
 
