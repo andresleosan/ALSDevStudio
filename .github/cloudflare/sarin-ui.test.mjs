@@ -257,10 +257,11 @@ test('autorización previa sin premarcar, sin POST por servicios ni analítica d
   const informed=await page.locator('#sarin-consent [data-sarin-notice]').allTextContents();
   assert.equal(informed.map(text=>text.replace(/\s+/g,' ').trim()).join(' '),NOTICE_TEXT,'La huella debe incluir todo el aviso, la identidad, la autorización y las alternativas');
   assert.equal(await page.locator('#sarin-consent-text a[href="privacidad.html#sarin"]').textContent(),'DeepSeek');
-  assert.equal(await page.locator('.sarin-toolbar a[href="/control-sarin/"]').isVisible(),true);
+  assert.equal(await page.locator('.sarin-toolbar a[href="/control-sarin/"]').count(),0);
+  assert.equal(await page.locator('footer a[href="/control-sarin/"]').textContent(),'Staff');
   await page.locator('[data-sarin-close]').focus();
   await page.keyboard.press('Tab');await page.keyboard.press('Tab');
-  assert.equal(await page.locator('.sarin-toolbar a[href="/control-sarin/"]').evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.locator('[data-sarin-reset]').evaluate(el=>el===document.activeElement),true);
   assert.match(await page.locator('label[for="sarin-consent-checkbox"]').textContent(),/Autorizo.*acepto los Términos de Sarin/s);
   await authorize(page);
   assert.equal(requests.length,0); // autorización usa el mock específico, nunca inferencia
