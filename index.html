@@ -374,19 +374,27 @@
     <header class="sarin-header"><img src="assets/brand/mascot-welcome.png" width="64" height="64" alt="" loading="lazy" decoding="async"><div><h2 id="sarin-title" tabindex="-1">Sarin <span>Asistente de ALS DevStudio</span></h2></div><button type="button" data-sarin-close aria-label="Cerrar conversación">×</button></header>
     <div class="sarin-toolbar"><a href="https://wa.me/573146432135" target="_blank" rel="noopener noreferrer">Hablar con Andrés ↗</a><button type="button" data-sarin-reset>Nueva conversación</button></div>
     <div class="sarin-content" id="sarin-content">
-      <section class="sarin-consent" id="sarin-consent" aria-labelledby="sarin-consent-title">
+      <form class="sarin-consent" id="sarin-consent" aria-labelledby="sarin-consent-title" novalidate>
         <h3 id="sarin-consent-title">Antes de conversar</h3>
+        <fieldset class="sarin-lead-fields">
+          <legend>Tus datos de contacto</legend>
+          <p class="sarin-lead-help">Todos los campos son obligatorios.</p>
+          <div><label for="sarin-first-name">Nombre</label><input id="sarin-first-name" name="firstName" type="text" autocomplete="given-name" maxlength="80" required aria-describedby="sarin-first-name-error"><p id="sarin-first-name-error" class="sarin-field-error" hidden></p></div>
+          <div><label for="sarin-last-name">Apellido</label><input id="sarin-last-name" name="lastName" type="text" autocomplete="family-name" maxlength="80" required aria-describedby="sarin-last-name-error"><p id="sarin-last-name-error" class="sarin-field-error" hidden></p></div>
+          <div><label for="sarin-email">Correo electrónico</label><input id="sarin-email" name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="254" required aria-describedby="sarin-email-error"><p id="sarin-email-error" class="sarin-field-error" hidden></p></div>
+        </fieldset>
         <div id="sarin-consent-text">
           <p data-sarin-notice>Sarin es el asistente de IA de ALS DevStudio para ayudarte a impulsar tu negocio con soluciones digitales. Guardamos tu conversación 30 días desde el primer mensaje para atenderte y revisar abusos.</p>
           <p data-sarin-notice>Para responder, enviamos mensajes y contexto reciente a <a href="privacidad.html#sarin">DeepSeek</a> y usamos Cloudflare fuera de Colombia. Los 30 días solo corresponden a ALS; no garantizan el borrado del proveedor ni hay una exclusión de entrenamiento confirmada.</p>
+          <p data-sarin-notice>Pedimos nombre, apellido y correo para asociar tu consulta y poder contactarte. Son datos declarados; no verificamos el correo. Los verá el personal autorizado de ALS DevStudio y no los añadimos automáticamente a los mensajes enviados a DeepSeek ni a la analítica. Se conservan con la conversación: 30 días desde el primer mensaje, o 24 horas si no envías ninguno. No se usan para publicidad.</p>
           <p data-sarin-notice>No compartas contraseñas, documentos, datos sensibles ni de menores.</p>
           <p class="sarin-consent-responsible" data-sarin-notice>Responsable: Andrés Leonardo Santiago González (ALS DevStudio). Puedes ejercer tus derechos en alsdevstudio@alsdevstudio.com o +57 314 643 2135.</p>
         </div>
         <p data-sarin-notice><a href="privacidad.html#sarin">Privacidad: proveedores, países y tus derechos</a> · <a href="terminos.html#asistente">Términos de Sarin</a></p>
-        <label class="sarin-consent-choice" for="sarin-consent-checkbox"><input type="checkbox" id="sarin-consent-checkbox"> <span data-sarin-notice>Autorizo expresamente el tratamiento y el envío internacional descritos, la conservación de esta conversación durante 30 días, y acepto los <a href="terminos.html#asistente">Términos de Sarin</a>.</span></label>
-        <button class="sarin-primary" type="button" data-sarin-authorize disabled>Autorizar e iniciar</button>
+        <label class="sarin-consent-choice" for="sarin-consent-checkbox"><input type="checkbox" id="sarin-consent-checkbox"> <span data-sarin-notice>Autorizo expresamente registrar mi nombre, apellido y correo para asociar mi consulta y poder contactarme, el tratamiento y el envío internacional descritos, la conservación de esta conversación durante 30 días desde el primer mensaje o 24 horas si no envío ninguno, y acepto los <a href="terminos.html#asistente">Términos de Sarin</a>.</span></label>
+        <button class="sarin-primary" type="submit" data-sarin-authorize disabled>Autorizar e iniciar</button>
         <p class="sarin-consent-alternative" data-sarin-notice>Si prefieres no autorizar, puedes <a href="https://wa.me/573146432135" target="_blank" rel="noopener noreferrer">hablar con Andrés por WhatsApp</a> o <!--email_off--><a href="mailto:alsdevstudio@alsdevstudio.com">escribir por correo</a><!--/email_off-->. La analítica se elige por separado.</p>
-      </section>
+      </form>
       <p id="sarin-reference" class="sarin-reference" hidden></p>
       <div id="sarin-conversation">
         <div class="sarin-empty" id="sarin-empty"><p class="sarin-greeting">Tu idea empieza con una conversación.</p><p id="sarin-intro">Te ayudo a explorar qué solución necesita tu negocio y ejemplos reales. Andrés define el alcance y la cotización final.</p><div class="sarin-services" aria-label="Iniciar sobre un servicio"><button type="button" data-sarin-service="Página web" disabled>Página web</button><button type="button" data-sarin-service="Tienda virtual" disabled>Tienda virtual</button><button type="button" data-sarin-service="Aplicación a medida" disabled>Aplicación a medida</button><button type="button" data-sarin-service="Chatbot" disabled>Chatbot</button></div></div>

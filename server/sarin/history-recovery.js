@@ -16,6 +16,7 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
         (SELECT COUNT(*) FROM sarin_turns) AS turns,
         (SELECT COUNT(*) FROM sarin_messages) AS messages,
         (SELECT COUNT(*) FROM sarin_consents) AS consents,
+        (SELECT COUNT(*) FROM sarin_leads) AS leads,
         (SELECT COUNT(*) FROM sarin_turn_reservations) AS turnReservations,
         (SELECT COUNT(*) FROM sarin_events) AS events,
         (SELECT COUNT(*) FROM sarin_rejections) AS rejections,
@@ -29,6 +30,7 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
       db.prepare('DELETE FROM sarin_messages'),
       db.prepare('DELETE FROM sarin_turns'),
       db.prepare('DELETE FROM sarin_consents'),
+      db.prepare('DELETE FROM sarin_leads'),
       db.prepare('DELETE FROM sarin_events'),
       db.prepare('DELETE FROM sarin_rejections'),
       db.prepare('DELETE FROM sarin_admin_audit'),
@@ -39,7 +41,7 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
     if (!Array.isArray(results) || results.length !== statements.length || results.some(result => result?.success !== true)) throw new Error();
     const counts = results[0].results?.[0];
     if (!counts) throw new Error();
-    return { conversations: counts.conversations, turns: counts.turns, messages: counts.messages, consents: counts.consents,
+    return { conversations: counts.conversations, turns: counts.turns, messages: counts.messages, consents: counts.consents, leads: counts.leads,
       turnReservations: counts.turnReservations, events: counts.events, rejections: counts.rejections, audits: counts.audits,
       capacityBytesReleased: counts.capacityBytesReleased, budgetReconciliationRequired: true };
   } catch {

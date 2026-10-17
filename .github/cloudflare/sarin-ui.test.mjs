@@ -8,6 +8,7 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 const root = path.resolve(import.meta.dirname, '../..');
 const conversationId = '00000000-0000-4000-8000-000000000001';
 const requestId = '00000000-0000-4000-8000-000000000002';
+const lead = {firstName:'María José',lastName:"O'Neill Pérez",email:'maria.contacto@example.test'};
 const load = async name => import(`../../scripts/modules/${name}.js`).catch(error => {
   if (error.code === 'ERR_MODULE_NOT_FOUND') return null;
   throw error;
@@ -76,13 +77,21 @@ test('sesión solo registra autorización cerrada y usa cookie técnica sin expo
   const api=await load('sarin-api');
   const consent=await load('sarin-consent');
   assert.equal(typeof api.createSarinSession,'function');
-  const value=await api.createSarinSession({fetchImpl:async(url,options)=>{
+  const value=await api.createSarinSession({lead,fetchImpl:async(url,options)=>{
     assert.equal(url,'/api/sarin/session');
-    assert.deepEqual(JSON.parse(options.body),{consent:{accepted:true,noticeVersion:consent.NOTICE_VERSION,privacyVersion:consent.PRIVACY_VERSION,termsVersion:consent.TERMS_VERSION}});
+    assert.deepEqual(JSON.parse(options.body),{consent:{accepted:true,noticeVersion:consent.NOTICE_VERSION,privacyVersion:consent.PRIVACY_VERSION,termsVersion:consent.TERMS_VERSION},lead});
     assert.equal(options.credentials,'same-origin');
     return Response.json({conversationId,sessionExpiresAt:Date.now()+86400000});
   }});
   assert.equal(value.conversationId,conversationId);
+});
+
+test('lead inválido no provoca fetch ni bootstrap privado',async()=>{
+  const api=await load('sarin-api');let calls=0;
+  for(const privateTest of [false,true])for(const invalid of [undefined,{...lead,firstName:'   '},{...lead,lastName:''},{...lead,email:'sin-correo'},{...lead,firstName:'a'.repeat(81)}]){
+    await assert.rejects(api.createSarinSession({lead:invalid,privateTest,fetchImpl:async()=>{calls++;return Response.json({conversationId,sessionExpiresAt:Date.now()+86400000});}}));
+  }
+  assert.equal(calls,0);
 });
 
 test('prueba privada renueva CSRF y usa solo destinos administrativos sin historial del navegador',async()=>{
@@ -95,13 +104,14 @@ test('prueba privada renueva CSRF y usa solo destinos administrativos sin histor
     if(url==='/api/control-sarin/test/message')return Response.json({reply:'Una landing de prueba.',examples:[],brief:{},conversationId,requestId,turn:1});
     throw new Error(`Destino inesperado: ${url}`);
   };
-  const session=await api.createSarinSession({privateTest:true,fetchImpl});
+  const session=await api.createSarinSession({lead,privateTest:true,fetchImpl});
   assert.equal(session.conversationId,conversationId);
   const result=await api.requestSarin('Una landing de prueba',requestId,{privateTest:true,fetchImpl});
   assert.match(result.reply,/landing/);
   assert.deepEqual(calls.map(call=>call.url),['/api/control-sarin/bootstrap','/api/control-sarin/test/session','/api/control-sarin/bootstrap','/api/control-sarin/test/message']);
   for(const call of calls){assert.equal(call.options.credentials,'same-origin');assert.equal(call.options.cache,'no-store');assert.equal(call.options.redirect,'error');}
   assert.equal(calls[1].options.headers['X-Sarin-CSRF'],'synthetic-private-token-1');
+  assert.deepEqual(JSON.parse(calls[1].options.body).lead,lead);
   assert.equal(calls[3].options.headers['X-Sarin-CSRF'],'synthetic-private-token-2');
   assert.deepEqual(JSON.parse(calls[3].options.body),{message:'Una landing de prueba',requestId});
 });
@@ -110,7 +120,7 @@ test('prueba privada falla cerrada ante acceso inválido, flag falso y bootstrap
   const api=await load('sarin-api');
   for(const response of [Response.json({privateTestEnabled:false,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test'}),Response.json({privateTestEnabled:'true',csrfToken:'synthetic-private-token',adminEmail:'owner@example.test'}),Response.json({privateTestEnabled:true,csrfToken:'x',adminEmail:'owner@example.test'}),Response.json({}, {status:401}),new Response('<html>Login</html>',{headers:{'content-type':'text/html'}})]){
     const calls=[];
-    await assert.rejects(api.createSarinSession({privateTest:true,fetchImpl:async(url)=>{calls.push(url);return response;}}));
+    await assert.rejects(api.createSarinSession({lead,privateTest:true,fetchImpl:async(url)=>{calls.push(url);return response;}}));
     assert.deepEqual(calls,['/api/control-sarin/bootstrap']);
   }
 });
@@ -127,13 +137,13 @@ test('timeout privado cancela también bootstrap y nunca inicia un POST',async()
 test('403 privado explica acceso administrativo sin confundirlo con bloqueo del visitante',async()=>{
   const api=await load('sarin-api');
   for(const failBootstrap of [true,false]){
-    await assert.rejects(api.createSarinSession({privateTest:true,fetchImpl:async url=>{
+    await assert.rejects(api.createSarinSession({lead,privateTest:true,fetchImpl:async url=>{
       if(!failBootstrap && url.endsWith('/bootstrap'))return Response.json({privateTestEnabled:true,csrfToken:'synthetic-private-token',adminEmail:'owner@example.test',purge:{}});
       return Response.json({error:{code:'forbidden'}},{status:403});
     }}),error=>error.status===403 && /acceso.*prueba privada.*administración/i.test(error.message));
   }
   await assert.rejects(api.checkSarinPrivateTest({fetchImpl:async()=>Response.json({},{status:403})}),/acceso.*prueba privada.*administración/i);
-  await assert.rejects(api.createSarinSession({fetchImpl:async()=>Response.json({},{status:403})}),/bloqueada temporalmente/);
+  await assert.rejects(api.createSarinSession({lead,fetchImpl:async()=>Response.json({},{status:403})}),/bloqueada temporalmente/);
 });
 
 async function pageFor({enableChat = true, ...options} = {}) {
@@ -153,12 +163,105 @@ async function pageFor({enableChat = true, ...options} = {}) {
 }
 async function dismiss(page) { await page.locator('[data-analytics-choice="denied"]').click(); }
 async function open(page) { await dismiss(page); await page.locator('#sarin-launcher').click(); }
+async function fillLead(page,value=lead){
+  await page.locator('#sarin-first-name').fill(value.firstName);
+  await page.locator('#sarin-last-name').fill(value.lastName);
+  await page.locator('#sarin-email').fill(value.email);
+}
 async function authorize(page) {
   await page.route('**/api/sarin/session',route=>route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}}));
+  await fillLead(page);
   await page.locator('#sarin-consent-checkbox').check();
   await page.locator('[data-sarin-authorize]').click();
   await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
 }
+
+test('datos de contacto obligatorios muestran el primer error y no crean sesión antes de autorizar',async t=>{
+  const {page,context,apiRequests}=await pageFor();t.after(()=>context.close());await open(page);
+  assert.equal(await page.locator('#sarin-consent input[required]').count(),3);
+  assert.equal(await page.locator('#sarin-first-name').getAttribute('autocomplete'),'given-name');
+  assert.equal(await page.locator('#sarin-last-name').getAttribute('autocomplete'),'family-name');
+  assert.equal(await page.locator('#sarin-email').getAttribute('autocomplete'),'email');
+  await page.locator('#sarin-consent-checkbox').check();
+  await page.locator('[data-sarin-authorize]').click();
+  assert.equal(await page.locator('#sarin-first-name').evaluate(el=>el===document.activeElement),true);
+  assert.equal(await page.locator('#sarin-first-name').getAttribute('aria-invalid'),'true');
+  assert.match(await page.locator('#sarin-first-name-error').textContent(),/nombre/i);
+  await fillLead(page,{...lead,email:'correo-invalido'});await page.locator('[data-sarin-authorize]').click();
+  assert.equal(await page.locator('#sarin-email').evaluate(el=>el===document.activeElement),true);
+  assert.match(await page.locator('#sarin-email-error').textContent(),/correo/i);
+  await fillLead(page);await page.locator('#sarin-consent-checkbox').uncheck();
+  await page.locator('#sarin-consent').dispatchEvent('submit');
+  assert.deepEqual(apiRequests,[]);
+  await page.locator('#sarin-email').blur();await page.locator('#sarin-first-name').focus();
+  assert.deepEqual(apiRequests,[],'Escribir, salir del campo y marcar no deben enviar datos');
+  await page.locator('[data-sarin-close]').click();await page.locator('#sarin-launcher').click();
+  assert.equal(await page.locator('#sarin-first-name').inputValue(),lead.firstName,'Cerrar conserva el borrador sólo en esta vista');
+});
+
+test('contacto declarado se envía sólo al crear sesión, sin IA ni persistencia y Nueva exige otro formulario',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());const sessions=[],messages=[];
+  await page.route('**/api/sarin/session',route=>{sessions.push(route.request().postDataJSON());return route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}});});
+  await page.route('**/api/sarin',route=>{messages.push(route.request().postDataJSON());return route.fulfill({json:{reply:'Hablemos de tu tienda.',examples:[],brief:{}}});});
+  await open(page);await fillLead(page);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
+  assert.deepEqual(sessions[0].lead,lead);
+  await page.locator('#sarin-message').fill('Quiero una tienda');await page.locator('#sarin-message').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('#sarin-log').textContent.includes('Hablemos'));
+  assert.deepEqual(Object.keys(messages[0]).sort(),['message','requestId']);
+  assert.equal(JSON.stringify(messages).includes(lead.email),false);
+  for(const value of Object.values(lead))assert.equal(await page.evaluate(item=>JSON.stringify({...localStorage,...sessionStorage}).includes(item),value),false);
+  await page.locator('[data-sarin-reset]').click();
+  assert.equal(sessions.length,1,'Nueva conversación no crea ninguna sesión');
+  assert.equal(await page.locator('#sarin-first-name').inputValue(),'');
+  assert.equal(await page.locator('#sarin-last-name').inputValue(),'');
+  assert.equal(await page.locator('#sarin-email').inputValue(),'');
+  assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
+  assert.match(await page.locator('#sarin-log').textContent(),/Quiero una tienda/);
+  const second={firstName:'Lucía',lastName:'Gómez',email:'segunda.contacto@example.test'};
+  await fillLead(page,second);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
+  assert.equal(sessions.length,2);assert.deepEqual(sessions[1].lead,second);
+  assert.equal(await page.locator('#sarin-log').textContent(),'');assert.equal(messages.length,1);
+  await page.reload();await page.locator('#sarin-launcher').click();
+  assert.equal(sessions.length,2);assert.equal(await page.locator('#sarin-email').inputValue(),'');
+  assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
+});
+
+test('analítica aceptada y resumen manual no incorporan los datos de contacto',{timeout:10000},async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());const telemetry=[];let markFinal;
+  const vendor=await readFile(path.join(root,'test-results/cloudflare-beacon.min.js'),'utf8');
+  await page.route('https://www.alsdevstudio.com/**',async route=>{
+    const pathname=new URL(route.request().url()).pathname;
+    if(pathname==='/api/sarin/session')return route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}});
+    const file=path.resolve(root,`.${pathname==='/'?'/index.html':pathname}`);
+    if(!file.startsWith(root+path.sep))return route.fulfill({status:403,body:''});
+    try{
+      const body=await readFile(file),type=({'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2'})[path.extname(file)];
+      return route.fulfill({contentType:type||'application/octet-stream',body:pathname==='/'?body.toString('utf8').replace('data-sarin-enabled="false"','data-sarin-enabled="true"'):body});
+    }catch{return route.fulfill({status:404,body:''});}
+  });
+  await page.route('https://static.cloudflareinsights.com/beacon.min.js',route=>route.fulfill({contentType:'text/javascript',headers:{'Access-Control-Allow-Origin':'*'},body:vendor}));
+  await page.route('**/cdn-cgi/rum*',route=>{
+    if(route.request().postData()){telemetry.push(route.request().postData());markFinal?.();}
+    return route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'}});
+  });
+  await page.goto('https://www.alsdevstudio.com/');
+  const first=page.waitForResponse(response=>new URL(response.url()).pathname==='/cdn-cgi/rum'&&response.request().method()==='POST');
+  await page.locator('[data-analytics-choice="accepted"]').click();await first;
+  await page.locator('#sarin-launcher').click();await fillLead(page);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
+  await page.locator('[data-sarin-summary]').click();
+  const summary=await page.locator('#sarin-summary-text').inputValue(),whatsapp=await page.locator('#sarin-whatsapp').getAttribute('href');
+  const beforeFinal=telemetry.length,final=new Promise(resolve=>{markFinal=resolve;});
+  await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});await final;
+  assert.ok(beforeFinal>=1 && telemetry.length>beforeFinal,'Se inspecciona también un envío posterior a completar el contacto');
+  for(const value of Object.values(lead)){
+    assert.equal(telemetry.join('\n').includes(value),false);
+    assert.equal(summary.includes(value),false);assert.equal(decodeURIComponent(whatsapp).includes(value),false);
+    assert.equal(await page.evaluate(item=>JSON.stringify({...localStorage,...sessionStorage}).includes(item),value),false);
+  }
+});
 
 test('chat apagado por defecto mantiene contacto visible y no inicia API con clics programáticos', async t => {
   const {page,context,apiRequests} = await pageFor({enableChat:false});
@@ -205,11 +308,12 @@ test('query privada exige bootstrap autorizado antes de mostrar y abrir chat, co
   assert.match(await page.locator('#sarin-chat').textContent(),/panel.*30 días|30 días.*panel/s);
   assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
   assert.equal(requests.filter(request=>request.method==='POST').length,0);
-  await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await fillLead(page);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
   await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
   await page.locator('#sarin-message').fill('Una landing para un café ficticio');await page.locator('#sarin-message').press('Enter');
   await page.waitForFunction(()=>document.querySelector('#sarin-log').textContent.includes('Podemos crear'));
   assert.deepEqual(requests.filter(request=>request.method==='POST').map(request=>request.pathname),['/api/control-sarin/test/session','/api/control-sarin/test/message']);
+  assert.deepEqual(requests.find(request=>request.pathname.endsWith('/test/session')).body.lead,lead);
   assert.equal(requests.filter(request=>request.pathname.endsWith('/bootstrap')).length,3);
   assert.equal(requests.filter(request=>request.method==='POST').every(request=>request.headers['x-sarin-csrf']?.startsWith('synthetic-private-token-')),true);
   assert.equal(apiRequests.some(url=>new URL(url).pathname.startsWith('/api/sarin')),false);
@@ -235,7 +339,7 @@ test('acceso privado vencido al iniciar no crea conversación y permite volver a
     posts++;return route.fulfill({status:401,json:{error:{code:'unauthorized'}}});
   });
   await page.goto(`${origin}/?sarin=prueba`);await page.locator('#sarin-chat').waitFor();
-  await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+  await fillLead(page);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
   await page.locator('#sarin-status a[href="/control-sarin/"]').waitFor();
   assert.equal(posts,1);assert.equal(await page.locator('#sarin-message').evaluate(node=>node.readOnly),true);
   assert.equal(await page.locator('#sarin-log').textContent(),'');
@@ -331,6 +435,7 @@ test('IME, envío único, espera, respuesta segura, reinicio y error con contact
   assert.match(bodies[0].requestId,/^[a-f0-9-]{36}$/i);
   await input.fill('otro'); await input.press('Enter');
   await page.locator('[data-sarin-reset]').click();
+  await authorize(page);
   await page.waitForTimeout(250);
   assert.equal(await page.locator('#sarin-log').textContent(),'');
   await page.route('**/api/sarin', route => route.fulfill({status:503,json:{error:{code:'disabled',message:'No disponible'}}}));
@@ -384,6 +489,7 @@ test('fallar al crear otra sesión conserva la vista y recargar no crea sesiones
   await page.locator('[data-sarin-back]').click();
   await page.route('**/api/sarin/session',route=>{sessions++;return route.fulfill({status:503,json:{error:{code:'unavailable'}}});});
   await page.locator('[data-sarin-reset]').click();
+  await fillLead(page);await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
   await page.waitForFunction(()=>document.querySelector('#sarin-status').textContent.includes('conectado'));
   assert.equal(sessions,1);assert.match(await page.locator('#sarin-log').textContent(),/Una tienda de café de prueba/);
   await page.reload();await page.locator('#sarin-launcher').click();
@@ -394,7 +500,7 @@ test('fallar al crear otra sesión conserva la vista y recargar no crea sesiones
 
 test('320/390/680/900/1440, axe, movimiento reducido y contacto sin JavaScript', async () => {
   for (const width of [320,390,680,900,1440]) {
-    const {page,context} = await pageFor({viewport:{width,height:900},reducedMotion:'reduce'});
+    const {page,context} = await pageFor({viewport:{width,height:width===320?568:900},reducedMotion:'reduce'});
     await open(page);
     const rect = await page.locator('#sarin-chat').boundingBox();
     assert.ok(rect.width <= width && rect.x >= 0);
@@ -403,7 +509,11 @@ test('320/390/680/900/1440, axe, movimiento reducido y contacto sin JavaScript',
       const target=await link.boundingBox();
       assert.ok(target.height>=44 && target.x>=rect.x && target.x+target.width<=rect.x+rect.width);
     }
-    assert.equal(await page.locator('#sarin-message').isVisible(),true);
+    assert.equal(await page.locator('#sarin-message').isVisible(),false);
+    assert.equal(await page.locator('#sarin-first-name').isVisible(),true);
+    await page.locator('#sarin-consent-checkbox').check();await page.locator('[data-sarin-authorize]').click();
+    const focused=await page.locator('#sarin-first-name').boundingBox();
+    assert.ok(focused.y>=0 && focused.y+focused.height<=(width===320?568:900),'El campo inválido debe quedar visible');
     await page.addScriptTag({path:path.join(root,'test-results/axe.min.js')});
     const failures = await page.evaluate(async () => (await axe.run(document.querySelector('#sarin-chat'))).violations.map(v=>({id:v.id,impact:v.impact})));
     assert.deepEqual(failures,[]);

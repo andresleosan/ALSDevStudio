@@ -41,6 +41,7 @@
 .sarin-chat button { cursor:pointer; }
 body.has-custom-pointer .sarin-chat button, body.has-custom-pointer .sarin-chat a, body.has-custom-pointer .sarin-launcher { cursor:pointer; }
 body.has-custom-pointer .sarin-chat textarea { cursor:text; }
+body.has-custom-pointer .sarin-chat input:not([type="checkbox"]) { cursor:text; }
 .sarin-chat button:not(.sarin-primary) { min-height:44px; padding:8px 10px; color:var(--paper); border:1px solid var(--line); border-radius:9px; background:transparent; font:inherit; }
 .sarin-chat button:not(.sarin-primary):hover { background:var(--panel-soft); border-color:var(--mint); }
 .sarin-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:4px 10px; padding:5px 18px; border-bottom:1px solid var(--line); flex-shrink:0; }
@@ -78,6 +79,12 @@ body.has-custom-pointer .sarin-chat textarea { cursor:text; }
 .sarin-consent h3 { color:var(--mint); font:600 23px/1.25 'Chakra Petch',sans-serif; margin-bottom:12px; }
 .sarin-consent p { margin-bottom:12px; font-size:13px; }
 .sarin-consent .sarin-consent-responsible { color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.sarin-lead-fields { min-width:0; border:0; margin:0 0 22px; padding:0; display:grid; gap:14px; }
+.sarin-lead-fields legend { margin-bottom:8px; color:var(--paper); font-size:15px; font-weight:600; }
+.sarin-consent .sarin-lead-help { margin:0; color:var(--muted); font-size:12px; }
+.sarin-lead-fields input { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid #45617b; border-radius:10px; color:var(--paper); background:var(--ink-deep); font:400 16px/1.4 'DM Sans',sans-serif; scroll-margin-block:24px; }
+.sarin-lead-fields input[aria-invalid="true"] { border-color:#ffb5b5; }
+.sarin-consent .sarin-field-error { margin:6px 0 0; color:#ffb5b5; font-size:12px; overflow-wrap:anywhere; }
 .sarin-consent a { color:#a3caff; text-underline-offset:3px; }
 .sarin-chat .sarin-consent-choice { display:flex; align-items:flex-start; gap:10px; margin-block:16px; font-size:14px; font-weight:400; cursor:pointer; }
 .sarin-consent-choice input { flex-shrink:0; width:22px; height:22px; accent-color:var(--mint); }

@@ -55,6 +55,10 @@ label { display:block; color:var(--muted); font-size:12px; margin-bottom:7px; }
 .admin-conversation { width:100%; display:block; padding:16px; text-align:left; background:var(--ink); border-color:var(--line); border-left:3px solid var(--line); }
 .admin-conversation[aria-pressed="true"] { background:var(--panel); border-left-color:var(--mint); }
 .admin-conversation strong { display:block; font-weight:600; color:var(--paper); margin-bottom:7px; }
+.admin-conversation strong,.admin-contact-email { overflow-wrap:anywhere; }
+.admin-contact { padding:18px 0; margin-bottom:18px; border-block:1px solid var(--line); }
+.admin-contact h3 { font:600 18px/1.3 'Chakra Petch',sans-serif; margin-bottom:12px; }
+.admin-contact .admin-detail-meta { margin:0; }
 .admin-conversation span { display:block; color:var(--muted); font-size:12px; margin-top:4px; }
 .admin-conversation .admin-reference { font-size:10px; }
 .admin-conversation .admin-signal { color:#ffd498; }

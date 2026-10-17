@@ -15,7 +15,7 @@ const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-admin', 'sarin-admin-auth'].map(name => `modules/${name}.js`)];
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth'].map(name => `modules/${name}.js`)];
 const functionRoutes = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
   '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',

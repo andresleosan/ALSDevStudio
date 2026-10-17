@@ -2,6 +2,7 @@
 import { pseudonymizeIp } from './quota.js';
 import { SarinError, readBoundedJson } from './policy.js';
 import { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION, NOTICE_TEXT } from '../../scripts/modules/sarin-consent.js';
+import { validateSarinLead } from '../../scripts/modules/sarin-lead.js';
 
 export const SESSION_COOKIE = '__Host-sarin-session';
 export const PRIVATE_SESSION_COOKIE = '__Host-sarin-test-session';
@@ -91,18 +92,20 @@ export async function handleSarinSession(request,env,options={}) {
     validatePost(request);
     const cookieName=sessionCookieName(options.sessionCookie);
     const body=await readBoundedJson(request.body,16384,request.signal);
-    if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).length!==1 || !Object.hasOwn(body,'consent'))throw new SarinError(400,'invalid_request');
+    if(!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).length!==2 || !Object.hasOwn(body,'consent') || !Object.hasOwn(body,'lead'))throw new SarinError(400,'invalid_request');
     const consent=body.consent;
     if(!consent || typeof consent!=='object' || Array.isArray(consent)
         || Object.keys(consent).length!==4 || !Object.keys(consent).every(k=>['accepted','noticeVersion','privacyVersion','termsVersion'].includes(k)))throw new SarinError(403,'consent_required');
     if(consent.accepted!==true || consent.noticeVersion!==NOTICE_VERSION || consent.privacyVersion!==PRIVACY_VERSION || consent.termsVersion!==TERMS_VERSION)throw new SarinError(403,'consent_required');
+    const contact=validateSarinLead(body.lead);
+    if(!contact.ok)throw new SarinError(400,'invalid_request');
     ensureHistoryConfiguration(env);
     if(request.signal.aborted)throw new SarinError(504,'timeout');
     const now=(options.now||Date.now)();
     const identity=await requestIdentity(request,env,now);
     const store=await historyStore(env,options);
     const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),value=>value.toString(16).padStart(2,'0')).join('');
-    const result=await store.createSession({tokenHash:await hashSessionToken(token,cookieName),identity,consent:{
+    const result=await store.createSession({tokenHash:await hashSessionToken(token,cookieName),identity,lead:contact.lead,consent:{
       noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION,
       noticeHash:await hashText(NOTICE_TEXT),acceptedAt:now,method:'checkbox_and_start',
     }});

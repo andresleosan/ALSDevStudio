@@ -42,10 +42,13 @@ Los eventos se agregan por código cerrado, con máximo de 32 clases por convers
 
 ### Reversión exclusiva del historial
 
-Desactivar chat, historial y panel; detener y drenar peticiones y purga. En producción verificar antes un respaldo y la autorización explícita para borrar. Este procedimiento elimina todas las transcripciones y autorizaciones; conserva íntegra la cuota monetaria para no reiniciar gasto del período. Ejecutar en un batch transaccional; revisar por separado el registro de migraciones de D1 antes de reaplicar.
+Desactivar chat, historial y panel; detener y drenar peticiones y purga. En producción verificar antes un respaldo y la autorización explícita para borrar. Este procedimiento elimina todas las transcripciones, contactos y autorizaciones; conserva íntegra la cuota monetaria para no reiniciar gasto del período. No es la reversión operativa de `0003`: para volver sólo al código anterior, mantener las tablas y datos. Ejecutar en un batch transaccional; revisar por separado el registro de migraciones de D1 antes de reaplicar.
 
 <!-- history-rollback -->
 ```sql
+DROP TRIGGER IF EXISTS sarin_history_lead;
+DROP VIEW IF EXISTS sarin_lead_commands;
+DROP TABLE IF EXISTS sarin_leads;
 DROP TRIGGER IF EXISTS sarin_history_finish;
 DROP TRIGGER IF EXISTS sarin_history_begin;
 DROP TRIGGER IF EXISTS sarin_history_event;
@@ -67,3 +70,9 @@ DROP TABLE IF EXISTS sarin_history_state;
 ```
 
 La suite SQLite real ejecuta esta reversión, comprueba que conserva las cuotas y una tabla ajena y vuelve a aplicar la migración. No ejecutar la reversión de cuotas anterior mientras el historial siga activo.
+
+## Contacto declarado: `0003_leads.sql`
+
+Aplicar después de `0002`, con respaldo privado verificado antes de producción. Sólo añade `sarin_leads` 1:1 y un comando con trigger para admisión atómica; no modifica filas antiguas ni cuadros monetarios. Los nombres/correo suman sus bytes UTF-8 a `capacity_bytes` y al límite lógico global, incluso antes del primer mensaje. El contacto hereda vencimiento y eliminación en cascada de la conversación. Consultas administrativas usan `LEFT JOIN` y devuelven `lead:null` para históricos, sin backfill. Nunca se agrega el contacto al contexto de IA ni a la respuesta pública.
+
+Reversión segura de aplicación: publicar código anterior conservando esta migración, contactos y contabilidad hasta su purga. La eliminación total anterior requiere otra autorización explícita y no se ejecuta como parte de publicar esta ampliación. Para restaurar una copia anterior a `0003`, aplicar migraciones en la copia aislada antes del helper de limpieza, según [SARIN-RESTAURACION](../../docs/SARIN-RESTAURACION.md).

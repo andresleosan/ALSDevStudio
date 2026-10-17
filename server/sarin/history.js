@@ -1,5 +1,6 @@
 // @ts-check
 import { CATALOG } from './knowledge.js';
+import { validateSarinLead } from '../../scripts/modules/sarin-lead.js';
 
 const DAY = 86400000;
 const encoder = new TextEncoder();
@@ -60,14 +61,15 @@ export function createHistoryStore({ db, now = () => Date.now(), limits = {} }) 
   const guarded = callback => async (...args) => { try { return await callback(...args); } catch (error) { throw safeError(error); } };
   const expireLeases = (at, limit = 100) => stmt(`UPDATE sarin_turns SET outcome = 'timeout',status_code = 504,finished_at = ?
     WHERE (conversation_id,request_id) IN (SELECT conversation_id,request_id FROM sarin_turns WHERE outcome = 'pending' AND lease_expires_at <= ? ORDER BY lease_expires_at LIMIT ?)`, at, at, limit);
-  const summarySql = `SELECT c.*,
+  const summarySql = `SELECT c.*,l.first_name AS lead_first_name,l.last_name AS lead_last_name,l.email AS lead_email,
     COALESCE((SELECT SUM(r.reserved_micros) FROM sarin_turn_reservations tr JOIN sarin_reservations r ON r.id = tr.reservation_id WHERE tr.conversation_id = c.id),0) AS reserved_micros,
     COALESCE((SELECT SUM(r.actual_micros) FROM sarin_turn_reservations tr JOIN sarin_reservations r ON r.id = tr.reservation_id WHERE tr.conversation_id = c.id AND r.actual_micros IS NOT NULL),0) AS verified_micros,
     COALESCE((SELECT SUM(r.reserved_micros) FROM sarin_turn_reservations tr JOIN sarin_reservations r ON r.id = tr.reservation_id WHERE tr.conversation_id = c.id AND r.actual_micros IS NULL),0) AS retained_micros
-    FROM sarin_conversations c`;
+    FROM sarin_conversations c LEFT JOIN sarin_leads l ON l.conversation_id = c.id`;
   function summary(row, at) {
     return { id: row.id, createdAt: row.created_at, updatedAt: row.updated_at, expiresAt: row.expires_at,
       service: row.service, turns: row.turns, reviewedAt: row.reviewed_at, blockedUntil: row.blocked_until,
+      lead: row.lead_email === null ? null : { firstName: row.lead_first_name,lastName: row.lead_last_name,email: row.lead_email },
       status: row.blocked_until > at ? 'blocked' : row.status, outOfScopeCount: row.out_of_scope_count, errorCount: row.error_count,
       usage: { reservedMicros: row.reserved_micros, verifiedMicros: row.verified_micros, retainedMicros: row.retained_micros } };
   }
@@ -95,7 +97,9 @@ export function createHistoryStore({ db, now = () => Date.now(), limits = {} }) 
     return { serialized, content: success ? body.reply : body.error.message, service: success ? body.service ?? null : null };
   }
   return {
-    createSession: guarded(async ({ tokenHash, identity, consent }) => {
+    createSession: guarded(async ({ tokenHash, identity, consent, lead }) => {
+      const contact = validateSarinLead(lead);
+      if (!contact.ok) throw invalid();
       if (!hash(tokenHash) || !hash(identity) || !closed(consent, ['noticeVersion','privacyVersion','termsVersion','noticeHash','acceptedAt','method'])
           || !text(consent.noticeVersion, 100) || !text(consent.privacyVersion, 100) || !text(consent.termsVersion, 100)
           || !hash(consent.noticeHash) || consent.method !== 'checkbox_and_start') throw invalid();
@@ -103,6 +107,7 @@ export function createHistoryStore({ db, now = () => Date.now(), limits = {} }) 
       await batch([
         stmt('INSERT INTO sarin_session_commands(id,token_hash,at,identity,max_conversations,per_minute,per_day,max_events) VALUES (?,?,?,?,?,?,?,?)', id,tokenHash,at,identity,config.maxConversations,config.sessionPerMinute,config.sessionPerDay,config.maxEvents),
         stmt('INSERT INTO sarin_consents(conversation_id,notice_version,privacy_version,terms_version,notice_hash,accepted_at,method) VALUES (?,?,?,?,?,?,?)', id,consent.noticeVersion,consent.privacyVersion,consent.termsVersion,consent.noticeHash,at,'checkbox_and_start'),
+        stmt('INSERT INTO sarin_lead_commands(conversation_id,first_name,last_name,email,max_text_bytes) VALUES (?,?,?,?,?)', id,contact.lead.firstName,contact.lead.lastName,contact.lead.email,config.maxTextBytes),
       ]);
       return { conversationId: id, sessionExpiresAt: at + DAY };
     }),

@@ -1,3 +1,4 @@
+import { LEAD, LEAD_BYTES } from './sarin-lead-fixture.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -31,7 +32,7 @@ async function setup(t) {
   const now = () => at;
   const store = createHistoryStore({ db: fixture.db, now });
   return { ...fixture, store, now, setTime: value => { at = value; },
-    session: (tokenHash = HASH) => store.createSession({ tokenHash, identity: IDENTITY, consent: CONSENT }),
+    session: (tokenHash = HASH) => store.createSession({ tokenHash, identity: IDENTITY, consent: CONSENT, lead: LEAD }),
     env: { SARIN_RETENTION_ENABLED: 'true', SARIN_DB: fixture.db } };
 }
 
@@ -219,8 +220,8 @@ test('recuperación borra también historial vigente y reconcilia capacidad sin 
   // Simula un contador restaurado discordante; el borrado usa los triggers reales.
   sqlite.prepare('UPDATE sarin_history_state SET text_bytes = 1,rejection_overflow = 9,purge_status = \'ok\',last_success_at = ?').run(BASE);
   const result = await reset({ db, maintenanceConfirmed: true, requestsDrained: true });
-  assert.deepEqual(result, { conversations: 2, turns: 1, messages: 2, consents: 2, turnReservations: 1, events: 2, rejections: 1, audits: 1,
-    capacityBytesReleased: Buffer.byteLength(PRIVATE) + Buffer.byteLength(JSON.stringify({ reply: 'Respuesta sintética.', examples: [], brief: {} })), budgetReconciliationRequired: true });
+  assert.deepEqual(result, { conversations: 2, turns: 1, messages: 2, consents: 2, leads: 2, turnReservations: 1, events: 2, rejections: 1, audits: 1,
+    capacityBytesReleased: 2 * LEAD_BYTES + Buffer.byteLength(PRIVATE) + Buffer.byteLength(JSON.stringify({ reply: 'Respuesta sintética.', examples: [], brief: {} })), budgetReconciliationRequired: true });
   for (const table of ['sarin_conversations', 'sarin_consents', 'sarin_messages', 'sarin_turns', 'sarin_turn_reservations', 'sarin_events', 'sarin_rejections', 'sarin_admin_audit']) assert.equal(count(sqlite, table), 0, table);
   assert.deepEqual(money(sqlite), before);
   assert.deepEqual({ ...sqlite.prepare('SELECT * FROM sarin_history_state').get() }, { singleton: 1, text_bytes: 0, rejection_overflow: 0, last_run_at: null, last_success_at: null, last_error_at: null, purge_status: 'never', purge_remaining: 0 });

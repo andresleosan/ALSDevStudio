@@ -1,4 +1,5 @@
 // @ts-check
+import {validateSarinLead} from './sarin-lead.js';
 /** Vista en memoria; el historial autorizado se conserva en el servidor durante 30 días. */
 export async function initSarinChat() {
   const dialog = document.querySelector('#sarin-chat');
@@ -33,7 +34,12 @@ export async function initSarinChat() {
   const whatsapp = /** @type {HTMLAnchorElement} */ (find('#sarin-whatsapp'));
   const conversation = find('#sarin-conversation');
   const title = /** @type {HTMLElement} */ (find('#sarin-title'));
-  const consentPanel=find('#sarin-consent');
+  const consentPanel=/** @type {HTMLFormElement} */(find('#sarin-consent'));
+  const leadFields=/** @type {HTMLFieldSetElement} */(find('.sarin-lead-fields'));
+  const firstName=/** @type {HTMLInputElement} */(find('#sarin-first-name'));
+  const lastName=/** @type {HTMLInputElement} */(find('#sarin-last-name'));
+  const email=/** @type {HTMLInputElement} */(find('#sarin-email'));
+  const contactFields={firstName,lastName,email};
   const consent=/** @type {HTMLInputElement} */(find('#sarin-consent-checkbox'));
   const authorize=/** @type {HTMLButtonElement} */(find('[data-sarin-authorize]'));
   const reference=find('#sarin-reference');
@@ -61,6 +67,7 @@ export async function initSarinChat() {
   let summaryPrepared = false;
   let suspended = false;
   let authorized=false;
+  let onboarding=true;
   let expired=false;
   let creatingSession=false;
   let conversationId='';
@@ -69,15 +76,27 @@ export async function initSarinChat() {
   /** @param {boolean} busy */
   const setBusy = busy => {
     pending = busy;
+    const canChat=authorized && !onboarding;
     const submit = form.querySelector('button');
-    if (submit) submit.disabled = busy || !authorized || expired || turns >= 15;
-    input.readOnly = busy || !authorized || expired || turns >= 15;
+    if (submit) submit.disabled = busy || !canChat || expired || turns >= 15;
+    input.readOnly = busy || !canChat || expired || turns >= 15;
+    form.hidden=onboarding || !summaryPanel.hidden;
+    find('#sarin-notice').hidden=onboarding;
+    find('#sarin-retention').hidden=onboarding;
     authorize.disabled=busy || !consent.checked;
-    dialog.querySelectorAll('[data-sarin-service]').forEach(button=>{ if(button instanceof HTMLButtonElement) button.disabled=busy || !authorized || expired || turns>=15; });
+    leadFields.disabled=creatingSession;consent.disabled=creatingSession;
+    dialog.querySelectorAll('[data-sarin-service]').forEach(button=>{ if(button instanceof HTMLButtonElement) button.disabled=busy || !canChat || expired || turns>=15; });
     /** @type {HTMLButtonElement} */(find('[data-sarin-reset]')).disabled=creatingSession;
     form.setAttribute('aria-busy',String(busy));
   };
   consent.addEventListener('change',()=>{authorize.disabled=pending || !consent.checked;});
+  const clearLeadErrors=()=>{
+    for(const field of Object.values(contactFields)){field.removeAttribute('aria-invalid');const error=find(`#${field.id}-error`);error.hidden=true;error.textContent='';}
+  };
+  for(const field of Object.values(contactFields))field.addEventListener('input',()=>{
+    field.removeAttribute('aria-invalid');const error=find(`#${field.id}-error`);error.hidden=true;error.textContent='';
+  });
+  consentPanel.reset();
   /** @param {'user'|'assistant'} role @param {string} content @param {import('./sarin-api.js').Example[]} [examples] */
   const append = (role,content,examples = []) => {
     const article = document.createElement('article');
@@ -128,13 +147,22 @@ export async function initSarinChat() {
   }
   /** La vista anterior se limpia solo después de crear la sesión solicitada. */
   const startSession=async()=>{
-    if(creatingSession || !consent.checked)return;
+    if(creatingSession)return;
+    clearLeadErrors();
+    const result=validateSarinLead({firstName:firstName.value,lastName:lastName.value,email:email.value});
+    if(!result.ok){
+      const field=result.field==='lead'?firstName:contactFields[result.field];
+      const error=find(`#${field.id}-error`);error.textContent=result.message;error.hidden=false;field.setAttribute('aria-invalid','true');
+      status.textContent=result.message;field.focus();field.scrollIntoView({block:'center',behavior:'instant'});return;
+    }
+    if(!consent.checked){status.textContent='Marca la autorización para iniciar o elige contacto directo.';consent.focus();return;}
     const current=++generation;controller?.abort();controller=new AbortController();
     creatingSession=true;setBusy(true);status.textContent='Iniciando conversación…';
     try{
-      const api=await load();const result=await api.createSarinSession({signal:controller.signal,privateTest});
+      const api=await load();const session=await api.createSarinSession({lead:result.lead,signal:controller.signal,privateTest});
       if(current!==generation)return;
-      authorized=true;expired=false;conversationId=result.conversationId;
+      authorized=true;onboarding=false;expired=false;conversationId=session.conversationId;
+      consentPanel.reset();clearLeadErrors();
       messages=[];brief={};service=undefined;turns=0;
       log.replaceChildren();empty.hidden=false;input.value='';
       reference.textContent=`Referencia: ${conversationId}`;reference.hidden=false;
@@ -148,14 +176,18 @@ export async function initSarinChat() {
       if(current===generation){creatingSession=false;controller=null;setBusy(false);if(authorized && !expired)input.focus();}
     }
   };
-  authorize.addEventListener('click',()=>{void startSession();});
+  consentPanel.addEventListener('submit',event=>{event.preventDefault();void startSession();});
   find('[data-sarin-reset]').addEventListener('click',()=>{
-    if(!authorized){status.textContent='Autoriza el tratamiento antes de iniciar. También puedes contactar con Andrés.';consent.focus();return;}
-    void startSession();
+    if(creatingSession)return;
+    generation++;controller?.abort();controller=null;
+    onboarding=true;consentPanel.reset();clearLeadErrors();
+    summaryPanel.hidden=true;consentPanel.hidden=false;conversation.hidden=false;setBusy(false);
+    status.textContent='Completa tus datos y autoriza para iniciar una nueva conversación. La anterior conserva su plazo de 30 días.';
+    firstName.focus();firstName.scrollIntoView({block:'center',behavior:'instant'});
   });
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (pending || !authorized || expired || turns >= 15) return;
+    if (pending || !authorized || onboarding || expired || turns >= 15) return;
     const message = input.value.trim();
     if (!message || message.length > 1200) { status.textContent = 'Escribe un mensaje de 1 a 1200 caracteres.'; input.focus(); return; }
     const current = ++generation;
@@ -192,7 +224,7 @@ export async function initSarinChat() {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {event.preventDefault(); form.requestSubmit();}
   });
   dialog.querySelectorAll('[data-sarin-service]').forEach(button => button.addEventListener('click', () => {
-    if(!authorized || pending || expired)return;
+    if(!authorized || onboarding || pending || expired)return;
     input.value = `Me interesa ${(button.getAttribute('data-sarin-service') || '').toLowerCase()} para mi negocio.`;
     input.focus();
   }));
@@ -215,7 +247,7 @@ export async function initSarinChat() {
       updateSummary(); conversation.hidden = true; consentPanel.hidden=true; summaryPanel.hidden = false; form.hidden = true; summaryText.focus();
     } catch {status.textContent = 'No pudimos preparar el resumen. Puedes hablar directamente con Andrés.';}
   });
-  find('[data-sarin-back]').addEventListener('click', () => {summaryPanel.hidden = true; conversation.hidden = false; consentPanel.hidden=authorized; form.hidden = false; (authorized?input:consent).focus();});
+  find('[data-sarin-back]').addEventListener('click', () => {summaryPanel.hidden = true; conversation.hidden = false; consentPanel.hidden=!onboarding;setBusy(pending);(onboarding?firstName:input).focus();});
   setBusy(false);
   if(privateTest && !analytics())launcher.click();
 }

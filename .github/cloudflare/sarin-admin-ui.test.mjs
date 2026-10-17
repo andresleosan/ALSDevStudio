@@ -8,7 +8,8 @@ import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 const root=path.resolve(import.meta.dirname,'../..');
 const id='00000000-0000-4000-8000-000000000001';
 const now=Date.now();
-const summary={id,createdAt:now-3600000,updatedAt:now,expiresAt:now+86400000,service:'store',turns:1,reviewedAt:null,blockedUntil:null,status:'completed',outOfScopeCount:2,errorCount:1,usage:{reservedMicros:1200,verifiedMicros:700,retainedMicros:500}};
+const lead={firstName:'María José',lastName:"O'Neill Pérez",email:'maria.contacto@example.test'};
+const summary={id,lead,createdAt:now-3600000,updatedAt:now,expiresAt:now+86400000,service:'store',turns:1,reviewedAt:null,blockedUntil:null,status:'completed',outOfScopeCount:2,errorCount:1,usage:{reservedMicros:1200,verifiedMicros:700,retainedMicros:500}};
 const detail={...summary,messages:[{id:'m1',turn:1,role:'user',content:'<img src=x onerror="window.pwned=true"> Café de prueba',at:now-1000,status:'accepted'},{id:'m2',turn:1,role:'assistant',content:'Una tienda para tu café.',at:now,status:'completed'}],events:[{id:'e1',kind:'out_of_scope',at:now,count:2}],consent:{acceptedAt:now-3600000,noticeVersion:'sarin-history-2026-10-16-v1',privacyVersion:'2026-10-16-sarin-history-v1',termsVersion:'2026-10-16-sarin-history-v1',method:'checkbox_and_start'}};
 let server,browser,origin;
 before(async()=>{
@@ -62,6 +63,46 @@ async function mock(page,{items=[summary],purge={lastRunAt:now,lastSuccessAt:now
   await page.goto(`${origin}/control-sarin/`);
   return requests;
 }
+
+test('contacto seguro aparece en lista y detalle como declaración no verificada, sin datos heredados inventados',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());await mock(page);
+  await page.locator('[data-conversation-id]').first().waitFor();
+  assert.match(await page.locator('#admin-list').textContent(),/María José O'Neill Pérez/);
+  assert.match(await page.locator('#admin-list').textContent(),/maria\.contacto@example\.test/);
+  await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  assert.match(await page.locator('#admin-detail').textContent(),/Correo no verificado/i);
+  assert.match(await page.locator('#admin-detail').textContent(),/maria\.contacto@example\.test/);
+  await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.fulfill({json:{...detail,lead:null}}));
+  await page.route('**/api/control-sarin/conversations?*',route=>route.fulfill({json:{items:[{...summary,lead:null}],nextCursor:null}}));
+  await page.locator('#admin-filters').evaluate(form=>form.requestSubmit());await page.locator('[data-conversation-id]').first().click();
+  await page.waitForFunction(()=>document.querySelector('#admin-detail').textContent.includes('Sin datos de contacto'));
+  assert.match(await page.locator('#admin-list').textContent(),/Sin datos de contacto/);
+  assert.equal(await page.evaluate(value=>JSON.stringify({...localStorage,...sessionStorage}).includes(value),lead.email),false);
+});
+
+test('contacto HTML nunca se interpreta y salir elimina también nombre y correo',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());await mock(page,{items:[{...summary,lead:{...lead,firstName:'<img src=x onerror="window.pwned=true">'}}]});
+  await page.locator('[data-conversation-id]').first().waitFor();
+  assert.equal(await page.locator('#admin-list img').count(),0);
+  assert.match(await page.locator('#admin-list').textContent(),/Sin datos de contacto/);
+  assert.equal(await page.evaluate(()=>window.pwned),undefined);
+  await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  await page.locator('#admin-logout').click();await page.locator('#admin-google-login').waitFor();
+  assert.equal(await page.locator('#admin-list').textContent(),'');
+  assert.doesNotMatch(await page.locator('#admin-detail').textContent(),/maria\.contacto|María José/);
+});
+
+test('contacto con nombres y correo extensos conserva lectura a 320 px',async t=>{
+  const {page,context}=await pageFor({viewport:{width:320,height:568},reducedMotion:'reduce'});t.after(()=>context.close());
+  const longLead={firstName:'Á'.repeat(80),lastName:'Ñ'.repeat(80),email:`${'l'.repeat(64)}@${'d'.repeat(63)}.${'e'.repeat(63)}.${'f'.repeat(61)}`};
+  await mock(page,{items:[{...summary,lead:longLead}]});
+  await page.route(`**/api/control-sarin/conversations/${id}`,route=>route.fulfill({json:{...detail,lead:longLead}}));
+  await page.locator('[data-conversation-id]').first().click();await page.locator('#admin-detail-title').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  assert.equal(await page.locator('.admin-contact-email').textContent(),longLead.email);
+  assert.match(await page.locator('.admin-contact').textContent(),new RegExp(longLead.email.replaceAll('.','\\.')));
+  await page.screenshot({path:path.join(root,'test-results/sarin-admin/contact-long-320.png'),fullPage:true});
+});
 
 test('pantalla de Staff sin sesión no consulta historial y permite acceder con Google',async()=>{
   const {page,context,authRequests}=await pageFor({}, {signedOut:true});
@@ -194,9 +235,11 @@ test('acceso vencido, limpieza atrasada y lista vacía muestran estados honestos
 });
 
 test('espera y error de red permiten reintentar sin mostrar una autenticación ficticia',async()=>{
-  const {page,context}=await pageFor();let release;
-  await page.route('**/api/control-sarin/bootstrap',async route=>{await new Promise(resolve=>{release=resolve;});await route.abort();});
+  const {page,context}=await pageFor();let release,markStarted;
+  const started=new Promise(resolve=>{markStarted=resolve;});
+  await page.route('**/api/control-sarin/bootstrap',async route=>{await new Promise(resolve=>{release=resolve;markStarted();});await route.abort();});
   await page.goto(`${origin}/control-sarin/`);
+  await started;
   assert.match(await page.locator('#admin-status').textContent(),/acceso|cargando|verificando/i);
   release();await page.waitForFunction(()=>document.querySelector('#admin-retry').hidden===false);
   assert.match(await page.locator('#admin-status').textContent(),/conectar/i);await context.close();

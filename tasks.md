@@ -1,5 +1,13 @@
 # Tareas — ALS DevStudio
 
+## SARIN-CONTACTO · Identificar nuevas conversaciones · 2026-10-17
+
+- [x] Aprobación expresa «Sí, aplicar y publicar»: nombre, apellido y correo obligatorios; datos declarados, correo sin verificar, visibles en Staff, no añadidos automáticamente a IA ni publicidad. Históricos sin contacto; 30 días desde primer mensaje o 24 horas sin mensajes.
+- [x] Implementar validación compartida, formulario accesible, DTO administrativo y migración aditiva atómica con contabilidad y borrado en cascada. Actualizar aviso v6, privacidad v5, términos v4 y recuperación.
+- [x] Terminar pruebas: 481 distintas (429 regresiones, 40 UI, 6 Pages locales y 6 respaldo), sin P1/P2; cinco anchos/axe/tipos/Functions/build correctos. Respaldo privado restaurado en memoria y verificado antes de migrar D1.
+- [x] Aplicar únicamente `0003_leads.sql` a producción; conteos originales 8 conversaciones/32 mensajes/8 consentimientos/30 reservas/23 contadores conservados, 0 contactos.
+- [ ] Publicar desde `main`, comprobar producción y registrar reversión sin pérdida de historial ni reinicio del presupuesto.
+
 ## SARIN-FIREBASE-AUTH · Regreso a Google con Firebase · 2026-10-17
 
 - [x] Confirmar alcance: sólo autenticación de Staff; conservar D1 e historial, sin restaurar el panel Firebase retirado.

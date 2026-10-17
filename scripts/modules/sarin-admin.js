@@ -1,5 +1,6 @@
 // @ts-check
 import {createSarinAdminAuth} from './sarin-admin-auth.js';
+import {validateSarinLead} from './sarin-lead.js';
 /** Panel privado. Los mensajes permanecen en el DOM y nunca se interpretan como HTML. */
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const dateFormat=new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'});
@@ -117,7 +118,10 @@ function initSarinAdmin(){
   function listItem(item){
     const button=/** @type {HTMLButtonElement} */(element('button','','admin-conversation'));button.type='button';
     button.dataset.conversationId=item.id;button.setAttribute('aria-pressed',String(item.id===selected));
-    button.append(element('strong',service(item.service,'Servicio por definir')),element('span',item.id,'admin-reference'),element('span',`${date(item.updatedAt)} · ${count(item.turns)} turnos`),element('span',`${state(item.status)} · ${item.reviewedAt?'Revisada':'Sin revisar'}`));
+    const contact=validateSarinLead(item.lead);
+    if(contact.ok)button.append(element('strong',`${contact.lead.firstName} ${contact.lead.lastName}`),element('span',contact.lead.email,'admin-contact-email'),element('span',service(item.service,'Servicio por definir')));
+    else button.append(element('strong',service(item.service,'Servicio por definir')),element('span','Sin datos de contacto'));
+    button.append(element('span',item.id,'admin-reference'),element('span',`${date(item.updatedAt)} · ${count(item.turns)} turnos`),element('span',`${state(item.status)} · ${item.reviewedAt?'Revisada':'Sin revisar'}`));
     if(count(item.outOfScopeCount) || count(item.errorCount))button.append(element('span',`${count(item.outOfScopeCount)} fuera de alcance · ${count(item.errorCount)} errores`,'admin-signal'));
     button.append(element('span',`${money(record(item.usage).verifiedMicros)} verificado`));
     button.addEventListener('click',()=>{void loadDetail(item.id);});return button;
@@ -154,6 +158,14 @@ function initSarinAdmin(){
     detail.replaceChildren();
     const title=element('h2',service(value.service,'Conversación con Sarin'));title.id='admin-detail-title';title.tabIndex=-1;
     detail.append(title,element('p',`Referencia: ${value.id}`,'admin-reference'));
+    const contact=validateSarinLead(value.lead),contactSection=element('section','','admin-contact');
+    contactSection.append(element('h3','Datos de contacto'));
+    if(contact.ok){
+      const contactList=element('dl','','admin-detail-meta');
+      definition('Nombre',contact.lead.firstName,contactList);definition('Apellido',contact.lead.lastName,contactList);definition('Correo no verificado',contact.lead.email,contactList);
+      contactSection.append(contactList,element('p','Datos declarados por el visitante; no acreditan su identidad.','admin-note'));
+    }else contactSection.append(element('p','Sin datos de contacto','admin-note'));
+    detail.append(contactSection);
     const meta=element('dl','','admin-detail-meta');
     for(const [label,valueText] of [['Estado',state(value.status)],['Turnos',String(count(value.turns))],['Inicio',date(value.createdAt)],['Última actividad',date(value.updatedAt)],['Vence',date(value.expiresAt)],['Revisión',value.reviewedAt?date(value.reviewedAt):'Sin revisar']])definition(label,valueText,meta);
     if(value.blockedUntil && value.blockedUntil>Date.now())definition('Bloqueada hasta',date(value.blockedUntil),meta);

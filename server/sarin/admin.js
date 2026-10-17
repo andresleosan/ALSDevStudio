@@ -38,7 +38,7 @@ async function verifyCsrf(token, secret, admin, now) {
       || !await crypto.subtle.verify('HMAC', await csrfKey(secret), unb64(parts[1]), encoder.encode(parts[0]))) throw new AdminError(403, 'csrf_rejected');
 }
 const project = (value, fields) => Object.fromEntries(fields.filter(key => value?.[key] !== undefined).map(key => [key, value[key]]));
-const summary = value => ({ ...project(value, ['id', 'createdAt', 'updatedAt', 'expiresAt', 'service', 'turns', 'reviewedAt', 'blockedUntil', 'status', 'outOfScopeCount', 'errorCount']), usage: project(value?.usage, ['reservedMicros', 'verifiedMicros', 'retainedMicros']) });
+const summary = value => ({ ...project(value, ['id', 'createdAt', 'updatedAt', 'expiresAt', 'service', 'turns', 'reviewedAt', 'blockedUntil', 'status', 'outOfScopeCount', 'errorCount']), lead: value?.lead ? project(value.lead, ['firstName','lastName','email']) : null, usage: project(value?.usage, ['reservedMicros', 'verifiedMicros', 'retainedMicros']) });
 function detail(value) {
   return { ...summary(value),
     messages: (value.messages || []).map(message => project(message, ['id', 'turn', 'role', 'content', 'at', 'status'])),

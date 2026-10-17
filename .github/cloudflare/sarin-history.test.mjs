@@ -1,3 +1,4 @@
+import { LEAD, LEAD_BYTES } from './sarin-lead-fixture.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -25,7 +26,7 @@ async function setup(t, limits = {}) {
   let clock = BASE;
   const store = implementation.createHistoryStore({ db: fixture.db, now: () => clock, limits });
   return { ...fixture, store, setTime: value => { clock = value; },
-    session: (tokenHash = HASH, identity = IDENTITY) => store.createSession({ tokenHash, identity, consent: CONSENT }),
+    session: (tokenHash = HASH, identity = IDENTITY) => store.createSession({ tokenHash, identity, consent: CONSENT, lead: LEAD }),
     begin: (number, message = 'Necesito un sitio', tokenHash = HASH) => store.beginTurn({ tokenHash, requestId: rid(number), message }),
     finish: (number, body = BODY, outcome = 'completed', status = 200, tokenHash = HASH) => store.finishTurn({ tokenHash, requestId: rid(number), body, outcome, status }),
   };
@@ -48,7 +49,7 @@ test('sesión guarda autorización con fecha del servidor y no conserva identida
 test('sesiones requieren hash y consentimiento válidos y respetan 5/minuto 20/día', async t => {
   const { store, session, setTime } = await setup(t);
   for (const consent of [null, {}, { ...CONSENT, noticeHash: 'bad' }, { ...CONSENT, method: 'implicit' }]) {
-    await assert.rejects(() => store.createSession({ tokenHash: HASH, identity: IDENTITY, consent }), rejects(400));
+    await assert.rejects(() => store.createSession({ tokenHash: HASH, identity: IDENTITY, consent, lead: LEAD }), rejects(400));
   }
   for (let number = 0; number < 20; number++) {
     setTime(BASE + Math.floor(number / 5) * 60000);
@@ -80,7 +81,7 @@ test('admisión simultánea admite solo un mensaje y reserva respuesta máxima a
   assert.equal(results.filter(value => value.status === 'fulfilled').length, 1);
   assert.equal(results.filter(value => value.status === 'rejected' && rejects(409)(value.reason)).length, 1);
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_messages').get().n, 1);
-  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 102);
+  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 102 + LEAD_BYTES);
 });
 
 test('replay es estable, cambio de texto o request activo falla sin duplicar turnos', async t => {
@@ -131,7 +132,7 @@ test('máximo quince turnos también se exige en servidor', async t => {
 });
 
 test('capacidad global incluye sesiones vacías y reservas concurrentes, sin admisión parcial', async t => {
-  const { session, begin, store, sqlite } = await setup(t, { maxConversations: 2, maxReplyBytes: 100, maxTextBytes: 120 });
+  const { session, begin, store, sqlite } = await setup(t, { maxConversations: 2, maxReplyBytes: 100, maxTextBytes: 120 + 2 * LEAD_BYTES });
   await session(); await session(OTHER, 'e'.repeat(64));
   await assert.rejects(() => session('f'.repeat(64)), rejects(429, 'history_capacity'));
   await begin(1, 'a');
@@ -145,7 +146,7 @@ test('finalización concurrente libera solo reserva restante una vez y preserva 
   const { conversationId } = await session(); await begin(1, 'á');
   const done = await Promise.all([finish(1), finish(1)]);
   assert.deepEqual(done.map(item => item.applied).sort(), [false, true]);
-  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 2 + Buffer.byteLength(JSON.stringify(BODY)));
+  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, LEAD_BYTES + 2 + Buffer.byteLength(JSON.stringify(BODY)));
   assert.deepEqual(await finish(1, { ...BODY, reply: 'diferente' }), { applied: false });
   const detail = await store.getConversation(conversationId);
   assert.equal(detail.messages.length, 2);
@@ -242,7 +243,7 @@ test('lease vencido libera respuesta, mantiene entrada y descarta respuesta tard
   setTime(BASE + 45000);
   await store.purge();
   assert.deepEqual(await finish(1), { applied: false });
-  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 1);
+  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 1 + LEAD_BYTES);
   assert.equal((await store.getConversation(conversationId)).messages.length, 1);
   const replay = await begin(1, 'a');
   assert.equal(replay.replay.status, 504);
@@ -314,7 +315,7 @@ test('fallo SQL después de admisión revierte mensaje, turno y capacidad; error
   const broken = implementation.createHistoryStore({ db: { prepare: db.prepare, batch: statements => db.batch([...statements, db.prepare('SELECT * FROM private_missing_table').bind()]) }, now: () => BASE });
   await assert.rejects(() => broken.beginTurn({ tokenHash: HASH, requestId: rid(1), message: 'a' }), error => rejects(503, 'history_unavailable')(error) && !error.message.includes('private'));
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_messages').get().n, 0);
-  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 0);
+  assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, LEAD_BYTES);
 });
 
 test('fallo SQL finalizando revierte respuesta y devolución de capacidad, reintento finaliza una vez', async t => {
@@ -358,7 +359,7 @@ test('configuración inválida o mutable no permite exceder topes y los mensajes
   const limits = { maxConversations: 1 };
   const limited = implementation.createHistoryStore({ db, now: () => BASE, limits }); limits.maxConversations = 2000;
   await session();
-  await assert.rejects(() => limited.createSession({ tokenHash: OTHER, identity: IDENTITY, consent: CONSENT }), rejects(429, 'history_capacity'));
+  await assert.rejects(() => limited.createSession({ tokenHash: OTHER, identity: IDENTITY, consent: CONSENT, lead: LEAD }), rejects(429, 'history_capacity'));
   for (const message of ['', 'a'.repeat(1201), '\u0000', {}]) await assert.rejects(() => store.beginTurn({ tokenHash: HASH, requestId: rid(1), message }), rejects(400));
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_messages').get().n, 0);
 });
@@ -383,6 +384,9 @@ test('rollback historial conserva cuotas y objetos ajenos y permite reaplicar mi
   assert.equal(sqlite.prepare('SELECT blocked FROM sarin_state').get().blocked, 0);
   assert.equal(sqlite.prepare('SELECT id FROM unrelated').get().id, 7);
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'sarin_conversations'").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name IN ('sarin_leads','sarin_lead_commands','sarin_history_lead')").get().n, 0);
   sqlite.exec(await readFile(new URL('../../migrations/sarin/0002_history.sql', import.meta.url), 'utf8'));
+  sqlite.exec(await readFile(new URL('../../migrations/sarin/0003_leads.sql', import.meta.url), 'utf8'));
   assert.equal(sqlite.prepare('SELECT text_bytes FROM sarin_history_state').get().text_bytes, 0);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_leads').get().n, 0);
 });

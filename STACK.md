@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Datos de contacto de Sarin · 2026-10-17 · candidato aprobado
+
+Nombre, apellido y correo obligatorios antes de crear nuevas sesiones; datos declarados visibles sólo en Staff, sin verificación de correo y sin añadirlos automáticamente a IA/analítica/resumen. Validador compartido vanilla, tabla D1 1:1 `sarin_leads` con FK/cascada, batch atómico y capacidad UTF-8; retención de la conversación 30 días/24 horas vacía. Históricos `lead:null`, sin backfill; Firebase/Google y cuotas monetarias no cambian. Aviso v6, privacidad v5, términos v4. Sin dependencias ni proveedor nuevo; 429 regresiones, 40 UI, 6 Pages locales y 6 del respaldo aprobadas. Backup privado verificado; publicación expresamente autorizada. [Verificaciones, estado y reversión](docs/SARIN-CONTACTO.md).
+
 ### Firebase Authentication para Staff · 2026-10-17 · publicado
 
 Por nueva solicitud y autorización de producción del titular, Firebase Authentication con Google sustituye Access únicamente en la administración. Publicación inicial `5247000`; corrección de transporte `de87219` e inicio de sesión real confirmado por el titular el 17/10/2026. SDK modular aislado de la portada, firma/claims y UID/correo exclusivo comprobados por el servidor, estado actual del usuario consultado por petición, cookie HttpOnly/Strict y límite de seis horas desde autenticación. App web existente recuperada, usuario rehabilitado y dominio `www` autorizado; aplicación Access de Sarin eliminada tras confirmación, otras dos y política reutilizable conservadas. D1, retención, cuotas y APIs del chat no se migran. No se restaura el antiguo sistema Firebase ni su facturación. La verificación TOTP de Access deja de formar parte del nuevo flujo: los desafíos de Google dependen de su cuenta. [Estado y comprobaciones finales](docs/SARIN-OPERACION.md), [decisión y reversión](docs/adr/002-firebase-auth-staff.md). Las secciones inferiores son registros históricos.

@@ -1,5 +1,6 @@
 // @ts-check
 import {NOTICE_VERSION,PRIVACY_VERSION,TERMS_VERSION} from './sarin-consent.js';
+import {validateSarinLead} from './sarin-lead.js';
 /** @typedef {'website'|'store'|'application'|'chatbot'} Service */
 /** @typedef {{role:'user'|'assistant',content:string}} ChatMessage */
 /** @typedef {Partial<Record<'business'|'need'|'features'|'timeline'|'budget',string>>} Brief */
@@ -56,9 +57,11 @@ export async function requestSarin(message, requestId, {signal,fetchImpl = globa
 }
 
 /** Crea la sesión únicamente tras la acción explícita de autorización de la interfaz.
- * @param {RequestOptions} [options] */
-export async function createSarinSession(options = {}) {
-  const body=JSON.stringify({consent:{accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION}});
+ * @param {RequestOptions & {lead: import('./sarin-lead.js').SarinLead}} options */
+export async function createSarinSession(options) {
+  const result=validateSarinLead(options?.lead);
+  if(!result.ok)throw new Error(result.message);
+  const body=JSON.stringify({consent:{accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION},lead:result.lead});
   const value=await send(options.privateTest?'/api/control-sarin/test/session':'/api/sarin/session',body,options);
   if (!record(value) || !keys(value,['conversationId','sessionExpiresAt']) || typeof value.conversationId !== 'string' || !uuid.test(value.conversationId) || !Number.isSafeInteger(value.sessionExpiresAt) || Number(value.sessionExpiresAt)<=0) throw new Error('No pudimos iniciar la conversación. Puedes contactar con Andrés.');
   return /** @type {{conversationId:string,sessionExpiresAt:number}} */(/** @type {unknown} */(value));

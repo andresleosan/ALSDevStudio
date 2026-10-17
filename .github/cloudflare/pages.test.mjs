@@ -46,7 +46,7 @@ test('las URLs históricas redirigen y las rutas desconocidas o internas devuelv
       assert.equal(location.search, search);
     }
   }
-  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects', '/.dev.vars', '/server/sarin/history.js', '/migrations/sarin/0002_history.sql', '/workers/sarin-retention/index.js', '/.github/sarin/package.json']) {
+  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects', '/.dev.vars', '/server/sarin/history.js', '/migrations/sarin/0002_history.sql', '/migrations/sarin/0003_leads.sql', '/workers/sarin-retention/index.js', '/.github/sarin/package.json']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 404, route);
     assert.match(await response.text(), /Página no encontrada/);
@@ -80,7 +80,10 @@ test('sesión consentida real de Pages establece cookie HttpOnly segura en loopb
     await page.goto(base+'/',{waitUntil:'domcontentloaded'});
     const result=await page.evaluate(async()=>{
       const {NOTICE_VERSION,PRIVACY_VERSION,TERMS_VERSION}=await import('/scripts/modules/sarin-consent.js');
-      const r=await fetch('/api/sarin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:{accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION}})});
+      const consent={accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION};
+      const invalid=await fetch('/api/sarin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent})});
+      if(invalid.status!==400)throw new Error('La sesión sin contacto debe rechazarse.');
+      const r=await fetch('/api/sarin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent,lead:{firstName:'María',lastName:'Prueba',email:'prueba@example.com'}})});
       return {status:r.status,keys:Object.keys(await r.json()).sort(),jsCookie:document.cookie.includes('__Host-sarin-session')};
     });
     assert.equal(result.status,200);assert.deepEqual(result.keys,['conversationId','sessionExpiresAt']);assert.equal(result.jsCookie,false);

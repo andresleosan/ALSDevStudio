@@ -1,3 +1,4 @@
+import { LEAD } from './sarin-lead-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
@@ -21,8 +22,8 @@ async function setup(t) {
     SARIN_INPUT_PRICE_MICROS:'300000',SARIN_OUTPUT_PRICE_MICROS:'1200000',SARIN_DAILY_BUDGET_MICROS:'1000000',SARIN_MONTHLY_BUDGET_MICROS:'10000000'};
   const options={now:()=>at,fetch:async(_url,init)=>{calls.push(JSON.parse(init.body));return provider({inScope:false});}};
   const store=createHistoryStore({db:f.db,now:options.now});
-  async function session(ip) {
-    const r=await handleSarinSession(post('/api/sarin/session',{consent},null,ip),env,options);assert.equal(r.status,200);
+  async function session(ip, lead=LEAD) {
+    const r=await handleSarinSession(post('/api/sarin/session',{consent,lead},null,ip),env,options);assert.equal(r.status,200);
     return {cookie:r.headers.get('Set-Cookie').split(';')[0],...await r.json()};
   }
   const send=(s,message='Una tienda',requestId=crypto.randomUUID())=>handleSarin(post('/api/sarin',{message,requestId},s.cookie),env,options);
@@ -36,10 +37,30 @@ test('sesión, dos turnos, contexto del servidor y replay usan SQL y cuotas real
   const replay=await f.send(s,'Una tienda',id);assert.equal(replay.status,200);assert.deepEqual(await replay.json(),body);assert.equal(f.calls.length,1);
   const second=await f.send(s,'Vendo café');assert.equal(second.status,200);assert.equal((await second.json()).turn,2);
   assert.equal(f.calls.length,2);assert.deepEqual(f.calls[1].messages.map(item=>item.role),['system','user']);
+  assert.equal(JSON.stringify(f.calls).includes(LEAD.email),false,'el contacto administrativo no se envía al proveedor');
+  assert.equal(JSON.stringify(body).includes(LEAD.email),false,'la respuesta pública no contiene contacto');
   assert.deepEqual(JSON.parse(f.calls[1].messages[1].content),{message:'Vendo café',history:[{role:'user',content:'Una tienda'},{role:'assistant',content:body.reply}]});
   const detail=await f.store.getConversation(s.conversationId);assert.equal(detail.messages.length,4);assert.equal(detail.consent.noticeVersion,NOTICE_VERSION);
   assert.ok(detail.usage.verifiedMicros>0);assert.equal(detail.usage.retainedMicros,0);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_turn_reservations').get().n,2);
+});
+
+test('clasificación y generación excluyen contacto administrativo de IA, JSON público y logs', async t => {
+  const f = await setup(t), logs = [];
+  for (const method of ['log','warn','error']) t.mock.method(console, method, (...values) => logs.push(values));
+  const lead = { firstName: 'NombreCanario', lastName: 'ApellidoCanario', email: 'lead-canary@example.test' };
+  const session = await f.session(undefined, lead);
+  f.options.fetch = async (_url, init) => {
+    f.calls.push(JSON.parse(init.body));
+    return provider(f.calls.length === 1 ? { inScope: true } : { reply: 'Podemos crear una tienda para tu negocio.', service: 'store', examples: [], brief: {} });
+  };
+  const response = await f.send(session, 'Necesito una tienda para mi negocio');
+  assert.equal(response.status, 200); const publicBody = await response.json(); assert.equal(f.calls.length, 2);
+  assert.deepEqual((await f.store.getConversation(session.conversationId)).lead, lead);
+  for (const value of Object.values(lead)) {
+    for (const requestBody of f.calls) assert.equal(JSON.stringify(requestBody).includes(value), false);
+    assert.equal(JSON.stringify(publicBody).includes(value), false); assert.equal(JSON.stringify(logs).includes(value), false);
+  }
 });
 
 test('sesiones aisladas, bloqueo y borrado no permiten consultar con token ajeno',async t=>{
