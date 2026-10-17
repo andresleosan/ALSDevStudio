@@ -47,6 +47,7 @@ export async function callDeepSeek({ body, key, fetcher, signal, timeoutMs }) {
     if (choice.finish_reason !== 'stop' || choice.message?.role !== 'assistant'
         || choice.message.tool_calls || choice.message.function_call
         || typeof choice.message.content !== 'string') throw invalidOutput('provider_envelope');
+    if (choice.message.content.trim() === '') throw invalidOutput('provider_empty_content');
     let content;
     try {
       content = JSON.parse(choice.message.content);

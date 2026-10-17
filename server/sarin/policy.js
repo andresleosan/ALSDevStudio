@@ -3,7 +3,7 @@ import { CATALOG } from './knowledge.js';
 
 export const VALIDATION_REASONS = Object.freeze([
   'clasif_contract', 'generation_contract', 'reply_policy', 'brief_not_literal',
-  'unknown_example', 'provider_envelope', 'provider_json', 'usage_contract',
+  'unknown_example', 'provider_envelope', 'provider_json', 'provider_empty_content', 'usage_contract',
 ]);
 
 /**
@@ -160,7 +160,7 @@ export function buildPayload(input, prompt, maxTokens, maxBytes) {
     const payload = {
       model: 'deepseek-flash', thinking: { type: 'disabled' }, stream: false,
       response_format: { type: 'json_object' }, max_tokens: maxTokens,
-      messages: [{ role: 'system', content: prompt }, ...history, { role: 'user', content: input.message }],
+      messages: [{ role: 'system', content: prompt }, { role: 'user', content: JSON.stringify({ message: input.message, history }) }],
     };
     const body = JSON.stringify(payload);
     const bytes = new TextEncoder().encode(body).length;

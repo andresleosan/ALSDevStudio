@@ -1,5 +1,13 @@
 # Tareas — ALS DevStudio
 
+## SARIN-QA · Prueba local real y corrección de seguimientos · 2026-10-16
+
+- [x] Preparar vista local `http://127.0.0.1:8792/` con DeepSeek real, historial D1 local y datos ficticios; conservar producción con chat apagado.
+- [x] Reproducir fallos de seguimiento, distinguir contenido vacío sin exponer cuerpos y comparar tres contextos: roles independientes fallan; datos JSON dan tres clasificaciones correctas. Corregir representación del contexto con regresiones RED/GREEN, sin reintentos ni relajación de controles.
+- [x] Corregir cierre comercial: resumen revisado y WhatsApp manual, sin prometer que Andrés contactará al visitante.
+- [x] Verificar 98/98 focales de backend/integración y suites ampliadas; revisión independiente sin P1/P2. Pruebas reales finales de tienda/pagos y aplicación/demos 4/4 con 200; Chrome verifica rechazo de inyección, salida de tema, recuperación a chatbot y edición/límite de resumen. Historial local vence a 30 días. [Evidencia y operación](docs/SARIN-OPERACION.md#prueba-local-con-deepseek-real--16-de-octubre-de-2026).
+- [x] Dejar una conversación nueva y servidor local abiertos para las pruebas del titular. Corrección local sin publicar; el panel de producción no recibe los chats de prueba locales.
+
 ## SARIN-INFRA · Preparación remota con funciones públicas apagadas · 2026-10-16
 
 - Estado: **panel privado publicado con autorización expresa**, GitHub `main` sincronizado y despliegue Pages `9ab95b55` correcto. Build con `npm ci --prefix .github/sarin`; administración activa, chat e historial públicos apagados. Sesión del titular y primera purga remota comprobadas.

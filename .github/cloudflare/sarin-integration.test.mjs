@@ -35,7 +35,8 @@ test('sesión, dos turnos, contexto del servidor y replay usan SQL y cuotas real
   assert.equal(body.turn,1);assert.equal(body.conversationId,s.conversationId);
   const replay=await f.send(s,'Una tienda',id);assert.equal(replay.status,200);assert.deepEqual(await replay.json(),body);assert.equal(f.calls.length,1);
   const second=await f.send(s,'Vendo café');assert.equal(second.status,200);assert.equal((await second.json()).turn,2);
-  assert.equal(f.calls.length,2);assert.equal(f.calls[1].messages.at(-3).content,'Una tienda');assert.equal(f.calls[1].messages.at(-2).content,body.reply);
+  assert.equal(f.calls.length,2);assert.deepEqual(f.calls[1].messages.map(item=>item.role),['system','user']);
+  assert.deepEqual(JSON.parse(f.calls[1].messages[1].content),{message:'Vendo café',history:[{role:'user',content:'Una tienda'},{role:'assistant',content:body.reply}]});
   const detail=await f.store.getConversation(s.conversationId);assert.equal(detail.messages.length,4);assert.equal(detail.consent.noticeVersion,NOTICE_VERSION);
   assert.ok(detail.usage.verifiedMicros>0);assert.equal(detail.usage.retainedMicros,0);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_turn_reservations').get().n,2);
@@ -45,7 +46,9 @@ test('sesiones aisladas, bloqueo y borrado no permiten consultar con token ajeno
   const f=await setup(t),a=await f.session(),b=await f.session('192.0.2.2'),id=crypto.randomUUID();
   assert.equal((await f.send(a,'Una tienda',id)).status,200);
   assert.equal((await f.send(b,'Otra web',id)).status,200);
-  assert.equal(f.calls[1].messages.length,2,'sin mensajes de la otra conversación');
+  assert.deepEqual(f.calls[1].messages.map(item=>item.role),['system','user']);
+  assert.doesNotThrow(()=>JSON.parse(f.calls[1].messages[1].content),'El contexto vacío también se transmite como datos JSON');
+  assert.deepEqual(JSON.parse(f.calls[1].messages[1].content),{message:'Otra web',history:[]},'sin mensajes de la otra conversación');
   await f.store.adminAction({id:a.conversationId,action:'block',actor:'owner@example.test'});
   assert.equal((await f.send(a)).status,403);assert.equal(f.calls.length,2);
   await f.store.adminAction({id:a.conversationId,action:'delete',actor:'owner@example.test'});
