@@ -93,3 +93,20 @@ test('pageshow restaura la preferencia borrada al salir sin anular movimiento re
   assert.match(await toggle.getAttribute('aria-label'),/^Pausar/);
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('als:hero-autoplay-paused:v1')),null);
 });
+
+test('correo de contacto y derechos sigue disponible sin JavaScript con exclusión explícita de ofuscación',async t=>{
+  const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:320,height:900}});t.after(()=>context.close());
+  const page=await context.newPage();let protectedLinks=0;
+  await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+  // El servidor local no transforma correos como Cloudflare. Comprobamos el
+  // enlace sin JavaScript y sus marcadores; la respuesta del edge se revisa tras publicar.
+  for(const pathname of ['/','/privacidad.html','/terminos.html','/cookies.html']){
+    await page.goto(origin+pathname,{waitUntil:'domcontentloaded',timeout:15000});
+    const visible=page.locator('a[href="mailto:alsdevstudio@alsdevstudio.com"]:visible');
+    assert.ok(await visible.count()>=1,pathname);
+    await visible.first().scrollIntoViewIfNeeded();assert.equal(await visible.first().isVisible(),true);
+    const links=await page.locator('a[href^="mailto:"]').evaluateAll(anchors=>anchors.map(anchor=>({href:anchor.getAttribute('href'),before:anchor.previousSibling?.nodeType===8?anchor.previousSibling.textContent:null,after:anchor.nextSibling?.nodeType===8?anchor.nextSibling.textContent:null})));
+    for(const link of links){assert.equal(link.href,'mailto:alsdevstudio@alsdevstudio.com');assert.equal(link.before,'email_off',pathname);assert.equal(link.after,'/email_off',pathname);protectedLinks++;}
+  }
+  assert.equal(protectedLinks,7);
+});
