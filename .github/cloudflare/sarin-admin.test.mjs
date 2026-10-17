@@ -622,3 +622,35 @@ test('rotación JWKS respeta cooldown, recarga una vez por kid desconocido y no 
   assert.equal((await bootstrap(missingToken)).status, 403); assert.equal(downloads, 3); assert.equal(lookups, 2);
   assert.deepEqual(store.calls, []); assert.deepEqual(fetched, []);
 }));
+
+test('fetch nativo de autenticación conserva globalThis y reutiliza la caché JWKS entre peticiones', async () => fixture(async () => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const delegate = googleFetch(), calls = [];
+  globalThis.fetch = async function (url, options) {
+    assert.equal(this, globalThis, 'el fetch del runtime exige su receptor global');
+    calls.push(String(url)); return delegate(url, options);
+  };
+  for (let index = 0; index < 2; index++) {
+    const response = await handleSarinAdmin(request(), env(), { store });
+    assert.equal(response.status, 200);
+  }
+  assert.equal(calls.filter(url => url === JWKS_URL).length, 1);
+  assert.equal(calls.filter(url => url === LOOKUP_URL).length, 2);
+  assert.deepEqual(store.calls, []);
+}));
+
+test('authFetch inyectado conserva this indefinido y no pasa por fetch global', async () => fixture(async fetched => {
+  const { handleSarinAdmin } = await moduleUnderTest(); const store = storeFixture();
+  const delegate = googleFetch(), calls = [];
+  const authFetch = async function (url, options) {
+    assert.equal(this, undefined, 'la dependencia interna se invoca sin receptor');
+    calls.push(String(url)); return delegate(url, options);
+  };
+  for (let index = 0; index < 2; index++) {
+    const response = await handleSarinAdmin(request(), env(), { store, authFetch });
+    assert.equal(response.status, 200);
+  }
+  assert.equal(calls.filter(url => url === JWKS_URL).length, 1);
+  assert.equal(calls.filter(url => url === LOOKUP_URL).length, 2);
+  assert.deepEqual(store.calls, []); assert.deepEqual(fetched, []);
+}));

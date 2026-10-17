@@ -65,8 +65,11 @@ async function remoteJson(url, init, fetchImpl, limit) {
   const timer = setTimeout(() => controller.abort(), REMOTE_TIMEOUT);
   let response;
   try {
-    response = await fetchImpl(url, { ...init, headers: { Accept: 'application/json', ...init.headers },
-      redirect: 'error', cache: 'no-store', credentials: 'omit', signal: controller.signal });
+    const fetchOptions = { ...init, headers: { Accept: 'application/json', ...init.headers },
+      redirect: 'error', cache: 'no-store', credentials: 'omit', signal: controller.signal };
+    // Algunos runtimes exigen el receptor global. Se conserva la función original
+    // como clave de caché; las dependencias inyectadas siguen sin receptor.
+    response = await (fetchImpl === globalThis.fetch ? globalThis.fetch(url, fetchOptions) : fetchImpl(url, fetchOptions));
     if (response.status !== 200) {
       void response.body?.cancel().catch(() => {});
       if (url.startsWith(FIREBASE_LOOKUP) && [400, 401, 403, 404].includes(response.status)) throw new AdminError(403, 'access_denied');
