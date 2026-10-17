@@ -4,11 +4,14 @@
 
 - [x] Confirmar intención y retención: cada conversación para revisar uso/abuso; el titular elige 30 días para historial completo y borrado automático.
 - [x] Auditar administración retirada, contrato actual, cuotas, datos y afirmaciones públicas. Investigar fuentes oficiales de Colombia, DeepSeek y Cloudflare; preparar cláusulas y diseño concretos, sin cambiar el funcionamiento ni recoger conversaciones reales.
-- [ ] Revisar el [diseño propuesto](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y los [textos de datos y términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md) antes de implementar la ampliación.
-- [ ] Implementar panel privado, sesiones e historial del servidor, autorización previa y purga programada; actualizar avisos y guía al mismo tiempo. Probar acceso, abuso, borrado y coherencia legal con datos ficticios.
+- [x] Aprobación expresa del titular («aprobado») del [diseño propuesto](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y los [textos de datos y términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md) para implementar la ampliación local.
+- [x] Implementar panel privado, sesiones e historial del servidor, autorización previa y purga programada; actualizar avisos y guía. Pruebas con datos ficticios, sin publicar.
+- [x] Verificar: 259/259 principales, analítica/escenas 80/80, Pages local 6/6. Migración incremental repetible; cookie real segura; todas las rutas/alias privados cerrados. Worker scheduled local 200 y heartbeat D1 ok; dry-run sin despliegue.
+- [x] Revisiones independientes de integración, UI/legal y retención/recuperación. Corregidos lease con más de 100 pendientes, metadatos SQL, filtro inválido durante carga y descripciones de auditoría/purga. Sin hallazgos medios/altos pendientes. TSC mantiene 12 errores previos de analítica/proyectos; ninguno nuevo de Sarin.
+- [x] Preparar activación, costos y restauración en [operación](docs/SARIN-OPERACION.md) y [runbook](docs/SARIN-RESTAURACION.md). Solo main/commit local, sin push ni recursos remotos.
 - [ ] Verificar configuración y contratos de los proveedores y tratamiento internacional, antes de una activación pública autorizada.
 
-## SARIN-WEB · Asistente comercial LOCAL · 2026-10-16
+## SARIN-WEB · Entrega inicial anterior a SARIN-ADMIN · 2026-10-16
 
 - Estado: implementación local validada y lista para probar; **no publicada**. El historial de entregas anteriores permanece debajo.
 - [x] Implementar Pages Function `/api/sarin`, catálogo cerrado y DeepSeek `deepseek-flash` con pensamiento desactivado; D1 para cuotas/reservas sin conversaciones. Límites de aplicación: 10/min y 50/día por IP pseudonimizada, 1 USD/día y 10 USD/mes globales.

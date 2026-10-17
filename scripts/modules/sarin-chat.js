@@ -1,5 +1,6 @@
 // @ts-check
-/** Conversación efímera: ningún texto se escribe en almacenamiento o analítica. */
+import {NOTICE_TEXT} from './sarin-consent.js';
+/** Vista en memoria; el historial autorizado se conserva en el servidor durante 30 días. */
 export function initSarinChat() {
   const dialog = document.querySelector('#sarin-chat');
   const launcher = document.querySelector('#sarin-launcher');
@@ -20,6 +21,11 @@ export function initSarinChat() {
   const whatsapp = /** @type {HTMLAnchorElement} */ (find('#sarin-whatsapp'));
   const conversation = find('#sarin-conversation');
   const title = /** @type {HTMLElement} */ (find('#sarin-title'));
+  const consentPanel=find('#sarin-consent');
+  const consent=/** @type {HTMLInputElement} */(find('#sarin-consent-checkbox'));
+  const authorize=/** @type {HTMLButtonElement} */(find('[data-sarin-authorize]'));
+  const reference=find('#sarin-reference');
+  find('#sarin-consent-text').textContent=NOTICE_TEXT;
   /** @typedef {typeof import('./sarin-api.js') & typeof import('./sarin-summary.js')} ChatModules */
   /** @type {ChatModules|undefined} */
   let modules;
@@ -27,8 +33,6 @@ export function initSarinChat() {
   let loading;
   /** @type {import('./sarin-api.js').ChatMessage[]} */
   let messages = [];
-  /** @type {import('./sarin-api.js').ChatMessage[]} */
-  let history = [];
   /** @type {import('./sarin-api.js').Brief} */
   let brief = {};
   /** @type {import('./sarin-api.js').Service|undefined} */
@@ -41,16 +45,24 @@ export function initSarinChat() {
   let summaryDirty = false;
   let summaryPrepared = false;
   let suspended = false;
+  let authorized=false;
+  let expired=false;
+  let creatingSession=false;
+  let conversationId='';
   const load = () => loading ||= Promise.all([import('./sarin-api.js'),import('./sarin-summary.js')]).then(([api,summary]) => (modules = { ...api,...summary }));
   const analytics = () => document.querySelector('#analytics-preferences[open]');
   /** @param {boolean} busy */
   const setBusy = busy => {
     pending = busy;
     const submit = form.querySelector('button');
-    if (submit) submit.disabled = busy || turns >= 15;
-    input.readOnly = busy || turns >= 15;
+    if (submit) submit.disabled = busy || !authorized || expired || turns >= 15;
+    input.readOnly = busy || !authorized || expired || turns >= 15;
+    authorize.disabled=busy || !consent.checked;
+    dialog.querySelectorAll('[data-sarin-service]').forEach(button=>{ if(button instanceof HTMLButtonElement) button.disabled=busy || !authorized || expired || turns>=15; });
+    /** @type {HTMLButtonElement} */(find('[data-sarin-reset]')).disabled=creatingSession;
     form.setAttribute('aria-busy',String(busy));
   };
+  consent.addEventListener('change',()=>{authorize.disabled=pending || !consent.checked;});
   /** @param {'user'|'assistant'} role @param {string} content @param {import('./sarin-api.js').Example[]} [examples] */
   const append = (role,content,examples = []) => {
     const article = document.createElement('article');
@@ -99,17 +111,35 @@ export function initSarinChat() {
     const observer = new MutationObserver(() => {if (document.querySelector('#analytics-preferences')) {observer.disconnect(); watchAnalytics();}});
     observer.observe(document.body,{childList:true});
   }
-  find('[data-sarin-reset]').addEventListener('click', () => {
-    generation++; controller?.abort(); controller = null;
-    messages = []; history = []; brief = {}; service = undefined; turns = 0;
-    log.replaceChildren(); empty.hidden = false; input.value = ''; status.textContent = 'Nueva conversación.';
-    summaryText.value = ''; summaryDirty = false; summaryPrepared = false;
-    summaryPanel.hidden = true; conversation.hidden = false; form.hidden = false;
-    setBusy(false); input.focus();
+  /** La vista anterior se limpia solo después de crear la sesión solicitada. */
+  const startSession=async()=>{
+    if(creatingSession || !consent.checked)return;
+    const current=++generation;controller?.abort();controller=new AbortController();
+    creatingSession=true;setBusy(true);status.textContent='Iniciando conversación…';
+    try{
+      const api=await load();const result=await api.createSarinSession({signal:controller.signal});
+      if(current!==generation)return;
+      authorized=true;expired=false;conversationId=result.conversationId;
+      messages=[];brief={};service=undefined;turns=0;
+      log.replaceChildren();empty.hidden=false;input.value='';
+      reference.textContent=`Referencia: ${conversationId}`;reference.hidden=false;
+      status.textContent='Conversación iniciada. La anterior, si existe, conserva su plazo de 30 días.';
+      summaryText.value='';summaryDirty=false;summaryPrepared=false;
+      summaryPanel.hidden=true;consentPanel.hidden=true;conversation.hidden=false;form.hidden=false;
+    }catch(error){
+      status.textContent=error instanceof Error && error.name!=='AbortError'?error.message:'No pudimos iniciar la conversación. Puedes contactar con Andrés.';
+    }finally{
+      if(current===generation){creatingSession=false;controller=null;setBusy(false);if(authorized && !expired)input.focus();}
+    }
+  };
+  authorize.addEventListener('click',()=>{void startSession();});
+  find('[data-sarin-reset]').addEventListener('click',()=>{
+    if(!authorized){status.textContent='Autoriza el tratamiento antes de iniciar. También puedes contactar con Andrés.';consent.focus();return;}
+    void startSession();
   });
   form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (pending || turns >= 15) return;
+    if (pending || !authorized || expired || turns >= 15) return;
     const message = input.value.trim();
     if (!message || message.length > 1200) { status.textContent = 'Escribe un mensaje de 1 a 1200 caracteres.'; input.focus(); return; }
     const current = ++generation;
@@ -121,10 +151,11 @@ export function initSarinChat() {
     try {
       const api = await load();
       if (current !== generation) return;
-      const result = await api.requestSarin(message,history.slice(-8),{signal});
+      const requestId=crypto.randomUUID();
+      const result = await api.requestSarin(message,requestId,{signal});
       if (current !== generation) return;
-      history.push({role:'user',content:message},{role:'assistant',content:result.reply});
-      history = history.slice(-8);
+      if((result.conversationId && result.conversationId!==conversationId) || (result.requestId && result.requestId!==requestId)) throw new Error('La respuesta no corresponde a esta conversación. Puedes contactar con Andrés.');
+      if(result.turn)turns=result.turn;
       messages.push({role:'assistant',content:result.reply});
       brief = {...brief,...result.brief}; service = result.service || service;
       append('assistant',result.reply,result.examples);
@@ -135,6 +166,7 @@ export function initSarinChat() {
       status.textContent = error instanceof Error && error.name !== 'AbortError' ? error.message : 'La consulta se canceló. Puedes contactar con Andrés.';
       // Mensaje fijo para errores de red: no revelar detalles internos del navegador.
       if (error instanceof TypeError) status.textContent = 'No pudimos conectar con Sarin. Puedes contactar con Andrés.';
+      if(error instanceof Error && 'status' in error && [401,403,410].includes(Number(error.status)))expired=true;
     } finally {
       if (current === generation) {setBusy(false); controller = null;}
     }
@@ -143,6 +175,7 @@ export function initSarinChat() {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {event.preventDefault(); form.requestSubmit();}
   });
   dialog.querySelectorAll('[data-sarin-service]').forEach(button => button.addEventListener('click', () => {
+    if(!authorized || pending || expired)return;
     input.value = `Me interesa ${(button.getAttribute('data-sarin-service') || '').toLowerCase()} para mi negocio.`;
     input.focus();
   }));
@@ -161,9 +194,10 @@ export function initSarinChat() {
   find('[data-sarin-summary]').addEventListener('click', async () => {
     try {
       const api = await load();
-      if (!summaryPrepared && !summaryDirty) {summaryText.value = api.createSummary({messages,brief,service}); summaryPrepared = true;}
-      updateSummary(); conversation.hidden = true; summaryPanel.hidden = false; form.hidden = true; summaryText.focus();
+      if (!summaryPrepared && !summaryDirty) {summaryText.value = api.createSummary({messages,brief,service})+(conversationId?`\n\nReferencia de conversación: ${conversationId}`:''); summaryPrepared = true;}
+      updateSummary(); conversation.hidden = true; consentPanel.hidden=true; summaryPanel.hidden = false; form.hidden = true; summaryText.focus();
     } catch {status.textContent = 'No pudimos preparar el resumen. Puedes hablar directamente con Andrés.';}
   });
-  find('[data-sarin-back]').addEventListener('click', () => {summaryPanel.hidden = true; conversation.hidden = false; form.hidden = false; input.focus();});
+  find('[data-sarin-back]').addEventListener('click', () => {summaryPanel.hidden = true; conversation.hidden = false; consentPanel.hidden=authorized; form.hidden = false; (authorized?input:consent).focus();});
+  setBusy(false);
 }

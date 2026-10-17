@@ -6,6 +6,8 @@ import path from 'node:path';
 import { chromium } from '../capturas/node_modules/playwright/index.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
+const conversationId = '00000000-0000-4000-8000-000000000001';
+const requestId = '00000000-0000-4000-8000-000000000002';
 const load = async name => import(`../../scripts/modules/${name}.js`).catch(error => {
   if (error.code === 'ERR_MODULE_NOT_FOUND') return null;
   throw error;
@@ -47,23 +49,40 @@ test('transporte rechaza HTML, URL ajena, campos extra y bytes excesivos antes d
     assert.throws(() => subject.validateResponse(value));
   }
   let calls = 0;
-  await assert.rejects(subject.requestSarin('a'.repeat(1201), [], {fetchImpl:async () => { calls++; }}));
-  await assert.rejects(subject.requestSarin('界'.repeat(1200), Array.from({length:8}, (_,i) => ({role:i%2?'assistant':'user', content:'界'.repeat(1200)})), {fetchImpl:async () => {calls++;}}));
+  await assert.rejects(subject.requestSarin('a'.repeat(1201), requestId, {fetchImpl:async () => { calls++; }}));
+  await assert.rejects(subject.requestSarin('Hola', [], {fetchImpl:async () => {calls++;}}));
+  assert.equal(subject.validateResponse({...good,conversationId,requestId,turn:1,expiresAt:Date.now()+1000}).turn,1);
+  assert.throws(()=>subject.validateResponse({...good,turn:16}));
   assert.equal(calls,0);
 });
 
 test('transporte ofrece contacto con JSON roto o timeout, sin reintentos y con destino fijo', async () => {
   const api = await load('sarin-api');
   assert.equal(typeof api?.requestSarin,'function');
-  await assert.rejects(api.requestSarin('Hola',[],{fetchImpl:async()=>new Response('{roto',{headers:{'content-type':'application/json'}})}),/Andrés/);
+  await assert.rejects(api.requestSarin('Hola',requestId,{fetchImpl:async()=>new Response('{roto',{headers:{'content-type':'application/json'}})}),/Andrés/);
   let attempts=0;
-  await assert.rejects(api.requestSarin('Hola',[],{timeoutMs:10,fetchImpl:async (url, options)=>{
+  await assert.rejects(api.requestSarin('Hola',requestId,{timeoutMs:10,fetchImpl:async (url, options)=>{
     attempts++;
     assert.equal(url,'/api/sarin');
-    assert.deepEqual(JSON.parse(options.body),{message:'Hola',history:[]});
+    assert.deepEqual(JSON.parse(options.body),{message:'Hola',requestId});
+    assert.equal(options.credentials,'same-origin');
     return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Cancelado','AbortError')),{once:true}));
   }}),/tardó demasiado/);
   assert.equal(attempts,1);
+  for (const [status, pattern] of [[409,/curso|ocupad/],[410,/venci|caduc/]]) await assert.rejects(api.requestSarin('Hola',requestId,{fetchImpl:async()=>new Response('{}',{status})}),pattern);
+});
+
+test('sesión solo registra autorización cerrada y usa cookie técnica sin exponerla',async()=>{
+  const api=await load('sarin-api');
+  const consent=await load('sarin-consent');
+  assert.equal(typeof api.createSarinSession,'function');
+  const value=await api.createSarinSession({fetchImpl:async(url,options)=>{
+    assert.equal(url,'/api/sarin/session');
+    assert.deepEqual(JSON.parse(options.body),{consent:{accepted:true,noticeVersion:consent.NOTICE_VERSION,privacyVersion:consent.PRIVACY_VERSION,termsVersion:consent.TERMS_VERSION}});
+    assert.equal(options.credentials,'same-origin');
+    return Response.json({conversationId,sessionExpiresAt:Date.now()+86400000});
+  }});
+  assert.equal(value.conversationId,conversationId);
 });
 
 async function pageFor(options = {}) {
@@ -76,6 +95,32 @@ async function pageFor(options = {}) {
 }
 async function dismiss(page) { await page.locator('[data-analytics-choice="denied"]').click(); }
 async function open(page) { await dismiss(page); await page.locator('#sarin-launcher').click(); }
+async function authorize(page) {
+  await page.route('**/api/sarin/session',route=>route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}}));
+  await page.locator('#sarin-consent-checkbox').check();
+  await page.locator('[data-sarin-authorize]').click();
+  await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
+}
+
+test('autorización previa sin premarcar, sin POST por servicios ni analítica denegada', async()=>{
+  const {page,context}=await pageFor();
+  const requests=[];
+  await page.route('**/api/sarin**',route=>{requests.push(route.request().url()); return route.fulfill({json:{conversationId,sessionExpiresAt:Date.now()+86400000}});});
+  await open(page);
+  assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
+  assert.equal(await page.locator('[data-sarin-authorize]').isDisabled(),true);
+  assert.equal(await page.locator('#sarin-message').evaluate(el=>el.readOnly),true);
+  assert.equal(await page.locator('[data-sarin-service]:disabled').count(),4);
+  await page.locator('#sarin-form').dispatchEvent('submit');
+  assert.equal(requests.length,0);
+  assert.match(await page.locator('#sarin-consent').textContent(),/30 días/);
+  assert.match(await page.locator('label[for="sarin-consent-checkbox"]').textContent(),/Autorizo.*acepto los Términos de Sarin/s);
+  await authorize(page);
+  assert.equal(requests.length,0); // autorización usa el mock específico, nunca inferencia
+  assert.match(await page.locator('#sarin-reference').textContent(),new RegExp(conversationId));
+  assert.match(await page.locator('#sarin-retention').textContent(),/recargar|recarga/i);
+  await context.close();
+});
 
 test('diálogo conserva foco, prioriza analítica y no conecta al abrir; cuatro servicios y resumen manual', async () => {
   const {page,context} = await pageFor();
@@ -118,6 +163,7 @@ test('IME, envío único, espera, respuesta segura, reinicio y error con contact
     await route.fulfill({json:{reply:'¿Qué vendes?',service:'store',examples:[],brief:{business:'Café'}}}).catch(()=>{});
   });
   await open(page);
+  await authorize(page);
   const input = page.locator('#sarin-message');
   await input.fill('Café');
   await input.dispatchEvent('keydown',{key:'Enter',isComposing:true});
@@ -133,7 +179,8 @@ test('IME, envío único, espera, respuesta segura, reinicio y error con contact
   await page.waitForTimeout(200);
   assert.match(await page.locator('#sarin-log').textContent(),/Qué vendes/);
   await page.screenshot({path:path.join(root,'test-results/sarin/conversation.png')});
-  assert.deepEqual(bodies[0].history,[]);
+  assert.deepEqual(Object.keys(bodies[0]).sort(),['message','requestId']);
+  assert.match(bodies[0].requestId,/^[a-f0-9-]{36}$/i);
   await input.fill('otro'); await input.press('Enter');
   await page.locator('[data-sarin-reset]').click();
   await page.waitForTimeout(250);
@@ -147,7 +194,7 @@ test('IME, envío único, espera, respuesta segura, reinicio y error con contact
   await context.close();
 });
 
-test('quince turnos como máximo, contexto de cuatro pares y ninguna persistencia de mensajes', async () => {
+test('quince turnos como máximo, contexto solo servidor y ninguna persistencia de mensajes', async () => {
   const {page,context} = await pageFor();
   const payloads=[];
   await page.route('**/api/sarin', route => {
@@ -155,6 +202,7 @@ test('quince turnos como máximo, contexto de cuatro pares y ninguna persistenci
     return route.fulfill({json:{reply:'¿Qué necesitas resolver?',examples:[],brief:{}}});
   });
   await open(page);
+  await authorize(page);
   let popups=0; page.on('popup',popup=>{popups++; popup.close();});
   for (let i=0;i<15;i++) {
     await page.locator('#sarin-message').fill(`Mi negocio ${i}`);
@@ -162,7 +210,8 @@ test('quince turnos como máximo, contexto de cuatro pares y ninguna persistenci
     await page.waitForFunction(() => document.querySelector('#sarin-form').getAttribute('aria-busy') === 'false');
   }
   assert.equal(payloads.length,15);
-  assert.deepEqual(payloads[5].history,[{role:'user',content:'Mi negocio 1'},{role:'assistant',content:'¿Qué necesitas resolver?'},{role:'user',content:'Mi negocio 2'},{role:'assistant',content:'¿Qué necesitas resolver?'},{role:'user',content:'Mi negocio 3'},{role:'assistant',content:'¿Qué necesitas resolver?'},{role:'user',content:'Mi negocio 4'},{role:'assistant',content:'¿Qué necesitas resolver?'}]);
+  assert.deepEqual(Object.keys(payloads[5]).sort(),['message','requestId']);
+  assert.equal(new Set(payloads.map(body=>body.requestId)).size,15);
   await page.locator('#sarin-form').evaluate(el=>el.requestSubmit());
   assert.equal(payloads.length,15);
   assert.match(await page.locator('#sarin-status').textContent(),/15/);
@@ -173,6 +222,25 @@ test('quince turnos como máximo, contexto de cuatro pares y ninguna persistenci
   await page.reload();
   await page.locator('#sarin-launcher').click();
   assert.equal(await page.locator('#sarin-log').textContent(),'');
+  await context.close();
+});
+
+test('fallar al crear otra sesión conserva la vista y recargar no crea sesiones automáticamente',async()=>{
+  const {page,context}=await pageFor();let sessions=0;
+  await page.route('**/api/sarin',route=>route.fulfill({json:{reply:'Cuéntame sobre tu café.',examples:[],brief:{}}}));
+  await open(page);await authorize(page);
+  await page.locator('#sarin-message').fill('Una tienda de café de prueba');await page.locator('#sarin-message').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('#sarin-log').textContent.includes('Cuéntame'));
+  await page.locator('[data-sarin-summary]').click();
+  assert.match(await page.locator('#sarin-summary-text').inputValue(),new RegExp(conversationId));
+  await page.locator('[data-sarin-back]').click();
+  await page.route('**/api/sarin/session',route=>{sessions++;return route.fulfill({status:503,json:{error:{code:'unavailable'}}});});
+  await page.locator('[data-sarin-reset]').click();
+  await page.waitForFunction(()=>document.querySelector('#sarin-status').textContent.includes('conectado'));
+  assert.equal(sessions,1);assert.match(await page.locator('#sarin-log').textContent(),/Una tienda de café de prueba/);
+  await page.reload();await page.locator('#sarin-launcher').click();
+  assert.equal(sessions,1);assert.equal(await page.locator('#sarin-log').textContent(),'');
+  assert.equal(await page.locator('#sarin-consent-checkbox').isChecked(),false);
   await context.close();
 });
 

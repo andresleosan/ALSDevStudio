@@ -3,10 +3,10 @@
 ## Sarin: administración e historial · solicitud del 16-10-2026
 
 - El titular solicita un panel privado para consultar cada conversación y su historial y revisar posibles abusos. Confirma conservar las conversaciones completas durante **30 días** con borrado automático; los contactos que siguen por WhatsApp mantienen su política aparte.
-- Ampliación propuesta: panel nuevo protegido con Cloudflare Access, historial fiable del servidor, señales técnicas de uso y autorización informada antes del primer mensaje. El panel anterior permanece retirado; no se restaura Firebase.
-- Investigación de términos, tratamiento internacional, retención y derechos terminada; diseño y cláusulas internas preparados para revisión. Esta ampliación **todavía no está implementada** y el chat actual sigue sin guardar conversaciones. [Diseño](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).
+- Ampliación aprobada e implementada en local: panel nuevo protegido con Cloudflare Access, historial fiable del servidor, señales técnicas de uso y autorización informada antes del primer mensaje. El panel anterior permanece retirado; no se restaura Firebase.
+- Investigación y textos preparados; historial del servidor, autorización previa, panel privado y purga horaria implementados y verificados localmente. **Sin publicar**: Access, D1/cron remotos y condiciones contractuales/internacionales pendientes antes de activar. [Diseño](docs/superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](docs/legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).
 
-## Sarin comercial · versión LOCAL implementada · 2026-10-16
+## Sarin comercial · entrega inicial previa al historial · 2026-10-16
 
 - Chat para explorar páginas web, tiendas virtuales, aplicaciones y chatbots, con ejemplos del catálogo real. Resumen revisable de hasta 1800 caracteres y continuación manual con Andrés por WhatsApp; Andrés confirma alcance y cotización.
 - Implementación Vanilla JS + Pages Function + D1 para metadatos de cuotas, con `deepseek-flash` y pensamiento desactivado como única IA. Conversación solo en memoria, contexto de cuatro intercambios y máximo quince turnos por conversación. Sin registro ni apertura o consulta automática.

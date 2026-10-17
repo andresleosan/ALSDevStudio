@@ -56,13 +56,18 @@ async function ensureLocalSecret() {
     if (error.code !== 'ENOENT') throw error;
     return 'DEEPSEEK_API_KEY=\nSARIN_ENABLED=false\n';
   });
-  const line = content.split(/\r?\n/).find(value => /^\s*SARIN_IP_SECRET\s*=/.test(value));
-  const value = line?.slice(line.indexOf('=') + 1).trim().replace(/^(["'])(.*)\1$/, '$2');
-  if (!value) {
-    content = content.replace(/^\s*SARIN_IP_SECRET\s*=.*$/gm, '');
-    content += `\nSARIN_IP_SECRET="${randomBytes(32).toString('hex')}"\n`;
-    await writeFile(file, content, { encoding: 'utf8', mode: 0o600 });
+  let changed = false;
+  for (const name of ['SARIN_IP_SECRET', 'SARIN_ADMIN_CSRF_SECRET']) {
+    const pattern = new RegExp(`^\\s*${name}\\s*=`);
+    const line = content.split(/\r?\n/).find(value => pattern.test(value));
+    const value = line?.slice(line.indexOf('=') + 1).trim().replace(/^(["'])(.*)\1$/, '$2');
+    if (!value) {
+      content = content.split(/\r?\n/).filter(line => !pattern.test(line)).join('\n');
+      content += `\n${name}="${randomBytes(32).toString('hex')}"\n`;
+      changed = true;
+    }
   }
+  if (changed) await writeFile(file, content, { encoding: 'utf8', mode: 0o600 });
 }
 
 function run(cli, args) {
@@ -78,6 +83,7 @@ function run(cli, args) {
 async function main() {
   const options = parseDevArgs(process.argv.slice(2));
   const cli = await findWrangler();
+  await access(path.join(root, '.github/sarin/node_modules/@cloudflare/pages-plugin-cloudflare-access/package.json'));
   await ensureLocalSecret();
   const artifact = await build();
   console.log(`Sarin local: ${artifact.files} archivos públicos; preparación de D1 exclusivamente local.`);
@@ -88,13 +94,15 @@ async function main() {
   // Pages exige wrangler.jsonc estándar; la configuración separada solo se usa para migrar D1 local.
   await run(cli, ['pages', 'dev', 'dist', '--d1', 'SARIN_DB=00000000-0000-0000-0000-000000000002', '--persist-to', persistence,
     '--ip', '127.0.0.1', '--port', String(options.port), '--inspector-port', '0', '--log-level', 'warn',
-    '--binding', `SARIN_ENABLED=${options.live ? 'true' : 'false'}`]);
+    '--binding', `SARIN_ENABLED=${options.live ? 'true' : 'false'}`,
+    '--binding', `SARIN_HISTORY_ENABLED=${options.live ? 'true' : 'false'}`,
+    '--binding', 'SARIN_ADMIN_ENABLED=false']);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(() => {
     // No imprimir errores de herramientas que puedan contener configuración local o secretos.
-    console.error('No se pudo iniciar Sarin local. Comprueba los argumentos, Wrangler, el build y la migración local.');
+    console.error('No se pudo iniciar Sarin local. Comprueba los argumentos, Wrangler, npm ci --prefix .github/sarin, el build y la migración local.');
     process.exitCode = 1;
   });
 }

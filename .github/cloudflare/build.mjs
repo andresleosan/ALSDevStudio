@@ -7,19 +7,21 @@ const CANONICAL_ORIGIN = 'https://www.alsdevstudio.com';
 const OUTPUT_MARKER = '# ALSDevStudio: salida generada por .github/cloudflare/build.mjs\n';
 const MAX_FILES = 20000;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
-const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', '404.html'];
+const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', '404.html', 'control-sarin/index.html'];
+const FUNCTION_ROUTES = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
+  '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary'].map(name => `modules/${name}.js`)]
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-admin'].map(name => `modules/${name}.js`)]
   .map(name => `scripts/${name}`);
 const BRAND_FILES = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg']
   .map(name => `assets/brand/${name}`);
 const FIXED_FILES = [...HTML_FILES, 'favicon.svg', 'robots.txt', 'sitemap.xml', '_headers', '_redirects', '_routes.json',
-  'styles/main.css', ...SCRIPT_FILES, ...BRAND_FILES, 'assets/fonts/fonts.css'];
+  'styles/main.css', 'styles/sarin-admin.css', ...SCRIPT_FILES, ...BRAND_FILES, 'assets/fonts/fonts.css'];
 const FIXED_SET = new Set(FIXED_FILES);
-const PAGE_ROUTES = new Map([['/index.html', '/'], ['/privacidad.html', '/privacidad'],
+const PAGE_ROUTES = new Map([['/index.html', '/'], ['/control-sarin/index.html','/control-sarin/'], ['/privacidad.html', '/privacidad'],
   ['/terminos.html', '/terminos'], ['/cookies.html', '/cookies'], ['/404.html', '/404']]);
 
 const samePath = (left, right) => path.relative(left, right) === '';
@@ -27,7 +29,7 @@ const publicFile = name => FIXED_SET.has(name) ||
   /^assets\/fonts\/[A-Za-z0-9_-]+(?:\.woff2|-OFL\.txt)$/.test(name) ||
   /^assets\/projects\/[A-Za-z0-9_-]+\.jpg$/.test(name) ||
   /^assets\/projects\/responsive\/(?:480|768|1200)\/[A-Za-z0-9_-]+\.(?:avif|webp)$/.test(name);
-const publicDirectory = name => ['styles', 'scripts', 'scripts/modules', 'assets', 'assets/brand',
+const publicDirectory = name => ['control-sarin', 'styles', 'scripts', 'scripts/modules', 'assets', 'assets/brand',
   'assets/fonts', 'assets/projects', 'assets/projects/responsive',
   'assets/projects/responsive/480', 'assets/projects/responsive/768', 'assets/projects/responsive/1200'].includes(name);
 
@@ -126,6 +128,8 @@ function localReference(value, documentPath, outputFiles) {
   try { target = decodeURIComponent(url.pathname).replace(/^\//, ''); }
   catch { throw new Error(`Referencia local inválida en ${documentPath}: ${value}`); }
   if (!target) target = 'index.html';
+  if (target.endsWith('/')) target += 'index.html';
+  if (!outputFiles.has(target) && outputFiles.has(`${target}/index.html`)) target += '/index.html';
   if (!outputFiles.has(target) && outputFiles.has(`${target}.html`)) target += '.html';
   if (!outputFiles.has(target)) throw new Error(`Referencia local sin archivo permitido en ${documentPath}: ${value}`);
 }
@@ -145,7 +149,8 @@ function validateReferences(contents, outputFiles) {
     const documentPath = `/${name}`;
     if (name.endsWith('.html')) htmlReferences(content, documentPath, outputFiles);
     if (name.endsWith('.js')) {
-      for (const match of content.matchAll(/\b(?:from\s*|import\s*)(["'])([^"']+)\1/g)) {
+      // Espacio tras from evita confundir selectores como '#admin-from'.
+      for (const match of content.matchAll(/\b(?:from\s+|import\s*(?:\(\s*)?)(["'])([^"']+)\1/g)) {
         localReference(match[2], documentPath, outputFiles);
       }
       // Las plantillas HTML y scripts creados por JS resuelven contra el documento.
@@ -166,10 +171,10 @@ function validateFunctionRoutes(content) {
   try { routes = JSON.parse(content); }
   catch { throw new Error('El archivo _routes.json debe contener las rutas exactas de Sarin.'); }
   if (!routes || Object.keys(routes).sort().join(',') !== 'exclude,include,version' || routes.version !== 1 ||
-      !Array.isArray(routes.include) || routes.include.length !== 2 ||
-      [...routes.include].sort().join(',') !== '/api/sarin,/api/sarin/' ||
+      !Array.isArray(routes.include) || routes.include.length !== FUNCTION_ROUTES.length ||
+      [...routes.include].sort().join(',') !== [...FUNCTION_ROUTES].sort().join(',') ||
       !Array.isArray(routes.exclude) || routes.exclude.length !== 0) {
-    throw new Error('Las rutas de Functions deben limitarse a /api/sarin y /api/sarin/.');
+    throw new Error('Las rutas de Functions deben limitarse al chat, sesión y administración protegida de Sarin.');
   }
 }
 

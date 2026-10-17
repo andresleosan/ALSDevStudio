@@ -2,9 +2,11 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 
 // Ejecuta las sentencias y triggers reales; batch reproduce la transacción de D1.
-export async function sqliteFixture() {
+export async function sqliteFixture({ history = false } = {}) {
   const sqlite = new DatabaseSync(':memory:');
+  sqlite.exec('PRAGMA foreign_keys = ON');
   sqlite.exec(await readFile(new URL('../../migrations/sarin/0001_usage.sql', import.meta.url), 'utf8'));
+  if (history) sqlite.exec(await readFile(new URL('../../migrations/sarin/0002_history.sql', import.meta.url), 'utf8'));
   function prepare(sql) {
     return {
       sql, values: [],

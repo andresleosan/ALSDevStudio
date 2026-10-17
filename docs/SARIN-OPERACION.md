@@ -1,50 +1,70 @@
 # Operación local de Sarin
 
-Fecha: 16 de octubre de 2026. Estado: implementación **LOCAL validada**, no publicada. DeepSeek responde desde la Pages Function con D1 local y cuotas activas.
-
-Ampliación solicitada después de esta validación: historial administrativo completo de 30 días, confirmado por el titular. Está en fase de diseño y no se ha habilitado el registro de mensajes. Consultar [diseño del panel](superpowers/specs/2026-10-16-sarin-admin-historial-design.md) y [revisión de datos/términos](legal/SARIN-REVISION-DATOS-Y-TERMINOS.md) antes de modificar o publicar el flujo de datos.
+Fecha: 16 de octubre de 2026. Estado: chat comercial y ampliación administrativa aprobada, implementados y verificados **en local, sin publicar**. No se ha configurado Access, D1 ni cron remotos. El panel deniega acceso mientras falte su configuración; no incorpora contraseña o autenticación de demostración.
 
 ## Preparar y abrir
 
-Desde la raíz del repositorio, con Node y Wrangler 4.150 o posterior disponibles:
+Desde la raíz, con Node y Wrangler 4.150 o posterior:
 
 ```powershell
+npm ci --prefix .github/sarin
 node .github/sarin/dev.mjs --prepare
 node .github/sarin/dev.mjs
 ```
 
-`--prepare` construye `dist` y aplica las migraciones pendientes de D1 **local**, sin iniciar un servidor. La segunda orden abre el entorno en `http://127.0.0.1:8791`, con IA desactivada por defecto. El formulario muestra contacto cuando la IA está apagada; no simula respuestas. Para usar otro puerto se admite `--port 8792`. Detener con Ctrl+C.
+`--prepare` construye `dist` y aplica migraciones pendientes únicamente en D1 local. Es repetible; no ejecuta de nuevo las aplicadas. El servidor abre `http://127.0.0.1:8791` con chat e historial apagados. Admite `--port 8792`; detener con Ctrl+C. No crea recursos ni despliega.
 
-Los secretos están exclusivamente en `.dev.vars`, ignorado por Git junto con `.dev.vars.*`. Nombres: `DEEPSEEK_API_KEY` y `SARIN_IP_SECRET`; no copiar sus valores a documentación, terminales compartidas, capturas ni mensajes. El launcher conserva la clave existente y genera un secreto de pseudonimización si falta. No incluir `.dev.vars` en `dist`.
+Secretos exclusivamente en `.dev.vars`, ignorado y excluido del artefacto: `DEEPSEEK_API_KEY`, `SARIN_IP_SECRET`, `SARIN_ADMIN_CSRF_SECRET`. El launcher conserva valores y genera los dos secretos técnicos si faltan, sin imprimirlos. Persistencia en `.wrangler/sarin-local`; configuración separada solo para migrar D1 local. Pages utiliza `wrangler.jsonc` estándar.
 
-Solo para una comprobación real local, con la clave configurada y controles de consumo activos:
+`node .github/sarin/dev.mjs --live` habilita chat e historial locales. **Enviar** mensajes llama a DeepSeek y puede consumir saldo; abrir o autorizar una sesión no llama a IA. Administración permanece apagada y exige Access real. `--live --prepare` prepara sin iniciar servidor. No hay bypass de autenticación para ver transcripciones.
 
-```powershell
-node .github/sarin/dev.mjs --live
-```
+## Conversaciones y consentimiento
 
-Esta opción habilita solicitudes facturables al **enviar** mensajes; abrir el panel no llama al proveedor. `--live --prepare` solo prepara el entorno. El launcher no contiene una ruta de despliegue y limita Wrangler al desarrollo y las migraciones locales. La persistencia local reside en `.wrangler/sarin-local`; `wrangler.sarin.local.jsonc` configura el binding `SARIN_DB` para las migraciones. No se crean bases de datos remotas.
+Frontend nativo, Pages Functions y D1; única IA DeepSeek `deepseek-flash`, pensamiento desactivado, sin streaming ni reintentos. Catálogo y alcance comercial controlados por el servidor.
 
-## Datos, límites y costo
+Aviso visible, casilla sin marcar y acción expresa antes de iniciar. `POST /api/sarin/session` acepta solo `{consent:{accepted:true,noticeVersion,privacyVersion,termsVersion}}`. Registra fecha, método, versiones y hash del aviso; devuelve referencia y cookie `__Host-sarin-session`, secreto aleatorio `HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`. D1 conserva únicamente su hash. Esta evidencia no identifica civilmente al visitante.
 
-El frontend Vanilla JS usa la Pages Function del mismo origen `/api/sarin`. Único proveedor: DeepSeek, modelo `deepseek-flash`, pensamiento desactivado, sin streaming ni reintentos. D1 guarda metadatos de cuotas y reservas; no guarda conversación ni resumen. Los mensajes permanecen en memoria de la pestaña y durante la petición. Nueva conversación o recarga borran la memoria del navegador.
+`POST /api/sarin` recibe solo `{message,requestId}`. El servidor recupera hasta cuatro pares anteriores; no admite historial ni roles del navegador. Un turno pendiente por sesión. Repetir mensaje/UUID completado reproduce respuesta sin otra inferencia; cambiar el mensaje con el mismo UUID se rechaza. Borrar o vencer el historial impide que una respuesta tardía lo recree.
 
-La función admite diez turnos/minuto y cincuenta/día por IP pseudonimizada. Los períodos diarios y mensuales se calculan en UTC. La interfaz limita cada conversación a quince turnos y remite como máximo los últimos cuatro pares completos. El resumen admite hasta 1800 caracteres con corrección manual, sin truncado silencioso. Continuar por WhatsApp prepara el mensaje para `573146432135`; la persona decide enviarlo desde WhatsApp.
+Se guardan mensajes admitidos, respuestas públicas validadas y errores públicos. Un mensaje admitido puede conservarse con error de cuota sin llamar a IA. Las peticiones inválidas o sin sesión no guardan contenido. No almacenar razonamiento, salidas descartadas, cuerpos de error del proveedor ni IP en las transcripciones. No hay contenido en analítica, consola ni almacenamiento persistente del navegador.
 
-Precios de cálculo configurados: entrada `300000` y salida `1200000` microUSD por millón de tokens (0,30 y 1,20 USD). El contador global limita reservas a `1000000` microUSD diarios y `10000000` mensuales (1 y 10 USD). Antes de cada llamada reserva `ceil(((2 × bytesUTF8 + 1024) × precioEntrada + tokensSalida × precioSalida) / 1000000)`; solo liquida uso verificado y conserva la reserva ante incertidumbre.
+Referencia en chat y resumen editable de hasta 1800 caracteres. WhatsApp `573146432135` se abre por acción de la persona y conserva su revisión; la persona decide enviarlo. Recargar o iniciar otra conversación limpia la vista, **no elimina el historial del servidor**.
 
-Estos importes son controles internos de la aplicación, no una garantía sobre la factura o cambios de tarifas. Con IA apagada no hay inferencias. La muestra local tiene 2110 microUSD de uso verificado y 12196 microUSD retenidos por intentos inciertos o respuestas inválidas: 0,014306 USD contabilizados en esa base. No incluye las pruebas aisladas en memoria ni acredita la factura de la cuenta. No se han verificado límites ni alertas configurados en la cuenta del proveedor. No se contrata un plan de pago en esta entrega.
+## Administración
 
-## Evidencia y pendientes
+Interfaz `/control-sarin/` y API `/api/control-sarin/*`: plugin oficial Access con firma, claims obligatorios y correo exclusivo del titular. API autentica también por separado. Mutaciones con origen exacto, JSON y CSRF de 15 minutos; respuestas `no-store` y sin indexación.
 
-La suite conjunta pasa 120/120: build 13, lanzador 3, cuotas 19, backend 78 e interfaz 7. La regresión adicional de Pages y escenas pasa 64/64. Cinco anchos entre 320 y 1440, axe del diálogo sin violaciones, teclado, IME, foco, prioridad de analítica, timeout, cancelación, resumen y no-JS. TypeScript no encuentra errores en los módulos nuevos; permanecen doce errores previos en analítica y proyectos, archivos que no se modificaron.
+Filtros de fecha colombiana, servicio y estado; paginación; transcripción y eventos; prueba de autorización; uso verificado y reservas retenidas. Acciones: revisar, bloquear sesión por 24 horas, desbloquear y eliminar. Borrar no reinicia dinero. Las señales requieren revisión contextual y no prueban abuso. El panel muestra estado y última limpieza.
 
-La prueba real en `workerd` devuelve 200 para landing con ejemplos, tienda con Mundo Celular/Coctels OPS, chatbot con Sarin/Dialon y consulta ajena con redirección a los servicios. En navegador de 390 px se verificaron respuesta real, dos enlaces, resumen editable, enlace con el texto revisado exacto y cero errores JavaScript, sin enviar mensajes a WhatsApp. Evidencia local ignorada por Git: `test-results/sarin-live-*.json`, `test-results/sarin-local-usage.json`, `test-results/sarin-tests-final.txt` y `test-results/sarin/live-*.png`.
+Configurar `SARIN_ADMIN_ENABLED`, `SARIN_ACCESS_DOMAIN` (HTTPS del equipo `*.cloudflareaccess.com`), `SARIN_ACCESS_AUD`, `SARIN_ADMIN_EMAIL` y secreto `SARIN_ADMIN_CSRF_SECRET` de al menos 32 caracteres. No hay valores de cuenta incorporados. Dependencia oficial aislada en `.github/sarin/`, nunca en el cliente.
 
-Se corrigió una incompatibilidad reproducida de `workerd`: `redirect: error` fallaba antes de la red; `manual` permite rechazar 3xx sin seguir el destino. También se reforzó la extracción literal del borrador tras detectar reformulaciones del modelo. Las respuestas que incumplen el contrato siguen rechazándose; los diagnósticos registran únicamente categorías técnicas cerradas. La revisión independiente final no encontró bloqueantes ni riesgos medios/altos. La muestra real es acotada y no garantiza cada futura respuesta del modelo ni verifica contención concurrente de D1 remoto.
+## Retención, límites y costo
 
-Antes de activar producción quedan: revisar las condiciones de tratamiento/retención del proveedor y los avisos, contrastar uso/factura y límites/alertas de cuenta, configurar D1 remoto y secretos mediante mecanismos privados y comprobar Functions/cabeceras/rutas en el despliegue autorizado. La expiración lógica de cuotas es de 48 horas para metadatos por IP y 35 días para globales/reservas, con purga oportunista; no equivale a una promesa de eliminación en DeepSeek.
+- Historial/autorización: 30 días desde primer mensaje admitido, sin renovación. Sesión operativa y sesión vacía: 24 horas.
+- Cuotas por IP transformada/rechazos agregados: 48 horas. Auditoría de acciones: 30 días. Contadores globales y reservas: 35 días.
+- Vencidos excluidos inmediatamente. Worker horario: máximo 20 lotes de 100, sin HTTP público. Fallas/retrasos pueden demorar eliminación física; supervisar. Las cuotas se limpian también durante peticiones.
+- `SARIN_RETENTION_ENABLED=false` por defecto, identificador D1 exclusivamente local. Debe compartir la base exacta de Pages. Cron remoto todavía no desplegado.
+- Límites de servidor: 10 mensajes/minuto, 50/día por IP transformada; 15 turnos/conversación; 5 sesiones/minuto, 20/día; 2000 conversaciones, 64 MiB de texto lógico, 32 clases de evento/conversación y 10000 agregados de rechazo. No equivalen al tamaño físico total de D1.
 
-Mantener `SARIN_ENABLED=false` en producción y previews mientras la activación esté pendiente. La desactivación posterior se realiza con ese mismo interruptor; el contacto humano y el resumen siguen disponibles. No aplicar migraciones locales contra producción ni convertir estos comandos en un despliegue.
+Precios de cálculo: 300000/1200000 microUSD por millón de tokens de entrada/salida. Presupuesto global: 1000000/10000000 microUSD por día/mes UTC (1/10 USD). Reserva atómica antes de cada llamada; liquidación solo de uso comprobado. Incertidumbre conserva reserva; cero se liquida únicamente al comprobar ausencia de red. Historial y revisión de abuso no añaden llamadas de IA. Estimación en [STACK](../STACK.md). Contadores no son factura ni garantizan tarifas futuras. Alertas/límites de la cuenta no comprobados; ningún plan contratado.
 
-Referencias internas: [diseño](superpowers/specs/2026-10-16-sarin-chat-web-design.md), [plan](superpowers/plans/2026-10-16-sarin-chat-web.md) y [stack](../STACK.md).
+Borrar D1 activo no promete eliminación inmediata de backups del proveedor. Plan/ventana Time Travel reales pendientes. [Restauración conservadora](SARIN-RESTAURACION.md): cerrar y drenar, borrar **todo** historial restaurado, conciliar capacidad, conservar dinero y mantener IA apagada hasta conciliar consumo o agotar períodos afectados. Una copia antigua no acredita saldo disponible.
+
+## Verificación local
+
+259/259 pruebas de build, launcher, cuotas, backend, sesiones, historial, Access/admin, integración SQLite, retención/recuperación y UI. Regresión analítica/escenas 80/80; Pages local real 6/6, incluidas rutas alternativas privadas y cookie HttpOnly/Secure en navegador. Cinco anchos 320–1440, teclado, no-JS y axe sin incidencias automáticas en superficies evaluadas. TypeScript mantiene doce errores previos en analítica/proyectos; ninguno nuevo de Sarin.
+
+Migración aplicada localmente y preparación repetida sin pendientes. Worker empaquetado con `deploy --dry-run`, sin publicar; evento scheduled en workerd local devuelve 200 y estado D1 `ok`. Compatibilidad `2026-10-13` igual que Pages, admitida por runtime local. El endpoint temporal de simulación de Wrangler solo se usó en loopback durante QA; producto no implementa `fetch`.
+
+Revisiones independientes de integración, UI/textos y purga/restauración sin hallazgos medios/altos pendientes. Corregidos lease con más de 100 pendientes, validación SQL de metadatos, filtro inválido durante carga y dos descripciones de retención. La muestra anterior de DeepSeek real valida transporte/modelo de forma acotada; esta ampliación usó datos/proveedores sintéticos, sin nuevas inferencias pagadas ni prueba de contención D1 remoto.
+
+Evidencia ignorada: `test-results/sarin-admin-tests-final.txt`, `sarin-admin-regression-final.txt`, `sarin-admin-types-final.txt`, capturas `test-results/sarin/` y `test-results/sarin-admin/`.
+
+## Activación posterior
+
+1. Verificar condiciones API, roles, tratamiento internacional y retención efectiva de DeepSeek/Cloudflare; completar [guía de datos](legal/OPERACION-Y-SOLICITUDES.md). No afirmar cero retención o exclusión de entrenamiento sin prueba contractual.
+2. Configurar Access del titular para interfaz y API en dominio propio, `pages.dev` y alternativas. Verificar acceso fuerte real y denegación de identidad ausente/ajena/vencida, sin guardar tokens.
+3. Preparar D1 remoto, respaldo y migraciones con base identificada; vincular Pages y Worker a esa misma base y configurar secretos privadamente. Comando Git de Pages necesario: `npm ci --prefix .github/sarin && node .github/cloudflare/build.mjs`, salida `dist`; no se cambió la cuenta.
+4. Desplegar/verificar cron, heartbeat, recuperación y controles de cuenta. Revisar candidato antes de activar chat/historial. Mantener `SARIN_ENABLED`, `SARIN_HISTORY_ENABLED`, `SARIN_ADMIN_ENABLED` apagados mientras falten los pasos. No activar previews contra datos operativos; cambiar flags no cancela inferencias en curso.
+
+Sin push, despliegue o configuración remota en esta entrega. [Diseño aprobado](superpowers/specs/2026-10-16-sarin-admin-historial-design.md), [plan](superpowers/plans/2026-10-16-sarin-admin-historial.md) y [revisión jurídica](legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).

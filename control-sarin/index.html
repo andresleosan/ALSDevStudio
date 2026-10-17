@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Administración de Sarin · ALS DevStudio</title>
+  <link rel="stylesheet" href="/assets/fonts/fonts.css">
+  <link rel="stylesheet" href="/styles/sarin-admin.css">
+  <script type="module" src="/scripts/modules/sarin-admin.js"></script>
+</head>
+<body>
+  <a class="admin-skip" href="#admin-main">Saltar a las conversaciones</a>
+  <header class="admin-header">
+    <a class="admin-brand" href="/" aria-label="ALS DevStudio, ir al sitio"><span>ALS</span> DevStudio</a>
+    <p id="admin-identity">Acceso privado</p>
+  </header>
+  <main id="admin-main" class="admin-main">
+    <div class="admin-intro">
+      <div><h1>Administración de Sarin</h1><p>Revisa las conversaciones, su consumo y las señales que necesitan atención.</p></div>
+      <img src="/assets/brand/mascot-welcome.png" width="92" height="92" alt="" decoding="async">
+    </div>
+    <div class="admin-notification"><p id="admin-status" role="status" aria-live="polite">Verificando acceso…</p><button id="admin-retry" type="button" hidden>Volver a comprobar acceso</button></div>
+    <noscript><p class="admin-note">Este panel necesita JavaScript y acceso autorizado. Puedes <a href="mailto:alsdevstudio@alsdevstudio.com">contactar con ALS DevStudio por correo</a>.</p></noscript>
+    <div id="admin-workspace" hidden>
+      <section class="admin-retention" aria-labelledby="admin-retention-title">
+        <div><h2 id="admin-retention-title">Historial de 30 días</h2><p>Las conversaciones vencidas dejan de aparecer. Las señales técnicas requieren revisión y no prueban abuso.</p></div>
+        <p id="admin-purge" class="admin-purge">Comprobando la limpieza automática…</p>
+      </section>
+      <form id="admin-filters" class="admin-filters" aria-label="Filtrar conversaciones">
+        <div><label for="admin-from">Desde</label><input id="admin-from" type="date"></div>
+        <div><label for="admin-to">Hasta</label><input id="admin-to" type="date"></div>
+        <div><label for="admin-service">Servicio</label><select id="admin-service"><option value="">Todos los servicios</option value="website">Página web</option><option value="store">Tienda virtual</option><option value="application">Aplicación a medida</option><option value="chatbot">Chatbot</option></select></div>
+        <div><label for="admin-state">Estado</label><select id="admin-state"><option value="">Todos los estados</option><option value="unreviewed">Sin revisar</option><option value="reviewed">Revisadas</option><option value="blocked">Bloqueadas</option><option value="error">Con error</option><option value="out_of_scope">Fuera de alcance</option><option value="pending">En curso</option><option value="empty">Sin mensajes</option></select></div>
+        <button class="admin-primary" type="submit">Aplicar filtros</button>
+      </form>
+      <div class="admin-columns">
+        <section class="admin-conversations" aria-labelledby="admin-list-title">
+          <div class="admin-section-heading"><h2 id="admin-list-title">Conversaciones</h2><span id="admin-count"></span></div>
+          <div id="admin-list" aria-busy="false"></div>
+          <button id="admin-more" class="admin-more" type="button" hidden>Cargar más conversaciones</button>
+        </section>
+        <section id="admin-detail" class="admin-detail" aria-label="Detalle de conversación" aria-busy="false"><div class="admin-detail-empty"><p>Elige una conversación</p><span>Aquí verás sus mensajes, autorización y eventos en orden de fecha.</span></div></section>
+      </div>
+    </div>
+  </main>
+  <footer class="admin-footer"><span>ALS DevStudio · Sarin</span><a href="/privacidad.html">Política de privacidad</a></footer>
+  <dialog id="admin-delete-confirm" class="admin-confirm" aria-labelledby="admin-delete-title" aria-describedby="admin-delete-description">
+    <h2 id="admin-delete-title">¿Eliminar esta conversación?</h2>
+    <p id="admin-delete-description">Se eliminarán sus mensajes y la autorización asociada de la base activa. Esta acción no se puede deshacer desde el panel.</p>
+    <p id="admin-delete-reference" class="admin-reference"></p>
+    <div class="admin-actions"><button type="button" data-admin-cancel-delete autofocus>Cancelar</button><button type="button" class="admin-danger" data-admin-confirm-delete>Eliminar conversación</button></div>
+  </dialog>
+</body>
+</html>

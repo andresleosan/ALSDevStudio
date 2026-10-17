@@ -13,7 +13,9 @@ const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary'].map(name => `modules/${name}.js`)];
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-admin'].map(name => `modules/${name}.js`)];
+const functionRoutes = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
+  '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg'];
 
@@ -38,9 +40,11 @@ async function fixture() {
     await put(root, `${name}.html`, '<!DOCTYPE html><a href="index.html">Inicio</a><link href="styles/main.css" rel="stylesheet">');
   }
   for (const name of ['favicon.svg', 'robots.txt', '_headers', '_redirects']) await put(root, name);
-  await put(root, '_routes.json', JSON.stringify({ version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [] }));
+  await put(root, '_routes.json', JSON.stringify({ version: 1, include: functionRoutes, exclude: [] }));
   await put(root, 'sitemap.xml', '<urlset><url><loc>https://www.alsdevstudio.com/privacidad.html</loc></url></urlset>');
   await put(root, 'styles/main.css', 'body { color: black; }');
+  await put(root, 'styles/sarin-admin.css', 'body { color: black; }');
+  await put(root, 'control-sarin/index.html', '<!DOCTYPE html><a href="/control-sarin/">Panel</a><a href="/">Inicio</a>');
   for (const name of scripts) await put(root, `scripts/${name}`, '// fixture');
   for (const name of brand) await put(root, `assets/brand/${name}`);
   await put(root, 'assets/fonts/fonts.css', '@font-face { src: url(font-1.woff2); }');
@@ -73,11 +77,12 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
     'scripts/internal-tool.js', 'assets/brand/private.png', 'assets/fonts/SOURCES.json',
     'assets/projects/source.png', 'wrangler.jsonc', 'internal/.env', 'internal/functions/src/index.mjs',
     'internal/dist/index.html', 'internal/config/public.json', 'server/sarin/knowledge.js',
-    'functions/api/sarin.js', 'migrations/sarin/0001_usage.sql', '.dev.vars']) await put(root, name, 'NO PUBLICAR');
+    'functions/api/sarin.js', 'migrations/sarin/0001_usage.sql', '.dev.vars',
+    '.github/sarin/access-plugin.js','workers/sarin-retention/index.js','control-sarin/private.html']) await put(root, name, 'NO PUBLICAR');
   await build(root);
   assert.deepEqual(await files(path.join(root, 'dist')), [
     '404.html', '_headers', '_redirects', '_routes.json', 'cookies.html', 'favicon.svg', 'index.html',
-    'privacidad.html', 'robots.txt', 'sitemap.xml', 'terminos.html', 'styles/main.css',
+    'privacidad.html', 'robots.txt', 'sitemap.xml', 'terminos.html', 'styles/main.css', 'styles/sarin-admin.css', 'control-sarin/index.html',
     ...scripts.map(name => `scripts/${name}`), ...brand.map(name => `assets/brand/${name}`),
     'assets/fonts/fonts.css', 'assets/fonts/font-1.woff2', 'assets/fonts/spacegrotesk-OFL.txt',
     'assets/projects/demo.jpg', 'assets/projects/responsive/480/demo.avif',
@@ -85,13 +90,15 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
   ].sort());
 });
 
-test('solo permite las dos rutas exactas del chat sin invocar Functions en recursos estáticos', async () => {
+test('solo permite chat, sesión y administración protegida sin Functions en recursos estáticos', async () => {
   const root = await fixture();
   await build(root);
   assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist/_routes.json'), 'utf8')),
-    { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [] });
+    { version: 1, include: functionRoutes, exclude: [] });
   for (const routes of [
     { version: 1, include: ['/*'], exclude: [] },
+    { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [] },
+    { version: 1, include: functionRoutes, exclude: ['/control-sarin/*'] },
     { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: [], extra: true },
     { version: 1, include: ['/api/sarin', '/api/sarin/'], exclude: ['/api/sarin'] },
   ]) {
@@ -116,6 +123,13 @@ test('normaliza enlaces y canonicals de Pages conservando fuentes y destinos ext
   assert.equal(await readFile(path.join(root, 'dist/scripts/analytics.js'), 'utf8'), 'const oldPath = "privacidad.html";');
   assert.equal(await readFile(path.join(root, 'dist/sitemap.xml'), 'utf8'),
     '<urlset><url><loc>https://www.alsdevstudio.com/privacidad</loc></url></urlset>');
+});
+
+test('un selector admin-from no se interpreta como import de un módulo', async () => {
+  const root = await fixture();
+  await put(root, 'scripts/modules/sarin-admin.js', "const from=find('#admin-from').value,to=find('#admin-to').value;");
+  await build(root);
+  assert.match(await readFile(path.join(root,'dist/scripts/modules/sarin-admin.js'),'utf8'), /admin-from/);
 });
 
 test('rechaza una referencia local rota antes de reemplazar un build válido', async () => {

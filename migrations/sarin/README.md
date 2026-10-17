@@ -27,3 +27,43 @@ DROP TABLE IF EXISTS sarin_state;
 3. Si se vuelve a activar, restaurar el respaldo de cuotas o esperar al siguiente mes UTC antes de reiniciar presupuestos; recrear tablas vacías dentro del mismo periodo reiniciaría contadores de gasto. Verificar el registro de migraciones de D1 antes de volver a ejecutar la migración. No borrar su registro automáticamente.
 
 La prueba local ejecuta estas sentencias y verifica que los objetos ajenos se conservan.
+
+## Historial autorizado: `0002_history.sql`
+
+Aplicar después de `0001_usage.sql`. Las tablas de conversaciones, autorización, turnos, mensajes, eventos y enlaces se eliminan en cascada; las reservas monetarias permanecen independientes. Solo el hash del secreto de sesión se conserva, nunca el secreto ni la identidad técnica de IP en las transcripciones. Los pseudónimos de creación de sesiones permanecen únicamente en `sarin_counters` durante 48 horas.
+
+Las vistas de comandos ejecutan admisión y comprobaciones en triggers SQLite dentro de un `batch` transaccional D1. `sarin_history_state.text_bytes` contabiliza texto de entradas y cuerpo JSON público de respuestas, más la reserva máxima de respuesta de cada turno pendiente. Un trigger ajusta capacidad exactamente una vez al finalizar; borrar una conversación devuelve toda su capacidad sin liquidar dinero. Los enlaces monetarios permiten distinguir reservas, uso verificado y reservas retenidas, sin copiar identidad de IP.
+
+La sesión operativa y su autorización vacía vencen a las 24 horas. El primer mensaje admitido fija los 30 días de conservación, sin ampliarlos por actividad posterior. Consultas administrativas excluyen lo vencido aunque espere purga física. La purga acotada elimina además cuotas técnicas vencidas, reservas de 35 días, rechazos de 48 horas y auditoría de 30 días; una limpieza fallida guarda solo fecha y estado si D1 sigue disponible.
+
+Un turno tiene una concesión de 45 segundos. Al vencer, una admisión posterior o la purga marca `timeout`, conserva la entrada y libera la reserva de respuesta sin inventar un mensaje emitido. La respuesta tardía se descarta y no reabre ni recrea el turno. No se libera ninguna reserva monetaria incierta.
+
+Los eventos se agregan por código cerrado, con máximo de 32 clases por conversación. Si un límite de pruebas inferior impide una clase nueva, su ocurrencia incrementa un agregado existente. Los rechazos sin conversación se agregan por minuto/código: máximo 10000 filas y un contador global de desborde sin contenido.
+
+### Reversión exclusiva del historial
+
+Desactivar chat, historial y panel; detener y drenar peticiones y purga. En producción verificar antes un respaldo y la autorización explícita para borrar. Este procedimiento elimina todas las transcripciones y autorizaciones; conserva íntegra la cuota monetaria para no reiniciar gasto del período. Ejecutar en un batch transaccional; revisar por separado el registro de migraciones de D1 antes de reaplicar.
+
+<!-- history-rollback -->
+```sql
+DROP TRIGGER IF EXISTS sarin_history_finish;
+DROP TRIGGER IF EXISTS sarin_history_begin;
+DROP TRIGGER IF EXISTS sarin_history_event;
+DROP TRIGGER IF EXISTS sarin_history_session;
+DROP TRIGGER IF EXISTS sarin_history_capacity_delete;
+DROP TRIGGER IF EXISTS sarin_history_capacity_update;
+DROP VIEW IF EXISTS sarin_turn_commands;
+DROP VIEW IF EXISTS sarin_event_commands;
+DROP VIEW IF EXISTS sarin_session_commands;
+DROP TABLE IF EXISTS sarin_turn_reservations;
+DROP TABLE IF EXISTS sarin_messages;
+DROP TABLE IF EXISTS sarin_events;
+DROP TABLE IF EXISTS sarin_consents;
+DROP TABLE IF EXISTS sarin_turns;
+DROP TABLE IF EXISTS sarin_conversations;
+DROP TABLE IF EXISTS sarin_rejections;
+DROP TABLE IF EXISTS sarin_admin_audit;
+DROP TABLE IF EXISTS sarin_history_state;
+```
+
+La suite SQLite real ejecuta esta reversión, comprueba que conserva las cuotas y una tabla ajena y vuelve a aplicar la migración. No ejecutar la reversión de cuotas anterior mientras el historial siga activo.

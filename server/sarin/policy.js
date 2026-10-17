@@ -92,7 +92,14 @@ export function validateInput(value) {
   };
 }
 
-/** El único contrato permitido del clasificador es {inScope:boolean}. */
+/** El navegador solo aporta el mensaje y su identificador de reintento. */
+export function validateChatRequest(value) {
+  if (!closed(value, ['message', 'requestId']) || !text(value.message, 1200)
+      || typeof value.requestId !== 'string'
+      || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value.requestId)) throw invalid();
+  return {message:value.message.trim(),requestId:value.requestId};
+}
+
 export function validateClassification(value) {
   if (!closed(value, ['inScope']) || typeof value.inScope !== 'boolean'
       || Object.keys(value).length !== 1) throw invalidOutput('clasif_contract');

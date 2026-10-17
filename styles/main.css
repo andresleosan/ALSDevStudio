@@ -74,6 +74,15 @@ body.has-custom-pointer .sarin-chat textarea { cursor:text; }
 .sarin-prepare { width:100%; margin-top:10px; color:var(--mint)!important; }
 .sarin-notice { color:var(--muted); font-size:10px; line-height:1.5; margin-top:10px; }
 .sarin-notice a { text-underline-offset:3px; }
+.sarin-consent { padding:18px; margin-bottom:24px; border:1px solid #45617b; border-radius:12px; background:var(--panel); }
+.sarin-consent h3 { color:var(--mint); font:600 23px/1.25 'Chakra Petch',sans-serif; margin-bottom:12px; }
+.sarin-consent p { margin-bottom:12px; font-size:13px; }
+.sarin-consent a { color:#a3caff; text-underline-offset:3px; }
+.sarin-chat .sarin-consent-choice { display:flex; align-items:flex-start; gap:10px; margin-block:16px; font-size:14px; font-weight:400; cursor:pointer; }
+.sarin-consent-choice input { flex-shrink:0; width:22px; height:22px; accent-color:var(--mint); }
+.sarin-consent .sarin-primary { width:100%; }
+.sarin-consent .sarin-consent-alternative { margin:14px 0 0; color:#c7dbea; font-size:12px; }
+.sarin-reference { font:400 11px/1.6 'IBM Plex Mono',monospace; color:#a3caff; padding:10px 0 20px; overflow-wrap:anywhere; }
 .sarin-summary h3 { font:600 24px/1.2 'Chakra Petch',sans-serif; margin-bottom:10px; }
 .sarin-summary > p { margin-bottom:16px; }
 .sarin-summary label { margin-top:20px; }

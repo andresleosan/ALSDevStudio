@@ -1,9 +1,11 @@
 // @ts-check
+import {NOTICE_VERSION,PRIVACY_VERSION,TERMS_VERSION} from './sarin-consent.js';
 /** @typedef {'website'|'store'|'application'|'chatbot'} Service */
 /** @typedef {{role:'user'|'assistant',content:string}} ChatMessage */
 /** @typedef {Partial<Record<'business'|'need'|'features'|'timeline'|'budget',string>>} Brief */
 /** @typedef {{id:string,title:string,url:string,description:string}} Example */
-/** @typedef {{reply:string,service?:Service,examples:Example[],brief:Brief}} SarinResponse */
+/** @typedef {{reply:string,service?:Service,examples:Example[],brief:Brief,conversationId?:string,requestId?:string,turn?:number,expiresAt?:number}} SarinResponse */
+const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const urls = new Map([
   ['bpt-jersey','https://www.bptjersey.com/'], ['sarinbotsaas','https://sarinbotsaas.pages.dev/'], ['semancontrol','https://semancontrol.pages.dev/'],
   ['mundocelular','https://mundocelular.vercel.app/'], ['coctelsops','https://coctelsops.vercel.app/'], ['laparada','https://laparada.pages.dev/'],
@@ -23,8 +25,11 @@ const keys = (value, allowed) => Object.keys(value).every(key => allowed.include
 export function validateResponse(value) {
   /** @returns {never} */
   const invalid = () => { throw new Error('Respuesta no válida. Puedes contactar con Andrés.'); };
-  if (!record(value) || !keys(value,['reply','service','examples','brief']) || !plain(value.reply,1200) ||
+  if (!record(value) || !keys(value,['reply','service','examples','brief','conversationId','requestId','turn','expiresAt']) || !plain(value.reply,1200) ||
       (value.service !== undefined && (typeof value.service !== 'string' || !services.has(value.service))) || !Array.isArray(value.examples) || value.examples.length > 2 || !record(value.brief)) return invalid();
+  if (['conversationId','requestId'].some(key=>value[key] !== undefined && (typeof value[key] !== 'string' || !uuid.test(/** @type {string} */(value[key])))) ||
+      (value.turn !== undefined && (!Number.isInteger(value.turn) || Number(value.turn)<1 || Number(value.turn)>15)) ||
+      (value.expiresAt !== undefined && (!Number.isSafeInteger(value.expiresAt) || Number(value.expiresAt)<=0))) return invalid();
   if (Object.entries(value.brief).some(([key,text]) => !briefKeys.has(key) || !plain(text,240))) invalid();
   for (const example of value.examples) {
     if (!record(example) || !keys(example,['id','title','url','description']) || !plain(example.id,80) || !plain(example.title,180) || !plain(example.description,400)) invalid();
@@ -37,16 +42,29 @@ export function validateResponse(value) {
   return /** @type {SarinResponse} */ (/** @type {unknown} */ (value));
 }
 
-/** Una sola solicitud, sin reintentos. El historial contiene pares completos anteriores.
- * @param {string} message @param {ChatMessage[]} history
+/** Una sola solicitud, sin reintentos ni historial aportado por el navegador.
+ * @param {string} message @param {string} requestId
  * @param {{signal?:AbortSignal,fetchImpl?:typeof fetch,timeoutMs?:number}} [options] */
-export async function requestSarin(message, history, {signal,fetchImpl = globalThis.fetch,timeoutMs = 35000} = {}) {
-  if (!plain(message,1200) || !Array.isArray(history) || history.length > 8 || history.length % 2 ||
-      history.some((entry,index) => !record(entry) || !keys(entry,['role','content']) || entry.role !== (index%2 ? 'assistant':'user') || !plain(entry.content,1200))) {
+export async function requestSarin(message, requestId, {signal,fetchImpl = globalThis.fetch,timeoutMs = 35000} = {}) {
+  if (!plain(message,1200) || typeof requestId !== 'string' || !uuid.test(requestId)) {
     throw new Error('Escribe un mensaje de 1 a 1200 caracteres.');
   }
-  const body = JSON.stringify({message,history});
+  const body = JSON.stringify({message,requestId});
   if (new TextEncoder().encode(body).byteLength > 16384) throw new Error('La consulta es demasiado extensa. Acorta el mensaje o inicia una conversación nueva.');
+  return validateResponse(await send('/api/sarin',body,{signal,fetchImpl,timeoutMs}));
+}
+
+/** Crea la sesión únicamente tras la acción explícita de autorización de la interfaz.
+ * @param {{signal?:AbortSignal,fetchImpl?:typeof fetch,timeoutMs?:number}} [options] */
+export async function createSarinSession(options = {}) {
+  const body=JSON.stringify({consent:{accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION}});
+  const value=await send('/api/sarin/session',body,options);
+  if (!record(value) || !keys(value,['conversationId','sessionExpiresAt']) || typeof value.conversationId !== 'string' || !uuid.test(value.conversationId) || !Number.isSafeInteger(value.sessionExpiresAt) || Number(value.sessionExpiresAt)<=0) throw new Error('No pudimos iniciar la conversación. Puedes contactar con Andrés.');
+  return /** @type {{conversationId:string,sessionExpiresAt:number}} */(/** @type {unknown} */(value));
+}
+
+/** @param {string} url @param {string} body @param {{signal?:AbortSignal,fetchImpl?:typeof fetch,timeoutMs?:number}} [options] @returns {Promise<unknown>} */
+async function send(url,body,{signal,fetchImpl=globalThis.fetch,timeoutMs=35000}={}) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   if (signal?.aborted) controller.abort();
@@ -54,16 +72,17 @@ export async function requestSarin(message, history, {signal,fetchImpl = globalT
   let timedOut = false;
   const timeout = setTimeout(() => {timedOut = true; controller.abort();}, timeoutMs);
   try {
-    const response = await fetchImpl('/api/sarin', {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
+    const response = await fetchImpl(url, {method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
     if (!response.ok) {
       /** @type {Record<number,string>} */
-      const messages = {429:'Alcanzamos el límite de consultas. Puedes continuar con Andrés.',503:'Sarin todavía no está conectado. Puedes contactar con Andrés.',504:'La respuesta tardó demasiado. Puedes contactar con Andrés.'};
-      throw new Error(messages[response.status] || 'No pudimos obtener una respuesta. Puedes contactar con Andrés.');
+      const messages = {401:'La sesión venció o ya no es válida. Inicia una nueva conversación o contacta con Andrés.',403:'Esta sesión está bloqueada temporalmente. Puedes contactar con Andrés.',409:'Hay una consulta en curso o una solicitud en conflicto. Espera antes de continuar; puedes contactar con Andrés.',410:'Esta conversación venció o fue eliminada. Inicia una nueva conversación o contacta con Andrés.',429:'Alcanzamos el límite de consultas. Puedes continuar con Andrés.',503:'Sarin todavía no está conectado. Puedes contactar con Andrés.',504:'La respuesta tardó demasiado. Puedes contactar con Andrés.'};
+      const error = new Error(messages[response.status] || 'No pudimos obtener una respuesta. Puedes contactar con Andrés.');
+      Object.assign(error,{status:response.status}); throw error;
     }
     if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('Respuesta no válida. Puedes contactar con Andrés.');
     const text = await response.text();
     if (new TextEncoder().encode(text).byteLength > 16384) throw new Error('Respuesta no válida. Puedes contactar con Andrés.');
-    return validateResponse(JSON.parse(text));
+    return JSON.parse(text);
   } catch (error) {
     if (timedOut) throw new Error('La respuesta tardó demasiado. Puedes contactar con Andrés.');
     if (error instanceof SyntaxError || error instanceof TypeError) throw new Error('No pudimos conectar con Sarin. Puedes contactar con Andrés.');

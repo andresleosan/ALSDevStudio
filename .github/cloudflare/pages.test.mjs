@@ -45,11 +45,40 @@ test('las URLs históricas redirigen y las rutas desconocidas o internas devuelv
       assert.equal(location.search, search);
     }
   }
-  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects']) {
+  for (const route of ['/no-existe/anidado', '/docs/MIGRACION-CLOUDFLARE.md', '/tasks.md', '/AGENTS.md', '/.codex/config.toml', '/.git/config', '/wrangler.jsonc', '/_headers', '/_redirects', '/.dev.vars', '/server/sarin/history.js', '/migrations/sarin/0002_history.sql', '/workers/sarin-retention/index.js', '/.github/sarin/package.json']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 404, route);
     assert.match(await response.text(), /Página no encontrada/);
   }
+});
+
+test('panel y API privados deniegan el acceso en Pages incluso en rutas alternativas', async () => {
+  for (const path of ['/control-sarin','/control-sarin/','/control-sarin/index.html','/control-sarin/index','/api/control-sarin','/api/control-sarin/','/api/control-sarin/bootstrap']) {
+    for (const search of ['', '?qa=fixture']) {
+      const r=await fetch(base+path+search,{redirect:'manual'});
+      assert.ok([401,403,503].includes(r.status),path+search);
+      assert.equal(r.headers.get('Cache-Control'),'no-store');
+      assert.match(r.headers.get('X-Robots-Tag')||'',/noindex/);
+      assert.doesNotMatch(await r.text(),/id="admin-list"|id="admin-workspace"/);
+    }
+  }
+});
+
+test('sesión consentida real de Pages establece cookie HttpOnly segura en loopback', async t => {
+  if (!['127.0.0.1','localhost'].includes(new URL(base).hostname)) { t.skip('La creación sintética se limita al entorno local.');return; }
+  const context=await browser.newContext();
+  try {
+    const page=await context.newPage();
+    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+    const result=await page.evaluate(async()=>{
+      const {NOTICE_VERSION,PRIVACY_VERSION,TERMS_VERSION}=await import('/scripts/modules/sarin-consent.js');
+      const r=await fetch('/api/sarin/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:{accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION}})});
+      return {status:r.status,keys:Object.keys(await r.json()).sort(),jsCookie:document.cookie.includes('__Host-sarin-session')};
+    });
+    assert.equal(result.status,200);assert.deepEqual(result.keys,['conversationId','sessionExpiresAt']);assert.equal(result.jsCookie,false);
+    const cookie=(await context.cookies()).find(c=>c.name==='__Host-sarin-session');
+    assert.ok(cookie);assert.equal(cookie.httpOnly,true);assert.equal(cookie.secure,true);assert.equal(cookie.sameSite,'Strict');assert.equal(cookie.path,'/');
+  } finally { await context.close(); }
 });
 
 test('portafolio, mapa y aviso conservan lectura y controles a 320 y 1440 px', async () => {

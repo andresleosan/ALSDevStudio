@@ -1,6 +1,6 @@
 # Sarin: historial administrativo y protección de datos
 
-Fecha: 16 de octubre de 2026. Estado: propuesta concreta para revisión; no implementada ni publicada. Complementa la versión local `8c9d926` y sustituirá su regla de no persistir conversaciones únicamente cuando se active el nuevo flujo con autorización previa.
+Fecha: 16 de octubre de 2026. Estado: diseño aprobado expresamente por el titular, implementado y verificado en local; sin publicar. Complementa la versión local `8c9d926` y sustituye su regla de no persistir conversaciones en el nuevo flujo local con autorización previa. La activación remota sigue pendiente; ver [operación](../../SARIN-OPERACION.md).
 
 ## Objetivo y decisiones del titular
 
