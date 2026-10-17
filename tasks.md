@@ -6,6 +6,7 @@
 - [x] Añadir Administración al pie y consentimiento v3 explícito para envío internacional, sin promesas sobre retención o entrenamiento del proveedor.
 - [x] Preparar ambos flags de producción activos, build coherente y previews/local cerrados; conservar Access, cuotas y retención.
 - [x] Publicar `952d2cb` / Pages `53e29312`: 299 pruebas seleccionadas, 10 comprobaciones HTTP y Chrome en portada sin query con chat visible/aviso v3. Administración autenticada y Access anónimo comprobados; ninguna autorización pública real v3 se simuló en producción.
+- [x] Registrar la declaración del titular del 16/10/2026: autorización de los veinte proyectos con marcas e imágenes, y logo/referencias de Sarin propios o con permiso comercial. No se inspeccionaron justificantes; mapa y voz del video tienen pendientes separados.
 
 ## PRIVACIDAD-SARIN · Revisión y demostración solicitadas · 2026-10-16
 
