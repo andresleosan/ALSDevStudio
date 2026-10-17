@@ -391,7 +391,8 @@ a.project-card:hover h3, a.project-card:focus-visible h3 { text-decoration-line:
   to { opacity:1; transform:translateY(0); }
 }
 .project-card.is-page-active {
-  animation: projectFadeIn .42s var(--ease-expo) both;
+  /* Conserva el inicio durante el stagger, pero libera transform para la inclinación al terminar. */
+  animation: projectFadeIn .42s var(--ease-expo) backwards;
   animation-delay: var(--stagger, 0ms);
 }
 @media (prefers-reduced-motion:reduce) {
