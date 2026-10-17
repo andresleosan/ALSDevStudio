@@ -5,7 +5,7 @@
 - [x] Preparar prueba privada solicitada para `www`: enlace desde panel, query de presentación, bootstrap del titular y POST Access/CSRF, sin habilitar chat público.
 - [x] Aislar cookie y hash privados, conservar cuotas/presupuesto, contrato y D1 con 30 días; preview/local apagados, sin migraciones ni secretos nuevos.
 - [x] Regresiones RED/GREEN y 282/282 pruebas de Sarin/build; UI 29/29, revisión independiente sin P1/P2, audit sin vulnerabilidades, TSC sin errores nuevos de Sarin y build/Functions correctos.
-- [ ] Publicar candidato aislado y después push autorizado a `main`; comprobar prueba real en `www`, aparición del historial en panel y cierre para visitantes. [Operación y reversión](docs/SARIN-OPERACION.md#candidato-de-prueba-privada-en-el-dominio--16-de-octubre-de-2026).
+- [x] Preview `cd64f7c1` 14/14; push autorizado a `main` en `828bdd5`, producción `03625efb` correcta y 14/14 HTTP anónimas. Chrome comprueba dos turnos reales, cuatro mensajes en el panel, retención, resumen de 836 caracteres y enlace WhatsApp sin enviar; prueba nueva abierta para el titular. Público apagado. [Operación y reversión](docs/SARIN-OPERACION.md#prueba-privada-publicada-en-el-dominio--16-de-octubre-de-2026).
 
 ## SARIN-QA · Prueba local real y corrección de seguimientos · 2026-10-16
 
@@ -13,7 +13,7 @@
 - [x] Reproducir fallos de seguimiento, distinguir contenido vacío sin exponer cuerpos y comparar tres contextos: roles independientes fallan; datos JSON dan tres clasificaciones correctas. Corregir representación del contexto con regresiones RED/GREEN, sin reintentos ni relajación de controles.
 - [x] Corregir cierre comercial: resumen revisado y WhatsApp manual, sin prometer que Andrés contactará al visitante.
 - [x] Verificar 98/98 focales de backend/integración y suites ampliadas; revisión independiente sin P1/P2. Pruebas reales finales de tienda/pagos y aplicación/demos 4/4 con 200; Chrome verifica rechazo de inyección, salida de tema, recuperación a chatbot y edición/límite de resumen. Historial local vence a 30 días. [Evidencia y operación](docs/SARIN-OPERACION.md#prueba-local-con-deepseek-real--16-de-octubre-de-2026).
-- [x] Dejar una conversación nueva y servidor local abiertos para las pruebas del titular. Corrección local sin publicar; el panel de producción no recibe los chats de prueba locales.
+- [x] Dejar inicialmente conversación y servidor locales para probar; la corrección se publicó después con SARIN-WWW-PRIVADO. El historial local permanece separado del panel de producción.
 
 ## SARIN-INFRA · Preparación remota con funciones públicas apagadas · 2026-10-16
 
