@@ -5,7 +5,7 @@
 - [x] Reproducir ausencia del widget: despliegue correcto con flags públicos apagados; prueba privada y panel sí accesibles.
 - [x] Añadir Administración al pie y consentimiento v3 explícito para envío internacional, sin promesas sobre retención o entrenamiento del proveedor.
 - [x] Preparar ambos flags de producción activos, build coherente y previews/local cerrados; conservar Access, cuotas y retención.
-- [ ] Publicar, comprobar widget y autorización públicos, y verificar que el panel continúa protegido.
+- [x] Publicar `952d2cb` / Pages `53e29312`: 299 pruebas seleccionadas, 10 comprobaciones HTTP y Chrome en portada sin query con chat visible/aviso v3. Administración autenticada y Access anónimo comprobados; ninguna autorización pública real v3 se simuló en producción.
 
 ## PRIVACIDAD-SARIN · Revisión y demostración solicitadas · 2026-10-16
 

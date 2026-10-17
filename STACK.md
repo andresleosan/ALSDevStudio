@@ -2,7 +2,7 @@
 
 ### Apertura pública de Sarin · 2026-10-16
 
-La configuración de producción habilita `SARIN_ENABLED` y `SARIN_HISTORY_ENABLED` juntas. El CLI de build solo muestra el widget cuando ambas variables son exactamente `true`; la API `build()` y el lanzador local siguen cerrados por defecto, y preview conserva sus cuatro flags apagadas, sin D1 ni secretos. Se mantiene Access exclusivo del titular para administración y prueba privada. Consentimiento v3 informa y solicita el envío internacional; no se cambian proveedor, esquema ni topes de gasto. [Estado de publicación y reversión](docs/SARIN-OPERACION.md). Las revisiones inferiores registran las fases anteriores.
+La producción publicada en `952d2cb` / Pages `53e29312` habilita `SARIN_ENABLED` y `SARIN_HISTORY_ENABLED` juntas. El CLI de build solo muestra el widget cuando ambas variables son exactamente `true`; la API `build()` y el lanzador local siguen cerrados por defecto, y preview conserva sus cuatro flags apagadas, sin D1 ni secretos. Se mantiene Access exclusivo del titular para administración y prueba privada. Consentimiento v3 informa y solicita el envío internacional; no se cambian proveedor, esquema ni topes de gasto. [Estado de publicación y reversión](docs/SARIN-OPERACION.md). Las revisiones inferiores registran las fases anteriores.
 
 ### Revisión actual de privacidad, accesibilidad y caché · 2026-10-16
 

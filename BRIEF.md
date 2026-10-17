@@ -2,7 +2,7 @@
 
 ## Apertura pública de Sarin · 2026-10-16
 
-El titular aclaró que esperaba ver el chat en la portada tras el push. La publicación anterior funcionaba, pero conservaba el chat público apagado y no tenía un enlace visible al panel. Se prepara la apertura de chat e historial para visitantes, un enlace «Administración» en el pie de portada y consentimiento v3 con envío internacional expreso. Access, cuotas, retención de 30 días y aislamiento de previews se conservan. La verificación y el despliegue final se registran en [Operación de Sarin](docs/SARIN-OPERACION.md); los apartados inferiores son el estado histórico anterior.
+El titular aclaró que esperaba ver el chat en la portada tras el push. La publicación anterior funcionaba, pero conservaba el chat público apagado y no tenía un enlace visible al panel. La apertura de chat e historial para visitantes quedó publicada en `952d2cb` / Pages `53e29312`, con «Administración» en el pie y consentimiento v3 con envío internacional expreso. Access, cuotas, retención de 30 días y aislamiento de previews se conservan. Pasaron 299 pruebas seleccionadas y 10 comprobaciones HTTP; Chrome verificó el chat en la portada normal y la administración autenticada. [Evidencia y límites](docs/SARIN-OPERACION.md); los apartados inferiores son el estado histórico anterior.
 
 ## Revisión publicada de privacidad y accesibilidad · 2026-10-16
 
