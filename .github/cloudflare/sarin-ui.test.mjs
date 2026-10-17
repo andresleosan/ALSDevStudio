@@ -85,13 +85,20 @@ test('sesión solo registra autorización cerrada y usa cookie técnica sin expo
   assert.equal(value.conversationId,conversationId);
 });
 
-async function pageFor(options = {}) {
+async function pageFor({enableChat = true, ...options} = {}) {
   const context = await browser.newContext(options);
   const page = await context.newPage();
+  const apiRequests = [];
+  page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url()); });
   page.setDefaultTimeout(2000);
   await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+  if (enableChat) await page.route(origin + '/', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const html = await readFile(path.join(root, 'index.html'), 'utf8');
+    await route.fulfill({contentType:'text/html; charset=utf-8',body:html.replace('data-sarin-enabled="false"','data-sarin-enabled="true"')});
+  });
   await page.goto(origin);
-  return {page,context};
+  return {page,context,apiRequests};
 }
 async function dismiss(page) { await page.locator('[data-analytics-choice="denied"]').click(); }
 async function open(page) { await dismiss(page); await page.locator('#sarin-launcher').click(); }
@@ -101,6 +108,29 @@ async function authorize(page) {
   await page.locator('[data-sarin-authorize]').click();
   await page.waitForFunction(()=>!document.querySelector('#sarin-message').readOnly);
 }
+
+test('chat apagado por defecto mantiene contacto visible y no inicia API con clics programáticos', async t => {
+  const {page,context,apiRequests} = await pageFor({enableChat:false});
+  t.after(() => context.close());
+  await dismiss(page);
+  await page.evaluate(async () => { await import('/scripts/modules/sarin-chat.js'); });
+  assert.equal(await page.locator('#sarin-launcher').isVisible(),false,'El chat público debe permanecer oculto hasta su activación explícita');
+  assert.equal(await page.locator('#sarin-chat').isVisible(),false);
+  await page.evaluate(() => {
+    document.querySelector('#sarin-launcher').click();
+    document.querySelector('[data-sarin-service]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    const consent = document.querySelector('#sarin-consent-checkbox');
+    consent.checked = true;consent.dispatchEvent(new Event('change',{bubbles:true}));
+    document.querySelector('[data-sarin-authorize]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    document.querySelector('#sarin-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  });
+  assert.equal(await page.locator('#sarin-chat').evaluate(el=>el.open),false);
+  assert.equal(await page.locator('#sarin-launcher').isVisible(),false);
+  assert.deepEqual(apiRequests,[]);
+  await page.locator('#whatsapp-link').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('#whatsapp-link').isVisible(),true);
+  assert.match(await page.locator('#whatsapp-link').getAttribute('href'),/^https:\/\/wa\.me\/573146432135/);
+});
 
 test('autorización previa sin premarcar, sin POST por servicios ni analítica denegada', async()=>{
   const {page,context}=await pageFor();

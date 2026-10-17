@@ -4,7 +4,7 @@ import {NOTICE_TEXT} from './sarin-consent.js';
 export function initSarinChat() {
   const dialog = document.querySelector('#sarin-chat');
   const launcher = document.querySelector('#sarin-launcher');
-  if (!(dialog instanceof HTMLDialogElement) || !(launcher instanceof HTMLButtonElement) || typeof dialog.showModal !== 'function') return;
+  if (!(dialog instanceof HTMLDialogElement) || !(launcher instanceof HTMLButtonElement) || typeof dialog.showModal !== 'function' || launcher.dataset.sarinEnabled !== 'true') return;
   /** @param {string} selector @returns {HTMLElement} */
   const find = selector => {
     const element = dialog.querySelector(selector);

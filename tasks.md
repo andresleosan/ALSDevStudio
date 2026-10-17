@@ -9,7 +9,9 @@
 - [x] Cambiar por instrucción del titular el nombre visual de la organización Access a **ALS Dev Studio** y comprobarlo en el login real, conservando dominio de autenticación y autorizaciones. Registro TOTP personal todavía pendiente.
 - [x] Desplegar Worker `als-sarin-retention`, versión `fc6b4b0f-3aad-4559-a3fc-17a0aae1be9c`, misma D1 y cron `0 * * * *`, sin HTTP público, `workers.dev` ni URLs de preview. Perfil predeterminado local apagado con UUID simulado.
 - [x] Repetir pruebas focales build/launcher/retención 27/27 y preparación local sin migraciones pendientes; confirmar cron configurado mediante API, sin acreditar todavía una ejecución. Revisar el perfil real de DeepSeek sin encontrar controles específicos API de entrenamiento, retención o DPA; mantener chat apagado y documentar condiciones pendientes.
-- [ ] Registrar credencial TOTP del titular y completar login real; verificar administración con identidad válida, ajena y vencida cuando el código web esté publicado.
+- [x] Registrar credencial TOTP por el titular, comprobar dispositivo en su cuenta y solicitud real de segundo factor al entrar a Sarin, sin leer códigos ni QR.
+- [x] Corregir disponibilidad pública: chat oculto y sin eventos por defecto, activación explícita solo para la vista local `--live`; 29 pruebas build/lanzador/UI y 6 de Pages local aprobadas. Probar publicación independiente de admin con chat/historial apagados: 59 pruebas administrativas aprobadas.
+- [ ] Publicar el panel privado tras autorización de producción y verificar sesión funcional con identidad válida, ajena y vencida; mantener chat/historial públicos apagados mientras sigan pendientes sus condiciones.
 - [ ] Observar primera ejecución remota del cron y comprobar heartbeat D1; no se sustituye por el scheduled local aprobado.
 - [ ] Completar condiciones efectivas del proveedor y tratamiento internacional; revisar/publicar el código web y verificar controles antes de habilitar chat, historial o administración. [Operación actual](docs/SARIN-OPERACION.md).
 

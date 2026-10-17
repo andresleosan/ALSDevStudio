@@ -194,6 +194,37 @@ test('sin binding D1 el admin no crea un store público', async () => fixture(as
   assert.equal((await handleSarinAdmin(request(), config)).status, 503);
 }));
 
+// Regresión de configuración sobre comportamiento existente: no modifica producción.
+test('administración habilitada funciona vacía con chat e historial apagados sin admitir sesiones públicas', async t => fixture(async fetched => {
+  const database = await sqliteFixture({ history: true }); t.after(database.close);
+  const { handleSarinAdmin } = await moduleUnderTest();
+  const { handleSarinSession } = await import('../../server/sarin/sessions.js');
+  const { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION } = await import('../../scripts/modules/sarin-consent.js');
+  const config = { ...env(), SARIN_DB: database.db, SARIN_ADMIN_ENABLED: 'true',
+    SARIN_ENABLED: 'false', SARIN_HISTORY_ENABLED: 'false', SARIN_IP_SECRET: 'fixture-ip-secret-with-at-least-32-characters' };
+  // Sin clave de inferencia: el panel solo requiere identidad Access, CSRF y D1.
+  const bootstrap = await handleSarinAdmin(request(), config);
+  assert.equal(bootstrap.status, 200);
+  assert.equal(bootstrap.headers.get('Cache-Control'), 'no-store');
+  const body = await bootstrap.json();
+  assert.equal(body.adminEmail, 'owner@example.test');
+  assert.ok(body.csrfToken.length > 30);
+  assert.deepEqual(body.purge, { lastRunAt: null, lastSuccessAt: null, lastErrorAt: null, status: 'never', remaining: false });
+  const list = await handleSarinAdmin(request('/api/control-sarin/conversations'), config);
+  assert.equal(list.status, 200);
+  assert.deepEqual(await list.json(), { items: [], nextCursor: null });
+  const session = await handleSarinSession(request('/api/sarin/session', { token: null, method: 'POST',
+    headers: { Origin: 'https://alsdevstudio.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '192.0.2.1' },
+    body: { consent: { accepted: true, noticeVersion: NOTICE_VERSION, privacyVersion: PRIVACY_VERSION, termsVersion: TERMS_VERSION } } }), config);
+  assert.equal(session.status, 503);
+  assert.equal(session.headers.has('Set-Cookie'), false);
+  for (const table of ['sarin_conversations', 'sarin_consents', 'sarin_turns', 'sarin_messages', 'sarin_counters', 'sarin_reservations', 'sarin_admin_audit']) {
+    assert.equal(database.sqlite.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n, 0, table);
+  }
+  assert.ok(fetched.length > 0);
+  assert.ok(fetched.every(url => url === 'https://fixture.cloudflareaccess.com/cdn-cgi/access/certs'));
+}));
+
 test('API integra SQL real: lista paginada, detalle fiel, revisión, bloqueo 24h, desbloqueo y borrado', async t => fixture(async () => {
   const database = await sqliteFixture({ history: true }); t.after(database.close);
   const { createHistoryStore } = await import('../../server/sarin/history.js');

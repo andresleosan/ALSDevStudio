@@ -211,3 +211,15 @@ test('reconstruye un dist propio y retira recursos públicos obsoletos', async (
   await build(root);
   assert.ok(!(await files(path.join(root, 'dist'))).includes('assets/fonts/old.woff2'));
 });
+
+test('el chat público queda apagado en el artefacto y la vista local requiere habilitación explícita', async () => {
+  const root = await fixture();
+  await put(root, 'index.html', '<!DOCTYPE html><button id="sarin-launcher" data-sarin-enabled="false" hidden>Sarin</button>');
+  for (const enableSarinChat of [undefined, false, 'true']) {
+    await build(root, { enableSarinChat });
+    assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="false"/);
+  }
+  await build(root, { enableSarinChat: true });
+  assert.match(await readFile(path.join(root, 'dist/index.html'), 'utf8'), /data-sarin-enabled="true"/);
+  assert.match(await readFile(path.join(root, 'index.html'), 'utf8'), /data-sarin-enabled="false"/);
+});

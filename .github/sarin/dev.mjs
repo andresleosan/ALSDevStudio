@@ -85,7 +85,7 @@ async function main() {
   const cli = await findWrangler();
   await access(path.join(root, '.github/sarin/node_modules/@cloudflare/pages-plugin-cloudflare-access/package.json'));
   await ensureLocalSecret();
-  const artifact = await build();
+  const artifact = await build({ enableSarinChat: options.live });
   console.log(`Sarin local: ${artifact.files} archivos públicos; preparación de D1 exclusivamente local.`);
   await run(cli, ['d1', 'migrations', 'apply', 'SARIN_DB', '--local', '--config', config,
     '--persist-to', persistence]);

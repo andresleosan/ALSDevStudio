@@ -204,7 +204,7 @@ async function verifyOwnedOutput(root, output) {
 }
 
 /** Empaqueta recursos públicos; el servidor se compila por separado y no se copia a dist. */
-export async function build({ sourceDir = PROJECT_ROOT, outputDir } = {}) {
+export async function build({ sourceDir = PROJECT_ROOT, outputDir, enableSarinChat = false } = {}) {
   const root = path.resolve(sourceDir);
   const rootStat = await lstat(root);
   if (rootStat.isSymbolicLink() || !samePath(await realpath(root), root)) throw new Error('Enlace simbólico no permitido en la raíz del sitio.');
@@ -215,7 +215,10 @@ export async function build({ sourceDir = PROJECT_ROOT, outputDir } = {}) {
   const contents = new Map();
   for (const file of selected) {
     if (/\.(?:html|xml|css|js|txt)$/.test(file.path) || ['_headers', '_redirects', '_routes.json'].includes(file.path)) {
-      const text = transform(file.path, await readFile(path.join(root, file.path), 'utf8'));
+      let text = transform(file.path, await readFile(path.join(root, file.path), 'utf8'));
+      if (file.path === 'index.html' && enableSarinChat === true) {
+        text = text.replace('data-sarin-enabled="false"', 'data-sarin-enabled="true"');
+      }
       contents.set(file.path, text);
       file.size = Buffer.byteLength(text);
     }

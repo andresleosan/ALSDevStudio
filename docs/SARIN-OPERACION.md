@@ -1,12 +1,12 @@
 # Operación de Sarin
 
-Fecha: 16 de octubre de 2026. Estado: chat comercial y ampliación administrativa aprobada, implementados y verificados **en local, sin publicar el código web nuevo**. Infraestructura remota preparada: D1 vacía, Access y Worker de retención. `SARIN_ENABLED`, `SARIN_HISTORY_ENABLED` y `SARIN_ADMIN_ENABLED` permanecen en `false`; no se recogen conversaciones públicas. El acceso completo del titular y la primera ejecución remota del cron siguen pendientes de comprobar.
+Fecha: 16 de octubre de 2026. Estado: chat comercial y ampliación administrativa aprobada, implementados y verificados **en local, sin publicar el código web nuevo en producción**. Infraestructura remota preparada: D1 vacía, Access y Worker de retención. `SARIN_ENABLED`, `SARIN_HISTORY_ENABLED` y `SARIN_ADMIN_ENABLED` permanecen en `false`; no se recogen conversaciones públicas. El autenticador del titular está registrado y Access solicita TOTP para Sarin; faltan la sesión funcional del panel nuevo y la primera ejecución remota del cron.
 
 ## Preparación remota realizada
 
 - **D1:** base exclusiva `alsdevstudio-sarin`, UUID `ba6d723c-57fb-472d-b9c0-1308c24912e3`, jurisdicción `us` y ubicación ENAM. Migraciones `0001` y `0002` aplicadas; comprobadas cero conversaciones y cero mensajes. Respaldo del esquema vacío restaurado en una prueba. Esto no equivale a probar la recuperación de conversaciones reales. [Decisión de datos y entornos](adr/001-sarin-d1-y-entornos.md).
 - **Pages:** producción dispone del binding D1 y de configuración privada de API, secreto de IP, CSRF y Access. Preview permanece sin D1 ni secretos y con los tres flags apagados. El despliegue web continúa siendo `38c298b7`; no se ha hecho push ni publicado el código nuevo. El comando de build de la cuenta sigue en `node .github/cloudflare/build.mjs`; se cambiará al comando con `npm ci` al publicar ese código.
-- **Access:** aplicación `385e9dee-d4a3-43d0-bfcc-2719e58a5fc0`, acceso exclusivo de `andres.san1404@gmail.com`, One-time PIN como método de identidad, sesión de 6 horas y TOTP requerido cada 6 horas. Cubre `/control-sarin*` y `/api/control-sarin*` en `www.alsdevstudio.com`, `alsdevstudio.pages.dev` y `*.alsdevstudio.pages.dev`. App Launcher habilitado reutilizando la política exclusiva del titular; no se impuso MFA global a otras aplicaciones. El titular debe registrar su credencial TOTP y completar el login; no se ha validado todavía una sesión administrativa completa.
+- **Access:** aplicación `385e9dee-d4a3-43d0-bfcc-2719e58a5fc0`, acceso exclusivo de `andres.san1404@gmail.com`, One-time PIN como método de identidad, sesión de 6 horas y TOTP requerido cada 6 horas. Cubre `/control-sarin*` y `/api/control-sarin*` en `www.alsdevstudio.com`, `alsdevstudio.pages.dev` y `*.alsdevstudio.pages.dev`. App Launcher habilitado reutilizando la política exclusiva del titular; no se impuso MFA global a otras aplicaciones. El titular confirmó su registro y se comprobó un dispositivo TOTP en su cuenta. Entrar al destino privado de Sarin solicita el código del autenticador. No se leyó ni guardó ningún código, QR o secreto, y todavía falta comprobar una sesión funcional del panel nuevo.
 - **Nombre del acceso:** por instrucción expresa del titular, el rótulo organizacional `fullstack-challenge-e-commerce - Cloudflare Access` se sustituyó por `ALS Dev Studio`. Guardado y comprobado en el login real; afecta el nombre visual de los accesos de esa organización. El dominio `andres-san1404.cloudflareaccess.com` y la configuración de autorización se conservan. Evidencia local ignorada: `test-results/sarin-remote/access-als-dev-studio.jpg`.
 - **DNS y acceso anónimo:** el CNAME `www → alsdevstudio.pages.dev` pasó a Proxied para aplicar Access. Los nameservers ya eran Cloudflare; no se modificaron los demás registros. Comprobados portada 200 y rutas privadas de interfaz/API 302 hacia Access, también en preview. Esa redirección verifica el cierre anónimo, no las funciones del panel nuevo todavía sin publicar.
 - **Retención:** Worker de producción `als-sarin-retention`, versión `fc6b4b0f-3aad-4559-a3fc-17a0aae1be9c`, desplegado con la misma D1, flag de retención activo y cron `0 * * * *` (cada hora UTC). Sin HTTP público, `workers.dev` ni URLs de preview. **Primera ejecución remota no observada**: falta confirmar su heartbeat en D1. El perfil predeterminado del Worker sigue apagado y con UUID local simulado.
@@ -15,6 +15,8 @@ Fecha: 16 de octubre de 2026. Estado: chat comercial y ampliación administrativ
 Verificación focal de esta preparación: 27/27 pruebas de build, launcher y retención aprobadas; preparación local repetida sin migraciones pendientes. La API del Worker confirma el cron configurado `0 * * * *`, pero eso no acredita todavía una ejecución. No hubo nuevas inferencias de visitantes ni publicación del código web.
 
 Consulta remota de solo lectura del 16 de octubre a las 21:28 de Bogotá (17 de octubre, 02:28 UTC): estado de purga `never`, sin fechas de ejecución, éxito o error; pendientes cero, conversaciones cero y mensajes cero. Sigue pendiente observar la primera ejecución programada. Esta consulta no ejecuta la purga.
+
+Segunda consulta remota a las 21:32 de Bogotá: mismos resultados, cero escrituras. El registro TOTP no equivale a haber ejecutado la purga.
 
 ## Preparar y abrir
 
@@ -31,6 +33,8 @@ node .github/sarin/dev.mjs
 En desarrollo, secretos exclusivamente en `.dev.vars`, ignorado y excluido del artefacto: `DEEPSEEK_API_KEY`, `SARIN_IP_SECRET`, `SARIN_ADMIN_CSRF_SECRET`. El launcher conserva valores y genera los dos secretos técnicos si faltan, sin imprimirlos. Persistencia en `.wrangler/sarin-local`; configuración separada solo para migrar D1 local y binding simulado explícito al arrancar. Pages utiliza `wrangler.jsonc` estándar; su binding de producción no habilita acceso remoto desde el launcher.
 
 `node .github/sarin/dev.mjs --live` habilita chat e historial locales. **Enviar** mensajes llama a DeepSeek y puede consumir saldo; abrir o autorizar una sesión no llama a IA. Administración permanece apagada y exige Access real. `--live --prepare` prepara sin iniciar servidor. No hay bypass de autenticación para ver transcripciones.
+
+El HTML fuente mantiene `data-sarin-enabled="false"` en el botón del chat. El módulo no revela ni inicializa el diálogo sin el valor exacto `true`. El build local con `--live` lo habilita únicamente en `dist`, conservando la fuente apagada. Esto evita mostrar un formulario que terminaría en 503 durante una publicación solo administrativa. Para activar el chat público posteriormente deben revisarse tanto ese control de presentación como los flags y condiciones del servidor; cambiar el atributo no autoriza peticiones ni habilita IA por sí solo.
 
 ## Conversaciones y consentimiento
 
@@ -79,8 +83,14 @@ Evidencia ignorada: `test-results/sarin-admin-tests-final.txt`, `sarin-admin-reg
 ## Activación posterior
 
 1. Verificar condiciones API, roles, tratamiento internacional y retención efectiva de DeepSeek/Cloudflare; completar [guía de datos](legal/OPERACION-Y-SOLICITUDES.md). No afirmar cero retención o exclusión de entrenamiento sin prueba contractual.
-2. Registrar TOTP del titular y completar el login de Access ya configurado. Verificar acceso fuerte real y denegación de identidad ajena/vencida, sin guardar tokens. La denegación anónima ya se comprobó.
+2. Completar la sesión funcional del panel nuevo con el TOTP ya registrado. Verificar acceso fuerte real y denegación de identidad ajena/vencida, sin guardar tokens. La denegación anónima y la solicitud del segundo factor ya se comprobaron.
 3. Publicar el código web revisado cuando corresponda y cambiar entonces el comando Git de Pages a `npm ci --prefix .github/sarin && node .github/cloudflare/build.mjs`, salida `dist`. Conservar D1 y secretos solo en producción, comprobar las Functions y el panel nuevo detrás de Access y revisar el candidato antes de activar chat/historial.
 4. Observar primera ejecución remota del cron y heartbeat, verificar controles de cuenta y mantener el procedimiento de recuperación conservadora. D1, migraciones, respaldo vacío y Worker ya están preparados; no sustituir estas comprobaciones por la prueba local. Mantener `SARIN_ENABLED`, `SARIN_HISTORY_ENABLED`, `SARIN_ADMIN_ENABLED` apagados mientras falten los pasos. No activar previews contra datos operativos; cambiar flags no cancela inferencias en curso.
 
 Preparación remota realizada sin push ni publicación del código web nuevo; únicamente el Worker de retención fue desplegado. [Diseño aprobado](superpowers/specs/2026-10-16-sarin-admin-historial-design.md), [plan](superpowers/plans/2026-10-16-sarin-admin-historial.md), [ADR-001](adr/001-sarin-d1-y-entornos.md) y [revisión jurídica](legal/SARIN-REVISION-DATOS-Y-TERMINOS.md).
+
+## Candidato de publicación del panel privado
+
+La administración se puede publicar con `SARIN_ADMIN_ENABLED=true`, conservando `SARIN_ENABLED=false`, `SARIN_HISTORY_ENABLED=false` y el botón público deshabilitado. Usa Access, el secreto CSRF y D1 vacía; no requiere DeepSeek ni recoge chats. La matriz está probada con identidad sintética y SQLite: bootstrap/listado 200 y sesión pública 503 sin cookie, registros o llamadas al proveedor. Esto permite separar la verificación del panel de la activación comercial pendiente.
+
+La publicación en producción requiere la autorización de esa etapa. El candidato conserva previews sin D1 ni secretos, con administración apagada. Verificación focal: 29 pruebas de build/lanzador/UI, 59 administrativas y 6 de Pages local aprobadas; compilación de Functions correcta y revisión independiente sin hallazgos P1/P2. La autorización de crear el autenticador no se presenta como aprobación de publicar producción.

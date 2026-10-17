@@ -194,10 +194,11 @@ test('producción comparte D1 con la purga y los previews quedan aislados y apag
   assert.equal(job.preview_urls, false);
   assert.deepEqual(job.triggers.crons, ['0 * * * *']);
   assert.deepEqual(pages.env.preview.d1_databases, []);
-  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED']) {
+  assert.equal(pages.vars.SARIN_ADMIN_ENABLED, 'true', 'El candidato publica solo la administración protegida');
+  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED']) {
     assert.equal(pages.vars[key], 'false');
-    assert.equal(pages.env.preview.vars[key], 'false');
   }
+  for (const key of ['SARIN_ENABLED', 'SARIN_HISTORY_ENABLED', 'SARIN_ADMIN_ENABLED']) assert.equal(pages.env.preview.vars[key], 'false');
 });
 
 test('recuperación exige mantenimiento y drenaje explícitos antes de tocar D1', async () => {
