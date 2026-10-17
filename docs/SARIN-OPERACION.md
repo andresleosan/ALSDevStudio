@@ -1,5 +1,9 @@
 # Operación de Sarin
 
+## Presentación orientada al negocio · aviso v5 del 17 de octubre de 2026
+
+Por solicitud del titular, el inicio ahora dice: «Sarin es el asistente de IA de ALS DevStudio para ayudarte a impulsar tu negocio con soluciones digitales». Se retira «para adultos» de esa presentación; las demás condiciones y la autenticación no cambian. Texto HTML y huella canónica sincronizados, aviso `sarin-history-2026-10-17-v5`; privacidad/términos conservan v3. Publicado en `337948ffc31a6c1c6e3eaf2cbf0afb281b78b588`, Pages `c750942e-caed-4610-abb9-b294df43aaac`, estado `success`, revisión pública `51c8d41a35aaf208`. UI/sesiones 39/39, build correcto, revisión independiente sin hallazgos y seis comprobaciones HTTP aprobadas, incluido rechazo de nuevas sesiones con aviso v4 sin cookie. Chrome con recarga normal muestra la frase nueva. El apartado siguiente registra la publicación previa de v4 y el paso de Google aún pendiente.
+
 ## Aviso breve publicado y acceso con Google pendiente · 17 de octubre de 2026
 
 **Publicación verificada:** commit `f76d3db0c2ebef1ecf966a9c81d0173689716633`, Pages `5560c540-0102-4493-8a50-60b77901563f`, estado `success`, publicado el 17/10 a las 08:11 Colombia en `https://www.alsdevstudio.com/`. Build remoto: 220 archivos, 5.371.628 bytes, revisión `644501b8793524a9`; dependencia oficial auditada sin vulnerabilidades y Functions compiladas. Doce comprobaciones HTTP aprobadas: portada/widget, aviso breve, proveedor una sola vez, enlace administrativo, módulo v4, tres políticas, dos rutas privadas redirigidas a Access y rechazo de v3 sin cookie. Chrome con recarga normal muestra la marca principal, identificación secundaria, casilla desmarcada y enlace al panel dentro de Sarin. No se autorizaron conversaciones nuevas, llamó a IA ni leyó historial privado durante esta comprobación. Google sigue pendiente de un secreto nuevo creado e introducido directamente por el titular; el acceso PIN/TOTP se conserva.

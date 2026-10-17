@@ -2,6 +2,7 @@
 
 ## SARIN-AVISO-ACCESO · Aviso breve y entrada con Google · 2026-10-17
 
+- [x] Sustituir «para adultos» en la presentación por «para ayudarte a impulsar tu negocio con soluciones digitales». Aviso v5 publicado en `337948f` / Pages `c750942e`; UI/sesiones 39/39, build correcto, revisión sin hallazgos, seis comprobaciones HTTP y Chrome con recarga normal. Resto del aviso y autenticación conservados.
 - [x] Aplicar aviso breve con ALS DevStudio como marca principal, identificación legal secundaria visible, proveedor enlazado y autorización internacional expresa. Conservar privacidad y términos v3; versionar el aviso completo como v4.
 - [x] Añadir «Panel administrativo» al chat y al pie; retirar la sobrescritura JavaScript del aviso para conservar su marcado semántico.
 - [x] Verificar UI/sesiones 39/39 y build/sesiones/administración 107/107. Cinco anchos 320–1440 px, teclado, objetivos de 44 px, axe sin hallazgos y contacto sin JavaScript. Revisión independiente sin P1/P2; capturas locales en `test-results/sarin/empty-390.png` y `empty-1440.png`.
