@@ -1,5 +1,9 @@
 # Operación de Sarin
 
+## Acceso Staff únicamente en el pie · 17 de octubre de 2026
+
+Por solicitud posterior del titular, el chat conserva sólo «Hablar con Andrés» y «Nueva conversación» en su barra. El enlace del pie se llama «Staff» y sigue apuntando a `/control-sarin/`, con la protección de Access vigente. No cambian el panel, su autenticación ni el aviso v5. Publicado en `866c3304c447ded2c3feecdc91e35f3584472447`, Pages `c27ab819-d764-4a2f-a713-e9d3506fa581`, estado `success`. Verificación: UI 18/18 (cinco anchos, teclado y axe), build correcto, revisión independiente sin hallazgos y cinco comprobaciones HTTP finales; Chrome con recarga normal confirma ambos cambios. Para revertir la presentación, reponer sólo esos dos enlaces mediante un commit nuevo; no cambiar reglas de acceso ni datos.
+
 ## Presentación orientada al negocio · aviso v5 del 17 de octubre de 2026
 
 Por solicitud del titular, el inicio ahora dice: «Sarin es el asistente de IA de ALS DevStudio para ayudarte a impulsar tu negocio con soluciones digitales». Se retira «para adultos» de esa presentación; las demás condiciones y la autenticación no cambian. Texto HTML y huella canónica sincronizados, aviso `sarin-history-2026-10-17-v5`; privacidad/términos conservan v3. Publicado en `337948ffc31a6c1c6e3eaf2cbf0afb281b78b588`, Pages `c750942e-caed-4610-abb9-b294df43aaac`, estado `success`, revisión pública `51c8d41a35aaf208`. UI/sesiones 39/39, build correcto, revisión independiente sin hallazgos y seis comprobaciones HTTP aprobadas, incluido rechazo de nuevas sesiones con aviso v4 sin cookie. Chrome con recarga normal muestra la frase nueva. El apartado siguiente registra la publicación previa de v4 y el paso de Google aún pendiente.
