@@ -157,6 +157,19 @@ test('solo hostname canónico y rutas conocidas miden visitas', async () => {
   }
 });
 
+test('la prueba privada de Sarin nunca solicita ni envía analítica aunque se acepte', async () => {
+  for (const path of ['/?sarin=prueba', '/index.html?sarin=prueba', '/?sarin=otro&sarin=prueba']) {
+    const h = await harness({ choice: saved(), url: `https://www.alsdevstudio.com${path}` });
+    try {
+      await h.page.getByRole('button', { name: 'Preferencias de analítica', exact: true }).click();
+      await h.page.getByRole('button', { name: 'Aceptar analítica', exact: true }).click();
+      await h.page.waitForTimeout(100);
+      assert.equal(vendorCount(h), 0, path);
+      assert.equal(h.payloads.length, 0, path);
+    } finally { await h.close(); }
+  }
+});
+
 // Firefox 142 + Playwright 1.56.1 entrega document.referrer vacío en estas
 // navegaciones interceptadas, incluso con cabecera Referer correcta. Reproducción
 // same-origin confirmada; comportamiento relacionado: microsoft/playwright#19565.

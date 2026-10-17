@@ -1,6 +1,7 @@
 # Cabeceras de assets estáticos. /api/sarin establece sus propias cabeceras.
 /*
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=15552000
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Frame-Options: DENY

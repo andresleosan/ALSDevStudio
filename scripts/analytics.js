@@ -6,6 +6,8 @@
   const MAX_AGE = 180 * 24 * 60 * 60 * 1000;
   const paths = new Set(['/', '/index.html', '/privacidad', '/privacidad.html', '/terminos', '/terminos.html', '/cookies', '/cookies.html']);
   const production = location.hostname === 'www.alsdevstudio.com';
+  // La prueba del propietario no forma parte de las visitas públicas medibles.
+  const privateTest = new URLSearchParams(location.search).getAll('sarin').includes('prueba');
   const controls = document.querySelectorAll('[data-analytics-preferences]');
   if (!controls.length || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
 
@@ -59,6 +61,7 @@
   const closeButton = dialog.querySelector('[data-analytics-close]');
   const updateStatus = () => {
     status.textContent = allowed() ? 'Tu elección: analítica aceptada.' : 'Tu elección: analítica desactivada.';
+    if (privateTest && status) status.textContent += ' En esta prueba privada de Sarin no se carga la analítica.';
     if (loadFailed && allowed()) status.textContent += ' No se pudo cargar la medición; puedes seguir navegando.';
     if (!storageAvailable) status.textContent += ' No se pudo guardar la elección. La analítica está desactivada en esta página.';
     if (withdrawalNotSaved) status.textContent += ' No pudimos comprobar que se haya eliminado una aceptación anterior: borra los datos de este sitio en tu navegador antes de recargar o navegar a otra página para evitar que vuelva a activarse.';
@@ -77,7 +80,7 @@
     connectionsBlocked = true;
   };
   const start = () => {
-    if (!allowed() || !production || !paths.has(location.pathname) || !safeReferrer()) return;
+    if (!allowed() || !production || privateTest || !paths.has(location.pathname) || !safeReferrer()) return;
     if (scriptRequested) return;
     scriptRequested = true;
     const script = document.createElement('script');

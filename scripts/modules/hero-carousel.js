@@ -4,11 +4,7 @@ import { reducedMotionQuery, saveDataQuery } from './env.js';
 import { query, queryAll } from './dom.js';
 
 const AUTOPLAY_DELAY = 3000;
-try {
-  sessionStorage.removeItem('als:hero-autoplay-paused:v1');
-} catch {
-  /* noop */
-}
+const PAUSE_KEY = 'als:hero-autoplay-paused:v1';
 
 /** @typedef {'init' | 'auto' | 'user' | 'programmatic'} SlideOrigin */
 
@@ -22,6 +18,7 @@ export function initHeroCarousel() {
   const status = query('#hero-carousel-status', HTMLElement);
   const prevButton = query("[data-hero-step='-1']", HTMLButtonElement);
   const nextButton = query("[data-hero-step='1']", HTMLButtonElement);
+  const pauseButton = query('[data-hero-autoplay-toggle]', HTMLButtonElement);
   const projectLink = query('#hero-project-link', HTMLAnchorElement);
   const projectCards = new Map(
     queryAll('.project-card[data-project-key]', HTMLAnchorElement).map(card => [card.dataset.projectKey, card]),
@@ -30,6 +27,8 @@ export function initHeroCarousel() {
   if (!carousel || !slides.length) return null;
 
   let index = 0;
+  let pausedByUser = false;
+  try { pausedByUser = sessionStorage.getItem(PAUSE_KEY) === 'true'; } catch { /* La pausa funciona también en memoria. */ }
   /** @type {number | undefined} */
   let timer;
   let announcementFrame = 0;
@@ -89,6 +88,8 @@ export function initHeroCarousel() {
 
   function canAutoplay() {
     return slides.length > 1
+      && Boolean(pauseButton)
+      && !pausedByUser
       && !reducedMotionQuery.matches
       && !saveDataQuery.matches
       && visible
@@ -115,6 +116,13 @@ export function initHeroCarousel() {
 
   function syncAutoplay() {
     stop();
+    if (pauseButton) {
+      const action = pausedByUser ? 'Reanudar' : 'Pausar';
+      pauseButton.hidden = reducedMotionQuery.matches || saveDataQuery.matches || slides.length < 2;
+      pauseButton.dataset.paused = String(pausedByUser);
+      pauseButton.setAttribute('aria-label', `${action} carrusel de proyectos`);
+      pauseButton.title = `${action} carrusel de proyectos`;
+    }
     if (canAutoplay()) timer = window.setTimeout(() => setSlide(index + 1, 'auto'), AUTOPLAY_DELAY);
   }
 
@@ -148,6 +156,11 @@ export function initHeroCarousel() {
 
   prevButton?.addEventListener('click', () => setSlide(index - 1, 'user'));
   nextButton?.addEventListener('click', () => setSlide(index + 1, 'user'));
+  pauseButton?.addEventListener('click', () => {
+    pausedByUser = !pausedByUser;
+    try { sessionStorage.setItem(PAUSE_KEY, String(pausedByUser)); } catch { /* Conservar la elección en memoria. */ }
+    syncAutoplay();
+  });
 
   carousel.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -207,8 +220,12 @@ export function initHeroCarousel() {
   }
   document.addEventListener('visibilitychange', syncAutoplay);
   window.addEventListener('pagehide', stop);
-  window.addEventListener('pageshow', syncAutoplay);
+  window.addEventListener('pageshow', () => {
+    try { pausedByUser = sessionStorage.getItem(PAUSE_KEY) === 'true'; } catch { /* Conservar la elección en memoria. */ }
+    syncAutoplay();
+  });
   reducedMotionQuery.addEventListener('change', syncAutoplay);
+  saveDataQuery.addEventListener('change', syncAutoplay);
 
   setSlide(0, 'init');
   return { stop, sync: syncAutoplay };

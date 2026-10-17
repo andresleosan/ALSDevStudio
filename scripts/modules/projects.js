@@ -74,6 +74,7 @@ export function initProjects() {
     });
 
     if (paginationNav && pagesContainer) {
+      const restorePageFocus = pagesContainer.contains(document.activeElement);
       paginationNav.classList.toggle('is-single-page', totalPages <= 1);
 
       if (prevBtn) prevBtn.disabled = currentPage <= 1;
@@ -85,7 +86,7 @@ export function initProjects() {
         btn.type = 'button';
         btn.className = `pagination-number${p === currentPage ? ' is-active' : ''}`;
         btn.textContent = String(p).padStart(2, '0');
-        btn.setAttribute('aria-label', `Ir a página ${p} de ${totalPages}`);
+        btn.setAttribute('aria-label', `Ir a página ${String(p).padStart(2, '0')} de ${totalPages}`);
         if (p === currentPage) {
           btn.setAttribute('aria-current', 'page');
         }
@@ -96,6 +97,10 @@ export function initProjects() {
           }
         });
         pagesContainer.appendChild(btn);
+      }
+      if (restorePageFocus) {
+        const activePage = pagesContainer.querySelector('button[aria-current="page"]');
+        if (activePage instanceof HTMLButtonElement) activePage.focus({ preventScroll: true });
       }
     }
 

@@ -1,5 +1,13 @@
 # Tareas — ALS DevStudio
 
+## PRIVACIDAD-SARIN · Revisión y demostración solicitadas · 2026-10-16
+
+- [x] Identificar antes de editar actividad, ubicación, público, canales y datos a partir de la web y confirmaciones previas; no repetir preguntas respondidas ni autenticar documentos no inspeccionados.
+- [x] Actualizar políticas reales y versiones v2, inventario de recursos y fuentes oficiales; delimitar condiciones de apertura pública y revisión profesional. Chakra OFL oficial restaurada y siete hashes comprobados.
+- [x] Corregir analítica privada, cabecera HSTS, pausa del carrusel y nombres/foco accesibles. 370/370 pruebas, 6/6 Pages con D1 local nueva, 12/12 escaneos axe y teclado/reflujo. Sin nuevos errores TSC; revisión independiente sin P1/P2. No se probó NVDA ni zoom nativo.
+- [ ] Publicar cambios revisados en `main` y comprobar el sitio real conservando la prueba privada y el cierre público.
+- [ ] Probar cliente ficticio y desvío sobre el Mundial, producir video de hasta 90 segundos con voz latinoamericana y subtítulos, entregar textos para WhatsApp y Facebook sin publicarlos.
+
 ## SARIN-WWW-PRIVADO · Pruebas del titular en el dominio · 2026-10-16
 
 - [x] Preparar prueba privada solicitada para `www`: enlace desde panel, query de presentación, bootstrap del titular y POST Access/CSRF, sin habilitar chat público.

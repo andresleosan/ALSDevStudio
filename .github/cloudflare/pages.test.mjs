@@ -22,6 +22,7 @@ test('Pages sirve el artefacto revisado, sus cabeceras y las imágenes sociales'
     assert.equal(normalize(await response.text()), normalize(await readFile(path.join(root, 'dist', file), 'utf8')), `artefacto publicado: ${route}`);
     assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('strict-transport-security'), 'max-age=15552000');
     assert.equal(response.headers.get('x-frame-options'), 'DENY');
     assert.match(response.headers.get('content-security-policy') || '', /frame-ancestors 'none'/);
     assert.match(response.headers.get('content-security-policy') || '', /connect-src 'self' https:\/\/cloudflareinsights\.com/);

@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { NOTICE_VERSION, PRIVACY_VERSION, TERMS_VERSION } from '../../scripts/modules/sarin-consent.js';
 
 const load = () => import('../../server/sarin/sessions.js').catch(error => {
   if (error.code === 'ERR_MODULE_NOT_FOUND') return {};
   throw error;
 });
-const version = 'sarin-history-2026-10-16-v1';
-const policy = '2026-10-16-sarin-history-v1';
-const consent = () => ({accepted:true,noticeVersion:version,privacyVersion:policy,termsVersion:policy});
+const consent = () => ({accepted:true,noticeVersion:NOTICE_VERSION,privacyVersion:PRIVACY_VERSION,termsVersion:TERMS_VERSION});
 const env = () => ({SARIN_ENABLED:'true',SARIN_HISTORY_ENABLED:'true',SARIN_IP_SECRET:'x'.repeat(32),SARIN_DB:{prepare(){},batch(){}}});
 const request = (body={consent:consent()},headers={},extra={}) => new Request('https://www.alsdevstudio.com/api/sarin/session', {
   method:'POST',headers:{Origin:'https://www.alsdevstudio.com','Content-Type':'application/json','CF-Connecting-IP':'192.0.2.1',...headers},body:JSON.stringify(body),...extra,
@@ -22,12 +21,16 @@ test('aceptación explícita produce cookie segura y guarda solo hash del secret
   assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
   const cookie=response.headers.get('Set-Cookie');assert.match(cookie,/^__Host-sarin-session=[a-f0-9]{64};/);for(const flag of ['HttpOnly','Secure','SameSite=Strict','Path=/','Max-Age=86400'])assert.ok(cookie.includes(flag));
   const token=cookie.split(';')[0].split('=')[1];assert.equal(s.calls.length,1);assert.notEqual(s.calls[0].tokenHash,token);assert.match(s.calls[0].tokenHash,/^[a-f0-9]{64}$/);
-  assert.equal(s.calls[0].consent.noticeVersion,version);assert.equal(s.calls[0].consent.method,'checkbox_and_start');assert.match(s.calls[0].consent.noticeHash,/^[a-f0-9]{64}$/);
+  assert.equal(s.calls[0].consent.noticeVersion,NOTICE_VERSION);assert.equal(s.calls[0].consent.privacyVersion,PRIVACY_VERSION);assert.equal(s.calls[0].consent.termsVersion,TERMS_VERSION);assert.equal(s.calls[0].consent.method,'checkbox_and_start');assert.match(s.calls[0].consent.noticeHash,/^[a-f0-9]{64}$/);
   assert.equal(s.calls[0].consent.acceptedAt,Date.UTC(2026,9,16));assert.equal(JSON.stringify(s.calls).includes('192.0.2.1'),false);
   const out=await response.json();assert.deepEqual(Object.keys(out).sort(),['conversationId','sessionExpiresAt']);assert.equal(JSON.stringify(out).includes(token),false);
 });
 for(const body of [{},{consent:{...consent(),accepted:false}},{consent:{...consent(),noticeVersion:'old'}},{consent:{...consent(),termsVersion:'old'}},{consent:{...consent(),extra:true}},{consent:consent(),message:'private-fixture'}])test('rechaza autorización ausente, vieja o campos ajenos antes de crear sesión',async()=>{
   const api=await load(),s=setup();const response=await api.handleSarinSession(request(body),env(),s.options);assert.ok([400,403].includes(response.status));assert.equal(s.calls.length,0);
+});
+for(const field of ['privacyVersion','termsVersion'])test(`nuevas sesiones rechazan ${field} v1 sin reutilizar aceptación anterior`,async()=>{
+  const api=await load(),s=setup();const response=await api.handleSarinSession(request({consent:{...consent(),[field]:'2026-10-16-sarin-history-v1'}}),env(),s.options);
+  assert.equal(response.status,403);assert.equal(response.headers.has('Set-Cookie'),false);assert.equal(s.calls.length,0);
 });
 for(const key of Object.keys(env()))test(`sesión cerrada sin ${key}`,async()=>{
   const api=await load(),s=setup(),config=env();delete config[key];assert.equal((await api.handleSarinSession(request(),config,s.options)).status,503);assert.equal(s.calls.length,0);
