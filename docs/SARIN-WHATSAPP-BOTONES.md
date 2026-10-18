@@ -24,6 +24,8 @@ El artefacto estático permanece idéntico: 223 archivos, 5.454.014 bytes, revis
 
 Publicar primero Pages, que reconoce los botones nuevos y los mensajes anteriores; después el consumidor que los envía. Se mantienen el esquema 7, la retención y la versión de consentimiento v3. No se reproducen trabajos terminados ni se reinician consumos.
 
+La ampliación posterior de [perfiles temporales](SARIN-WHATSAPP-PERFILES.md) ya usa esquema 8 y conserva estos botones y la aceptación v3. Su registro de publicación prevalece como estado actual.
+
 Publicación realizada el **18 de octubre de 2026** desde `307d1dd`, primero Pages `b34d6669-4a00-4437-b935-b846a4a1c9e6`, después el consumidor `f68bad32-682d-403b-a8e7-9ae3699c0eac`. La consulta remota de las **08:38:04 UTC (03:38:04 de Colombia)** confirmó esa versión al 100 %, AI presente, esquema 7 íntegro, envíos y alertas activos, aceptación v3 conservada y ningún trabajo pendiente. En ese momento los consumos seguían en diez envíos y cero transcripciones: la publicación no reprodujo los audios fallidos. Evidencia `remote-menu-audio-published-1.json`.
 
 La comprobación pública pasó: recursos comparados con el artefacto, privacidad y panel disponibles, API administrativa anónima rechazada con 403 y webhook sin firma con 401.

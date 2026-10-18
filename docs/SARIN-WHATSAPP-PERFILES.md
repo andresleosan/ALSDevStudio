@@ -32,4 +32,12 @@ Para revertir un problema, cerrar los envíos si hace falta y corregir hacia ade
 - Navegador CUA: nombre HTML como texto, caducidad sin sondeo, número completo, reflujo a 320 px, teclado y limpieza al cerrar sesión aprobados. Capturas y reporte en `test-results/sarin-whatsapp-profile-20261018`.
 - Ejecutor anterior probado sobre esquema 8 aditivo: aviso, aceptación, consulta y listado siguen funcionando. La migración no exige cortar recepción ni girar el estado de activación.
 
-Estado del despliegue: pendiente de registrar los identificadores y la comprobación remota.
+## Publicado
+
+Fuente `60ede7538ec2025396b4e8402cf9f34ae0d18112` en `main`. Se publicó retención `ee368b75-ea8b-44b9-a580-750afd41c3e7`, se aplicó 0008 y después se publicaron consumidor `08652fe4-d30d-4592-b8ea-ec677dae12d7` y Pages `e4751a61-dfc6-41c8-8ad0-b840cbbfbcda`.
+
+La lectura remota de las **09:00:18 UTC / 04:00:18 de Colombia del 18 de octubre** confirmó esquema 8 con definiciones coincidentes, `quick_check=ok`, cero errores de claves foráneas y ambas versiones de Workers al 100 %. Envíos, alertas y AI continúan activos; las previews siguen sin base ni secretos. Los consumos se conservaron en once envíos y una transcripción, con cero trabajos pendientes. La publicación no reprodujo eventos anteriores. Evidencia: `test-results/sarin-whatsapp-audio-handoff-20261018/remote-profile-published-1.json`.
+
+En el navegador productivo autenticado se verificó el teléfono completo del contacto autorizado y se reactivó ese contacto mediante el panel. La interfaz confirmó **Sarin activo**, **Pausar Sarin** y que necesita un mensaje nuevo. Captura: `test-results/sarin-whatsapp-profile-20261018/panel-publicado.png`.
+
+Pendiente de comprobación por el titular: recepción real del menú de tres botones, aceptación mediante botón, captura de un nombre nuevo y respuesta comercial al pedir un chatbot como este. Las pruebas locales de esos comportamientos están aprobadas; no se atribuye al usuario una confirmación que aún no ha dado. El audio real ya quedó confirmado en la etapa anterior.
