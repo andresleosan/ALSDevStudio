@@ -1,6 +1,7 @@
 // @ts-check
 import {createSarinAdminAuth} from './sarin-admin-auth.js';
 import {validateSarinLead} from './sarin-lead.js';
+import {createWhatsAppAdmin} from './sarin-whatsapp-admin.js';
 /** Panel privado. Los mensajes permanecen en el DOM y nunca se interpretan como HTML. */
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const dateFormat=new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'});
@@ -36,6 +37,14 @@ function initSarinAdmin(){
   const filters=/** @type {HTMLFormElement} */(find('#admin-filters'));
   const more=/** @type {HTMLButtonElement} */(find('#admin-more'));
   const confirm=/** @type {HTMLDialogElement} */(find('#admin-delete-confirm'));
+  const webPanel=find('#admin-web-panel'),waPanel=find('#wa-panel');
+  const webSection=/** @type {HTMLButtonElement} */(find('#admin-section-web')),waSection=/** @type {HTMLButtonElement} */(find('#admin-section-wa'));
+  const whatsapp=createWhatsAppAdmin({request:(path,options)=>request(`whatsapp/${path}`,{...options,whatsapp:true}),fail:error=>fail(error)});
+  /** @param {boolean} wa */
+  const selectSection=wa=>{
+    webPanel.hidden=wa;waPanel.hidden=!wa;webSection.setAttribute('aria-pressed',String(!wa));waSection.setAttribute('aria-pressed',String(wa));whatsapp.setActive(wa);
+  };
+  webSection.addEventListener('click',()=>selectSection(false));waSection.addEventListener('click',()=>selectSection(true));
   let csrf='',selected='',cursor='',listGeneration=0,detailGeneration=0,bootstrapGeneration=0;
   let listPending=false,detailPending=false,mutationPending=false;
   let operationGeneration=0;
@@ -59,6 +68,7 @@ function initSarinAdmin(){
   window.addEventListener('resize',updateScrollRegions);
   const clearDetail=()=>{scrollObserver?.disconnect();detail.replaceChildren(element('p','Elige una conversación para ver sus mensajes.','admin-note'));selected='';};
   const clearWorkspace=()=>{
+    whatsapp.clear();selectSection(false);
     csrf='';cursor='';operationGeneration++;bootstrapGeneration++;listGeneration++;detailGeneration++;
     listController?.abort();detailController?.abort();mutationController?.abort();bootstrapController?.abort();
     listPending=false;detailPending=false;mutationPending=false;deleteTrigger=null;deleteId='';
@@ -86,8 +96,8 @@ function initSarinAdmin(){
       authentication.forget(code===401?'Tu acceso venció. Accede de nuevo con Google para continuar.':'Acceso no autorizado o autorización vencida. Accede con la cuenta de Google autorizada.');
     }else announce(error instanceof Error?error.message:'No pudimos completar la operación. Vuelve a intentarlo.',true);
   };
-  /** @param {string} path @param {{action?:string,signal?:AbortSignal}} [options] */
-  async function request(path,{action,signal}={}){
+  /** @param {string} path @param {{action?:string,body?:Record<string,unknown>,whatsapp?:boolean,signal?:AbortSignal}} [options] */
+  async function request(path,{action,body,whatsapp=false,signal}={}){
     const current=operationGeneration;
     const controller=new AbortController();
     const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
@@ -98,15 +108,16 @@ function initSarinAdmin(){
       catch(error){if(current===operationGeneration)authentication.forget();throw error;}
       if(current!==operationGeneration)throw new DOMException('Solicitud cancelada','AbortError');
       if(controller.signal.aborted)throw new DOMException('Solicitud cancelada','AbortError');
-      const response=await fetch(`/api/control-sarin/${path}`,{method:action?'POST':'GET',headers:action?{'Accept':'application/json','Content-Type':'application/json','X-Sarin-CSRF':csrf}:{'Accept':'application/json'},body:action?JSON.stringify({action}):undefined,credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
+      const payload=whatsapp?body:action?{action}:undefined;
+      const response=await fetch(`/api/control-sarin/${path}`,{method:payload?'POST':'GET',headers:payload?{'Accept':'application/json','Content-Type':'application/json','X-Sarin-CSRF':csrf}:{'Accept':'application/json'},body:payload?JSON.stringify(payload):undefined,credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});
       if(!response.ok){
         const message=([401,403].includes(response.status))?'Tu acceso necesita verificarse de nuevo.':response.status===404 || response.status===410?'La conversación venció o fue eliminada. Actualiza el listado.':response.status===409?'La conversación está cambiando. Actualiza el listado antes de continuar.':'No pudimos completar la operación. Vuelve a intentarlo.';
-        throw Object.assign(new Error(message),{status:response.status});
+        throw Object.assign(new Error(whatsapp && ![401,403].includes(response.status)?response.status===409?'El estado de WhatsApp cambió. Actualiza antes de continuar.':response.status===404 || response.status===410?'El registro de WhatsApp ya no está disponible.':'No pudimos completar la operación de WhatsApp.':message),{status:response.status});
       }
       if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('La respuesta del panel no es válida. Vuelve a comprobar tu acceso.');
-      const body=await response.text();
-      if(new TextEncoder().encode(body).byteLength>262144)throw new Error('La respuesta del panel es demasiado extensa.');
-      return record(JSON.parse(body));
+      const responseBody=await response.text();
+      if(new TextEncoder().encode(responseBody).byteLength>262144)throw new Error('La respuesta del panel es demasiado extensa.');
+      return record(JSON.parse(responseBody));
     }catch(error){
       if(timedOut)throw new Error('El panel tardó demasiado. Vuelve a intentarlo.');
       if(error instanceof TypeError || error instanceof SyntaxError)throw new Error('No pudimos conectar con el panel. Vuelve a intentarlo.');
@@ -260,12 +271,13 @@ function initSarinAdmin(){
   confirm.addEventListener('close',()=>{deleteTrigger?.focus({preventScroll:true});});
   find('[data-admin-confirm-delete]').addEventListener('click',()=>{const id=deleteId;confirm.close();void mutate(id,'delete');});
   async function bootstrap(){
+    whatsapp.clear();selectSection(false);
     const current=++bootstrapGeneration;bootstrapController?.abort();bootstrapController=new AbortController();
     retry.hidden=true;workspace.hidden=true;document.body.dataset.adminState='access';find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
     try{
       const value=await request('bootstrap',{signal:bootstrapController.signal});if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
-      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';clearDetail();await loadList();
+      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';whatsapp.setReady(true);clearDetail();await loadList();
     }catch(error){if(current===bootstrapGeneration && record(error).name!=='AbortError'){fail(error);login.hidden=false;retry.hidden=([401,403].includes(Number(record(error).status)));}}
   }
   loginButton.addEventListener('click',()=>{clearWorkspace();retry.hidden=true;void authentication.login().then(()=>bootstrap()).catch(()=>{});});

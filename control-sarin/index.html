@@ -31,6 +31,11 @@
       <noscript><p class="admin-note">Este panel necesita JavaScript y acceso autorizado. Puedes <a href="mailto:alsdevstudio@alsdevstudio.com">contactar con ALS DevStudio por correo</a>.</p></noscript>
     </div>
     <div id="admin-workspace" hidden>
+      <nav class="admin-sections" aria-label="Canal de conversaciones">
+        <button id="admin-section-web" type="button" aria-pressed="true" aria-controls="admin-web-panel">Conversaciones web</button>
+        <button id="admin-section-wa" type="button" aria-pressed="false" aria-controls="wa-panel">WhatsApp</button>
+      </nav>
+      <div id="admin-web-panel" class="admin-channel-panel">
       <section class="admin-retention" aria-labelledby="admin-retention-title">
         <div><h2 id="admin-retention-title">Historial de 30 días</h2><p>Las conversaciones vencidas dejan de aparecer. Las señales técnicas requieren revisión y no prueban abuso.</p></div>
         <div class="admin-maintenance"><p id="admin-purge" class="admin-purge">Comprobando la limpieza automática…</p><a id="admin-test-sarin" href="/?sarin=prueba" hidden>Probar Sarin en la web</a></div>
@@ -50,6 +55,16 @@
         </section>
         <section id="admin-detail" class="admin-detail" aria-label="Detalle de conversación" aria-busy="false"><div class="admin-detail-empty"><p>Elige una conversación</p><span>Aquí verás sus mensajes, autorización y eventos en orden de fecha.</span></div></section>
       </div>
+      </div>
+      <section id="wa-panel" class="admin-channel-panel" aria-labelledby="wa-title" aria-busy="false" hidden>
+        <div class="wa-heading"><div><h2 id="wa-title">WhatsApp · Piloto privado</h2><p class="admin-note">Sólo números autorizados y datos ficticios. Contenido disponible hasta 24 horas; recibos mínimos hasta 48 horas. <a href="/privacidad.html#whatsapp-piloto">Aviso del piloto</a></p></div><div id="wa-pilot"></div></div>
+        <p class="admin-note wa-warning">Un mensaje cuyo envío ya comenzó puede llegar después de pausar o apagar el piloto.</p>
+        <p id="wa-status" role="status" aria-live="polite"></p>
+        <div class="wa-columns">
+          <section class="wa-contacts" aria-labelledby="wa-list-title"><div class="admin-section-heading"><h2 id="wa-list-title">Contactos del piloto</h2></div><div id="wa-list"></div></section>
+          <section id="wa-detail" aria-label="Detalle de WhatsApp"><p class="admin-note">Elige un contacto para revisar sus mensajes y estado de entrega.</p></section>
+        </div>
+      </section>
     </div>
   </main>
   <footer class="admin-footer"><span>ALS DevStudio · Sarin</span><a href="/privacidad.html">Política de privacidad</a></footer>
