@@ -47,8 +47,9 @@ async function consent(f) {
   await f.store.beginSend(n);
   await f.store.finishSend({ ...n, result: { status: 'accepted', providerId: 'provider_notice' } });
   await f.store.applyStatus({ eventId: 'delivery_notice', providerId: 'provider_notice', status: 'delivered', at: f.now() });
-  f.sqlite.prepare(`UPDATE sarin_wa_contexts SET consent_version='v1',consent_hash=?,consent_notice_id=?,
-    acceptance_event_id=?,accepted_at=?,consent_expires_at=? WHERE peer_key=?`).run('a'.repeat(64),n.outboxId,j.event_id,f.now(),f.now()+DAY,f.peerKey);
+  const acceptance=await f.capture('ACEPTO');
+  const accepted=await claim(f,acceptance);
+  await f.store.finishWithoutReply({...accepted,reason:'ignored'});
 }
 test('capture_and_job_are_atomic', async t => {
   const f = await setup(t); assert.equal(row(f,'sarin_wa_jobs'), undefined);

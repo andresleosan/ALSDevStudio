@@ -11,6 +11,7 @@
  * externalId?:string,wabaId?:string,from?:string,to?:string,wamid?:string}} DeliveryObservation
  */
 /**
+ * @typedef {{closed:boolean,closures:Array<{scope:'day'|'month',period_key:string,period_end_at:number}>}} SendClosure
  * @typedef {{wabaId:string,from:string,to:string}} Recipient
  * @typedef {{status:'idle'|'pending'|'claimed'|'complete'|'exhausted'|'conflict',attempts:number,nextAt:number|null}} ReconciliationState
  * @typedef {Recipient & {outboxId:string,providerId:string,externalId:string,contextId:string,epoch:string,attempt:number,leaseUntil:number}} ReconciliationPermit

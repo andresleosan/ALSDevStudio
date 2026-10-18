@@ -135,3 +135,55 @@ WHEN OLD.revision<>NEW.revision OR OLD.context_id<>NEW.context_id BEGIN
     WHERE peer_key=NEW.peer_key AND state IN('queued','claimed','inference_started','ready');
   UPDATE sarin_wa_jobs SET quota_state='released',reserved_bytes=CASE WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id) THEN reserved_bytes ELSE 0 END WHERE peer_key=NEW.peer_key AND quota_state='reserved';
 END;
+
+-- Prueba minima sin texto, telefonos ni FK hacia contenido efimero.
+CREATE TABLE sarin_wa_consent_proofs (
+ acceptance_event_id TEXT PRIMARY KEY, notice_id TEXT NOT NULL, peer_key TEXT NOT NULL,
+ notice_context_id TEXT NOT NULL, notice_epoch TEXT NOT NULL, version TEXT NOT NULL, hash TEXT NOT NULL,
+ started_at INTEGER NOT NULL, delivered_at INTEGER NOT NULL, accepted_at INTEGER NOT NULL,
+ consent_expires_at INTEGER NOT NULL, recorded_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+ external_id TEXT NOT NULL, provider_id TEXT, wamid TEXT,
+ waba_hash TEXT NOT NULL, from_hash TEXT NOT NULL, to_hash TEXT NOT NULL,
+ conflict INTEGER NOT NULL DEFAULT 0 CHECK(conflict IN(0,1)),
+ CHECK(expires_at=recorded_at+172800000),
+ CHECK(consent_expires_at>accepted_at AND consent_expires_at<=accepted_at+86400000 AND consent_expires_at<=expires_at)
+);
+CREATE INDEX sarin_wa_proofs_expiry ON sarin_wa_consent_proofs(expires_at);
+CREATE INDEX sarin_wa_proofs_provider ON sarin_wa_consent_proofs(provider_id);
+CREATE INDEX sarin_wa_proofs_external ON sarin_wa_consent_proofs(external_id);
+CREATE INDEX sarin_wa_proofs_notice ON sarin_wa_consent_proofs(notice_id);
+CREATE TRIGGER sarin_wa_proof_immutable BEFORE UPDATE ON sarin_wa_consent_proofs BEGIN
+ SELECT CASE WHEN NEW.acceptance_event_id IS NOT OLD.acceptance_event_id OR NEW.notice_id IS NOT OLD.notice_id
+ OR NEW.peer_key IS NOT OLD.peer_key OR NEW.notice_context_id IS NOT OLD.notice_context_id OR NEW.notice_epoch IS NOT OLD.notice_epoch
+ OR NEW.version IS NOT OLD.version OR NEW.hash IS NOT OLD.hash OR NEW.started_at IS NOT OLD.started_at
+ OR NEW.delivered_at IS NOT OLD.delivered_at OR NEW.accepted_at IS NOT OLD.accepted_at
+ OR NEW.consent_expires_at IS NOT OLD.consent_expires_at OR NEW.recorded_at IS NOT OLD.recorded_at OR NEW.expires_at IS NOT OLD.expires_at
+ OR NEW.external_id IS NOT OLD.external_id OR NEW.waba_hash IS NOT OLD.waba_hash OR NEW.from_hash IS NOT OLD.from_hash OR NEW.to_hash IS NOT OLD.to_hash
+ OR (OLD.provider_id IS NOT NULL AND NEW.provider_id IS NOT OLD.provider_id) OR (OLD.wamid IS NOT NULL AND NEW.wamid IS NOT OLD.wamid)
+ OR NEW.conflict<OLD.conflict THEN RAISE(ABORT,'WA_WORK_DENIED') END;
+END;
+CREATE TRIGGER sarin_wa_proof_sync AFTER UPDATE ON sarin_wa_outbox BEGIN
+ UPDATE sarin_wa_consent_proofs SET conflict=MAX(conflict,NEW.conflict,
+   CASE WHEN (provider_id IS NOT NULL AND NEW.provider_id IS NOT NULL AND provider_id<>NEW.provider_id)
+   OR (wamid IS NOT NULL AND NEW.wamid IS NOT NULL AND wamid<>NEW.wamid) THEN 1 ELSE 0 END),
+   provider_id=COALESCE(provider_id,NEW.provider_id),wamid=COALESCE(wamid,NEW.wamid)
+ WHERE notice_id=NEW.outbox_id;
+END;
+CREATE VIEW sarin_wa_delivery_targets AS
+ SELECT o.outbox_id,o.peer_key,o.context_id,o.provider_id,o.external_id,o.wamid,o.started_at,o.delivered_at,o.state,o.conflict,o.expires_at,
+ i.waba_id,i.business_phone,i.peer_phone,NULL AS waba_hash,NULL AS from_hash,NULL AS to_hash
+ FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+ WHERE NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs p WHERE p.notice_id=o.outbox_id)
+ UNION ALL
+ SELECT p.notice_id,p.peer_key,p.notice_context_id,p.provider_id,p.external_id,p.wamid,p.started_at,p.delivered_at,'delivered',p.conflict,p.expires_at,
+ NULL,NULL,NULL,p.waba_hash,p.from_hash,p.to_hash FROM sarin_wa_consent_proofs p;
+CREATE TABLE sarin_wa_send_closures (
+ scope TEXT NOT NULL CHECK(scope IN('day','month')), period_key TEXT NOT NULL,
+ closed_at INTEGER NOT NULL CHECK(closed_at>=0), period_end_at INTEGER NOT NULL,
+ reason TEXT NOT NULL CHECK(reason='restore'), PRIMARY KEY(scope,period_key),
+ CHECK((scope='day' AND length(period_key)=10 AND strftime('%Y-%m-%d',period_key) IS NOT NULL AND strftime('%Y-%m-%d',period_key)=period_key
+   AND period_end_at=CAST(strftime('%s',period_key,'+1 day') AS INTEGER)*1000)
+ OR (scope='month' AND length(period_key)=7 AND strftime('%Y-%m',period_key||'-01') IS NOT NULL AND strftime('%Y-%m',period_key||'-01')=period_key
+   AND period_end_at=CAST(strftime('%s',period_key||'-01','+1 month') AS INTEGER)*1000)),
+ CHECK(period_end_at>closed_at)
+);

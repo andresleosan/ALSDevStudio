@@ -214,3 +214,35 @@ test('error de literal incompleto conserva únicamente etapa y razón permitidas
     assert.equal(error.message.includes('CANARIO-PRIVADO'), false); return true;
   });
 });
+
+test('missing_0005_trigger_rejects_backup',async()=>{
+ const sql=await whatsappBackupSql()+'\n'+await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
+ const changed=changeDefinition(sql,'sarin_wa_context_invalidate',()=> '');
+ await assert.rejects(verifySarinBackup(Buffer.from(changed)),e=>e.stage==='integrity');
+});
+test('complete_cumulative_0005_backup_is_verified',async()=>{
+ const sql=await whatsappBackupSql()+'\n'+await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
+ const result=await verifySarinBackup(Buffer.from(sql));assert.equal(result.verified,true);assert.equal(result.whatsappWork.jobs,0);
+});
+
+for(const name of ['sarin_wa_proof_immutable','sarin_wa_proof_sync','sarin_wa_outbox_transition','sarin_wa_job_transition','sarin_wa_work_capture','sarin_wa_guard','sarin_wa_context_invalidate','sarin_wa_outbox_reconcile','sarin_wa_proofs_expiry','sarin_wa_proofs_provider','sarin_wa_proofs_external','sarin_wa_proofs_notice','sarin_wa_jobs_expiry','sarin_wa_jobs_dispatch','sarin_wa_one_owner','sarin_wa_send_month']){
+ test('cumulative_backup_rejects_missing_'+name,async()=>{
+  const sql=await whatsappBackupSql()+'\n'+await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
+  await assert.rejects(verifySarinBackup(Buffer.from(changeDefinition(sql,name,()=>''))),e=>e.stage==='integrity');
+ });
+}
+for(const [name,from,to] of [
+ ['sarin_wa_send_closures',"scope IN('day','month')","scope IN('day','month','year')"],
+ ['sarin_wa_consent_proofs','expires_at=recorded_at+172800000','expires_at>=recorded_at'],
+ ['sarin_wa_outbox','reconcile_attempts BETWEEN 0 AND 3','reconcile_attempts BETWEEN 0 AND 99'],
+ ['sarin_wa_outbox','reconcile_token TEXT','reconcile_token_wrong TEXT'],
+ ['sarin_wa_delivery_targets',"'delivered'","'failed'"],
+ ['sarin_wa_proof_immutable',"NEW.conflict<OLD.conflict","0"],
+ ['sarin_wa_work_guard','NULL AS code',"'denied' AS code"],
+ ['sarin_wa_outbox_reconcile','reconcile_state,reconcile_next_at','reconcile_next_at,reconcile_state']
+]){
+ test('cumulative_backup_rejects_changed_'+name+'/'+from,async()=>{
+  const sql=await whatsappBackupSql()+'\n'+await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
+  await assert.rejects(verifySarinBackup(Buffer.from(changeDefinition(sql,name,s=>{assert.ok(s.includes(from));return s.replace(from,to);}))),e=>e.stage==='integrity');
+ });
+}
