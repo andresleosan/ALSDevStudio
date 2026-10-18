@@ -123,7 +123,7 @@ Config cerrada: `SARIN_WHATSAPP_REPLIES_ENABLED`, `SARIN_WHATSAPP_SEND_ENABLED`,
 
 ## Tarea 5: Staff y aviso del piloto
 
-**Archivos:** crear `server/sarin/whatsapp/admin.js`, `scripts/modules/sarin-whatsapp-admin.js`, `.github/cloudflare/sarin-whatsapp-admin.test.mjs`, `.github/cloudflare/sarin-whatsapp-admin-ui.test.mjs`; modificar `server/sarin/admin.js`, `control-sarin/index.html`, `scripts/modules/sarin-admin.js`, estilos específicos usados por Staff y `privacidad.html`.
+**Archivos:** crear `server/sarin/whatsapp/admin.js`, `scripts/modules/sarin-whatsapp-admin.js`, `.github/cloudflare/sarin-whatsapp-admin.test.mjs`, `.github/cloudflare/sarin-whatsapp-admin-ui.test.mjs`; modificar `server/sarin/admin.js`, `control-sarin/index.html`, `scripts/modules/sarin-admin.js`, `styles/sarin-admin.css` y `privacidad.html`.
 
 **Interfaces HTTP:** rutas bajo `/api/control-sarin/whatsapp`: GET `/peers`, GET `/peers/:peerKey`, POST `/peers/:peerKey/action` con `{action:'pause'|'resume',revision}`, POST `/pilot` con `{enabled,revision}`, POST `/outbox/:id/reconcile` sólo consulta por ID existente. No aceptar teléfono destino ni texto de envío desde estos endpoints. Respuestas incluyen revisiones, estado y fechas, no secretos.
 
