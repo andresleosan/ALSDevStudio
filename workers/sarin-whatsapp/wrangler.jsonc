@@ -17,11 +17,11 @@
     },
     "production": {
       "name": "als-sarin-whatsapp",
-      // Publicación inicial apagada, usando la misma D1 y los mismos presupuestos que la web.
+      // Servicio habilitado para un solo contacto; el piloto y cada pausa se controlan desde Staff.
       // Aprovisionar Queue con message_retention_period=86400; Wrangler consumers no define ese ajuste.
       "vars": {
-        "SARIN_WHATSAPP_REPLIES_ENABLED": "false",
-        "SARIN_WHATSAPP_SEND_ENABLED": "false",
+        "SARIN_WHATSAPP_REPLIES_ENABLED": "true",
+        "SARIN_WHATSAPP_SEND_ENABLED": "true",
         "SARIN_INPUT_PRICE_MICROS": "300000",
         "SARIN_OUTPUT_PRICE_MICROS": "1200000",
         "SARIN_DAILY_BUDGET_MICROS": "1000000",
