@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "als-sarin-whatsapp",
+  "main": "index.js",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false" },
+  "triggers": { "crons": [] },
+  "queues": { "producers": [], "consumers": [] },
+  "env": {
+    "preview": {
+      "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false" },
+      "triggers": { "crons": [] },
+      "queues": { "producers": [], "consumers": [] },
+      "d1_databases": []
+    },
+    "production": {
+      // Candidato apagado. Sustituir ID ficticio únicamente al preparar publicación autorizada.
+      // Aprovisionar Queue con message_retention_period=86400; Wrangler consumers no define ese ajuste.
+      "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false" },
+      "triggers": { "crons": ["* * * * *"] },
+      "d1_databases": [{ "binding": "SARIN_DB", "database_name": "als-sarin", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "../../migrations/sarin" }],
+      "queues": {
+        "producers": [{ "binding": "SARIN_WHATSAPP_QUEUE", "queue": "als-sarin-whatsapp" }],
+        "consumers": [{ "queue": "als-sarin-whatsapp", "max_batch_size": 1, "max_batch_timeout": 1, "max_concurrency": 1, "max_retries": 3, "retry_delay": 60 }]
+      }
+    }
+  }
+}

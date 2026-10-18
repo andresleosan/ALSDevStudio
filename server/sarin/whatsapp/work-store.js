@@ -186,7 +186,137 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
           AND n.delivered_at IS NOT NULL AND n.conflict=0 AND n.state IN('delivered','read') AND n.expires_at>?) RETURNING acceptance_event_id`,at,peerKey,at,at,at);
     return {status:rows.length?'accepted':'unchanged'};
   }
+  /** @param {DeliveryObservation} event
+   * @param {import('./ingress-store.js').Statement[]} [prefix]
+   * @param {import('./ingress-store.js').Statement[]} [suffix] */
+  async function applyObservation(event,prefix=[],suffix=[]) {
+      requireThat(event&&id(event.eventId)&&['accepted','sent','delivered','read','failed'].includes(event.status)&&integer(event.at)
+        && (providerId(event.providerId)||randomId(event.externalId))
+        && (event.providerId===undefined||providerId(event.providerId))
+        && (event.wamid===undefined||providerId(event.wamid,512))
+        && (event.externalId===undefined||(typeof event.externalId==='string'&&event.externalId.length>0&&event.externalId.length<=128&&!/[\u0000-\u001f\u007f-\u009f]/.test(event.externalId)))
+        && (event.from===undefined||phone(event.from))&&(event.to===undefined||phone(event.to))
+        && (event.wabaId===undefined||(typeof event.wabaId==='string'&&/^[1-9]\d{0,31}$/.test(event.wabaId))));
+      const at=clock();requireThat(event.at<=at+300000);
+      const o=(await read(`SELECT o.*,i.waba_id,i.business_phone,i.peer_phone FROM sarin_wa_outbox o
+        JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+        WHERE o.started_at IS NOT NULL AND ((? IS NOT NULL AND o.provider_id=?) OR (? IS NOT NULL AND o.external_id=?))`,
+      event.providerId??null,event.providerId??null,event.externalId??null,event.externalId??null))[0];
+      if(!o)return {status:'ignored'};
+      const results=await batch([...prefix,
+        s(`INSERT INTO sarin_wa_delivery_observations(event_id,outbox_id,provider_id,status,observed_at,expires_at)
+          VALUES(?,?,?,?,?,?) ON CONFLICT(event_id) DO NOTHING RETURNING event_id`,event.eventId,o.outbox_id,event.providerId??null,event.status,event.at,at+2*DAY),
+        // Identidad dentro del commit: el POST puede vincular otro ID tras la lectura.
+        s(`UPDATE sarin_wa_delivery_observations SET conflict=1 WHERE event_id=? AND applied=0 AND EXISTS(
+          SELECT 1 FROM sarin_wa_outbox n WHERE n.outbox_id=? AND (
+            (n.provider_id IS NOT NULL AND ? IS NOT NULL AND n.provider_id<>?) OR
+            (? IS NOT NULL AND n.external_id<>?) OR (n.wamid IS NOT NULL AND ? IS NOT NULL AND n.wamid<>?) OR
+            (? IS NOT NULL AND ?<>?) OR (? IS NOT NULL AND ?<>?) OR (? IS NOT NULL AND ?<>?) OR
+            EXISTS(SELECT 1 FROM sarin_wa_outbox other WHERE other.outbox_id<>n.outbox_id AND other.provider_id=?) OR
+            (?='failed' AND n.delivered_at IS NOT NULL) OR (? IN('delivered','read') AND n.state IN('failed','rejected'))))`,
+          event.eventId,o.outbox_id,event.providerId??null,event.providerId??null,event.externalId??null,event.externalId??null,event.wamid??null,event.wamid??null,
+          event.wabaId??null,event.wabaId??null,o.waba_id,event.from??null,event.from??null,o.business_phone,event.to??null,event.to??null,o.peer_phone,event.providerId??null,event.status,event.status),
+        s(`UPDATE sarin_wa_outbox SET conflict=1 WHERE outbox_id=? AND EXISTS(
+          SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=sarin_wa_outbox.outbox_id AND applied=0 AND conflict=1)`,o.outbox_id,event.eventId),
+        s(`UPDATE sarin_wa_outbox SET provider_id=COALESCE(provider_id,?),wamid=COALESCE(wamid,?),
+          delivered_at=CASE WHEN ? IN('delivered','read') THEN COALESCE(delivered_at,?) ELSE delivered_at END,
+          state=CASE WHEN state IN('failed','rejected','cancelled','expired') THEN state
+            WHEN ?='accepted' AND state IN('send_uncertain','sent','delivered','read') THEN state WHEN state='read' THEN state WHEN state='delivered' AND ?='sent' THEN state ELSE ? END
+          WHERE outbox_id=? AND conflict=0 AND EXISTS(SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=sarin_wa_outbox.outbox_id AND applied=0)`,
+          event.providerId??null,event.wamid??null,event.status,event.at,event.status,event.status,event.status,o.outbox_id,event.eventId),
+        s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1 WHERE peer_key=(SELECT peer_key FROM sarin_wa_outbox WHERE outbox_id=? AND context_id=sarin_wa_contexts.context_id AND (state='failed' OR conflict=1))
+          AND EXISTS(SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=? AND applied=0)`,o.outbox_id,event.eventId,o.outbox_id),
+        s('UPDATE sarin_wa_delivery_observations SET applied=1 WHERE event_id=?',event.eventId),settleLookup(o.outbox_id,at),...suffix]);
+      await api.reconcileConsent({peerKey:o.peer_key});
+      return {status:results[prefix.length].results.length?'applied':'duplicate'};
+    }
+  /** Cualquier prueba definitiva cierra polling, aunque llegue por webhook.
+   * @param {string} outboxId @param {number} at */
+  const settleLookup=(outboxId,at)=>s(`UPDATE sarin_wa_outbox SET
+    reconcile_state=CASE WHEN conflict=1 THEN 'conflict' ELSE 'complete' END,
+    reconcile_token=NULL,reconcile_lease_until=NULL,reconcile_next_at=NULL,
+    reconcile_last_result=CASE WHEN conflict=1 THEN 'identity_conflict' ELSE state END,reconcile_updated_at=?
+    WHERE outbox_id=? AND (conflict=1 OR state IN('delivered','read','failed','rejected'))`,at,outboxId);
+  /** @param {string} outboxId */
+  async function reconciliationState(outboxId) {
+    const row=(await read('SELECT reconcile_state AS status,reconcile_attempts AS attempts,reconcile_next_at AS nextAt FROM sarin_wa_outbox WHERE outbox_id=?',outboxId))[0];
+    requireThat(row,'work_denied',409);
+    return /** @type {import('./work-contracts.js').ReconciliationState} */(row);
+  }
+  const LOOKUP_LIVE=`o.started_at IS NOT NULL AND o.provider_id IS NOT NULL AND o.expires_at>?
+    AND o.created_at>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)`;
+  /** @param {string} outboxId @param {string} token @param {string} binding @param {number} at */
+  const lookupGuard=(outboxId,token,binding,at)=>guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.outbox_id=?
+    AND o.reconcile_state='claimed' AND o.reconcile_token=? AND o.reconcile_lease_until>? AND o.provider_id=? AND ${LOOKUP_LIVE})`,[outboxId,token,at,binding,at]);
+  /** @param {string} outboxId @param {number} at @param {string} result */
+  const finishLookup=(outboxId,at,result)=>s(`UPDATE sarin_wa_outbox SET
+    reconcile_state=CASE WHEN conflict=1 THEN 'conflict' WHEN state IN('delivered','read','failed','rejected') THEN 'complete'
+      WHEN reconcile_attempts>=3 THEN 'exhausted' ELSE 'pending' END,
+    reconcile_next_at=CASE WHEN conflict=1 OR state IN('delivered','read','failed','rejected') OR reconcile_attempts>=3 THEN NULL ELSE ?+60000 END,
+    reconcile_token=NULL,reconcile_lease_until=NULL,reconcile_last_result=?,reconcile_updated_at=? WHERE outbox_id=?`,at,result,at,outboxId);
   const api={
+    requestReconciliation:guarded(/** @param {{outboxId:string,actor:string}} x */async({outboxId,actor})=>{
+      requireThat(randomId(outboxId)&&id(actor));const at=clock();
+      await batch([guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.outbox_id=? AND ${LOOKUP_LIVE})`,[outboxId,at]),
+        s(`UPDATE sarin_wa_outbox SET reconcile_state=CASE WHEN conflict=1 THEN 'conflict'
+          WHEN state IN('delivered','read','failed','rejected') THEN 'complete' WHEN reconcile_attempts>=3 AND reconcile_state<>'claimed' THEN 'exhausted'
+          WHEN reconcile_state='idle' THEN 'pending' ELSE reconcile_state END,
+          reconcile_next_at=CASE WHEN reconcile_state='idle' THEN ? ELSE reconcile_next_at END,reconcile_updated_at=? WHERE outbox_id=?`,at,at,outboxId),
+        s(`INSERT INTO sarin_wa_audit(audit_id,actor,action,peer_key,revision,at)
+          SELECT ?,?,'reconcile_'||reconcile_state,peer_key,0,? FROM sarin_wa_outbox WHERE outbox_id=?`,crypto.randomUUID(),actor,at,outboxId)]);
+      return reconciliationState(outboxId);
+    }),
+    discoverReconciliation:guarded(/** @param {{recipient:import('./work-contracts.js').Recipient}} x */async({recipient})=>{
+      requireThat(recipient&&phone(recipient.from)&&phone(recipient.to)&&/^[1-9]\d{0,31}$/.test(recipient.wabaId));
+      const rows=await read(`SELECT o.outbox_id FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id
+        JOIN sarin_wa_inbox i ON i.event_id=j.event_id WHERE ${LOOKUP_LIVE} AND o.reconcile_state='idle' AND o.conflict=0
+        AND o.state IN('accepted','sent','send_uncertain') AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=? ORDER BY o.created_at,o.outbox_id LIMIT 1`,clock(),recipient.wabaId,recipient.from,recipient.to);
+      if(rows[0])await api.requestReconciliation({outboxId:rows[0].outbox_id,actor:'consumer_cron'});
+      return {requested:rows.length};
+    }),
+    claimReconciliation:guarded(/** @param {{token:string,recipient:import('./work-contracts.js').Recipient}} x */async({token,recipient})=>{
+      requireThat(randomId(token)&&recipient&&phone(recipient.from)&&phone(recipient.to)&&/^[1-9]\d{0,31}$/.test(recipient.wabaId));const at=clock();
+      const results=await batch([
+        s(`UPDATE sarin_wa_outbox SET reconcile_state='claimed',reconcile_attempts=reconcile_attempts+1,reconcile_token=?,
+          reconcile_lease_until=?,reconcile_updated_at=? WHERE outbox_id=(SELECT o.outbox_id FROM sarin_wa_outbox o
+          JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+          WHERE ${LOOKUP_LIVE} AND o.reconcile_state='pending' AND o.reconcile_attempts<3 AND o.reconcile_next_at<=? AND o.conflict=0
+          AND o.state IN('sending','accepted','sent','send_uncertain') AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?
+          ORDER BY o.reconcile_next_at,o.outbox_id LIMIT 1)`,token,at+LEASE,at,at,at,recipient.wabaId,recipient.from,recipient.to),
+        s(`SELECT o.outbox_id AS outboxId,o.provider_id AS providerId,o.external_id AS externalId,i.waba_id AS wabaId,
+          i.business_phone AS 'from',i.peer_phone AS 'to',o.context_id AS contextId,o.epoch,o.reconcile_attempts AS attempt,o.reconcile_lease_until AS leaseUntil
+          FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+          WHERE o.reconcile_token=? AND o.reconcile_state='claimed'`,token)]);
+      const permit=/** @type {import('./work-contracts.js').ReconciliationPermit|undefined} */(results[1].results[0]);
+      return permit?{status:'claimed',permit}:{status:'none'};
+    }),
+    finishReconciliation:guarded(/** @param {{outboxId:string,token:string,result:import('./work-contracts.js').ReconciliationResult}} x */async({outboxId,token,result})=>{
+      requireThat(randomId(outboxId)&&randomId(token)&&result&&['observation','pending','unavailable','identity_conflict'].includes(result.kind));
+      if(result.kind==='unavailable')requireThat(['timeout','cancelled','network_error','provider_rejected','provider_unavailable','provider_redirect','invalid_response','response_too_large'].includes(result.code));
+      const at=clock(),o=(await read('SELECT provider_id,reconcile_attempts,peer_key,context_id FROM sarin_wa_outbox WHERE outbox_id=?',outboxId))[0];
+      requireThat(o&&providerId(o.provider_id),'work_denied',409);
+      const prefix=[lookupGuard(outboxId,token,o.provider_id,at)];
+      if(result.kind==='observation') {
+        requireThat(result.observation&&result.observation.providerId===o.provider_id,'work_conflict',409);
+        await applyObservation({...result.observation,eventId:'lookup:'+outboxId+':'+o.reconcile_attempts,at},prefix,[finishLookup(outboxId,at,result.observation.status)]);
+      }else {
+        await batch([...prefix,...(result.kind==='identity_conflict'?[
+          s('UPDATE sarin_wa_outbox SET conflict=1 WHERE outbox_id=?',outboxId),
+          s('UPDATE sarin_wa_contexts SET paused=1,revision=revision+1 WHERE peer_key=? AND context_id=? AND paused=0',o.peer_key,o.context_id)]:[]),
+          finishLookup(outboxId,at,result.kind==='unavailable'?result.code:result.kind)]);
+      }
+      return reconciliationState(outboxId);
+    }),
+    expireReconciliationLeases:guarded(async()=>{
+      const at=clock();const result=await read(`UPDATE sarin_wa_outbox SET
+        reconcile_state=CASE WHEN conflict=1 THEN 'conflict' WHEN state IN('delivered','read','failed','rejected') THEN 'complete'
+          WHEN reconcile_attempts>=3 OR expires_at<=? OR created_at<(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1) THEN 'exhausted' ELSE 'pending' END,
+        reconcile_next_at=reconcile_lease_until+60000,reconcile_token=NULL,reconcile_lease_until=NULL,
+        reconcile_last_result='lease_expired',reconcile_updated_at=? WHERE outbox_id=(SELECT outbox_id FROM sarin_wa_outbox
+          WHERE reconcile_state='claimed' AND reconcile_lease_until<=? ORDER BY reconcile_lease_until LIMIT 1) RETURNING outbox_id`,at,at,at);
+      return {processed:result.length};
+    }),
+
     observeControl:guarded(observeControl),
     reconcileConsent:guarded(reconcileConsent),
     recordNotice:guarded(async({peerKey,outboxId,version,hash})=>{
@@ -275,6 +405,8 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       const o=(await read('SELECT * FROM sarin_wa_outbox WHERE outbox_id=?',x.outboxId))[0];requireThat(o,'work_denied',409);
       const ownX={jobId:o.job_id,token:x.token};
       const result=await batch([permission(ownX,at,"'ready'",o.purpose==='accepted'?'confirm':o.purpose!=='notice'),
+        ...(x.recipient?[guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+          WHERE j.job_id=? AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)`,[o.job_id,x.recipient.wabaId,x.recipient.from,x.recipient.to])]:[]),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND state='ready' AND started_at IS NULL AND expires_at>?)`,[x.outboxId,at]),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs WHERE job_id=? AND quota_state='reserved')`,[o.job_id]),
         // Cambiar de día/mes no conserva un cupo del periodo anterior.
@@ -307,52 +439,12 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
           WHERE outbox_id=? AND conflict=0`,x.result.providerId??null,x.result.wamid??null,next,next,x.outboxId),
         s(`UPDATE sarin_wa_jobs SET state='completed',token=NULL,lease_until=NULL WHERE job_id=(SELECT job_id FROM sarin_wa_outbox WHERE outbox_id=?)`,x.outboxId),
         s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1 WHERE peer_key=(SELECT peer_key FROM sarin_wa_outbox WHERE outbox_id=? AND context_id=sarin_wa_contexts.context_id AND (state IN('rejected','failed','send_uncertain') OR conflict=1))`,x.outboxId),
-        s('SELECT conflict,peer_key FROM sarin_wa_outbox WHERE outbox_id=?',x.outboxId)]);
+        settleLookup(x.outboxId,at),s('SELECT conflict,peer_key FROM sarin_wa_outbox WHERE outbox_id=?',x.outboxId)]);
       const o=results[results.length-1].results[0];
       requireThat(!o.conflict,'work_conflict',409);
       await api.reconcileConsent({peerKey:o.peer_key});return {status:next};
     }),
-    applyStatus:guarded(/** @param {DeliveryObservation} event */async(event)=>{
-      requireThat(event&&id(event.eventId)&&['accepted','sent','delivered','read','failed'].includes(event.status)&&integer(event.at)
-        && (providerId(event.providerId)||randomId(event.externalId))
-        && (event.providerId===undefined||providerId(event.providerId))
-        && (event.wamid===undefined||providerId(event.wamid,512))
-        && (event.externalId===undefined||(typeof event.externalId==='string'&&event.externalId.length>0&&event.externalId.length<=128&&!/[\u0000-\u001f\u007f-\u009f]/.test(event.externalId)))
-        && (event.from===undefined||phone(event.from))&&(event.to===undefined||phone(event.to))
-        && (event.wabaId===undefined||(typeof event.wabaId==='string'&&/^[1-9]\d{0,31}$/.test(event.wabaId))));
-      const at=clock();requireThat(event.at<=at+300000);
-      const o=(await read(`SELECT o.*,i.waba_id,i.business_phone,i.peer_phone FROM sarin_wa_outbox o
-        JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
-        WHERE o.started_at IS NOT NULL AND ((? IS NOT NULL AND o.provider_id=?) OR (? IS NOT NULL AND o.external_id=?))`,
-      event.providerId??null,event.providerId??null,event.externalId??null,event.externalId??null))[0];
-      if(!o)return {status:'ignored'};
-      const results=await batch([
-        s(`INSERT INTO sarin_wa_delivery_observations(event_id,outbox_id,provider_id,status,observed_at,expires_at)
-          VALUES(?,?,?,?,?,?) ON CONFLICT(event_id) DO NOTHING RETURNING event_id`,event.eventId,o.outbox_id,event.providerId??null,event.status,event.at,at+2*DAY),
-        // Identidad dentro del commit: el POST puede vincular otro ID tras la lectura.
-        s(`UPDATE sarin_wa_delivery_observations SET conflict=1 WHERE event_id=? AND applied=0 AND EXISTS(
-          SELECT 1 FROM sarin_wa_outbox n WHERE n.outbox_id=? AND (
-            (n.provider_id IS NOT NULL AND ? IS NOT NULL AND n.provider_id<>?) OR
-            (? IS NOT NULL AND n.external_id<>?) OR (n.wamid IS NOT NULL AND ? IS NOT NULL AND n.wamid<>?) OR
-            (? IS NOT NULL AND ?<>?) OR (? IS NOT NULL AND ?<>?) OR (? IS NOT NULL AND ?<>?) OR
-            EXISTS(SELECT 1 FROM sarin_wa_outbox other WHERE other.outbox_id<>n.outbox_id AND other.provider_id=?) OR
-            (?='failed' AND n.delivered_at IS NOT NULL) OR (? IN('delivered','read') AND n.state IN('failed','rejected'))))`,
-          event.eventId,o.outbox_id,event.providerId??null,event.providerId??null,event.externalId??null,event.externalId??null,event.wamid??null,event.wamid??null,
-          event.wabaId??null,event.wabaId??null,o.waba_id,event.from??null,event.from??null,o.business_phone,event.to??null,event.to??null,o.peer_phone,event.providerId??null,event.status,event.status),
-        s(`UPDATE sarin_wa_outbox SET conflict=1 WHERE outbox_id=? AND EXISTS(
-          SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=sarin_wa_outbox.outbox_id AND applied=0 AND conflict=1)`,o.outbox_id,event.eventId),
-        s(`UPDATE sarin_wa_outbox SET provider_id=COALESCE(provider_id,?),wamid=COALESCE(wamid,?),
-          delivered_at=CASE WHEN ? IN('delivered','read') THEN COALESCE(delivered_at,?) ELSE delivered_at END,
-          state=CASE WHEN state IN('failed','rejected','cancelled','expired') THEN state
-            WHEN ?='accepted' AND state IN('send_uncertain','sent','delivered','read') THEN state WHEN state='read' THEN state WHEN state='delivered' AND ?='sent' THEN state ELSE ? END
-          WHERE outbox_id=? AND conflict=0 AND EXISTS(SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=sarin_wa_outbox.outbox_id AND applied=0)`,
-          event.providerId??null,event.wamid??null,event.status,event.at,event.status,event.status,event.status,o.outbox_id,event.eventId),
-        s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1 WHERE peer_key=(SELECT peer_key FROM sarin_wa_outbox WHERE outbox_id=? AND context_id=sarin_wa_contexts.context_id AND (state='failed' OR conflict=1))
-          AND EXISTS(SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=? AND applied=0)`,o.outbox_id,event.eventId,o.outbox_id),
-        s('UPDATE sarin_wa_delivery_observations SET applied=1 WHERE event_id=?',event.eventId)]);
-      await api.reconcileConsent({peerKey:o.peer_key});
-      return {status:results[0].results.length?'applied':'duplicate'};
-    }),
+    applyStatus:guarded(/** @param {DeliveryObservation} event */event=>applyObservation(event)),
     listDispatchable:guarded(async({limit=100}={})=>{
       requireThat(Number.isInteger(limit)&&limit>0&&limit<=500);const at=clock();
       const rows=await read(`SELECT j.job_id,j.epoch ${FROM} WHERE ${LIVE} AND ((j.state='queued' AND j.inference_started_at IS NULL AND ${UNBLOCKED}
@@ -409,7 +501,10 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         CASE WHEN consent_expires_at>? THEN consent_expires_at ELSE NULL END AS consent_expires_at FROM sarin_wa_contexts WHERE peer_key=?`,at,peerKey))[0];
       if(!peer)return null;
       const events=await read(`SELECT event_id,kind,media_type,text,sent_at FROM sarin_wa_inbox WHERE peer_key=? AND expires_at>? ORDER BY received_at DESC LIMIT 20`,peerKey,at);
-      const outputs=await read(`SELECT outbox_id,purpose,state,text,delivered_at,conflict FROM sarin_wa_outbox WHERE peer_key=? AND expires_at>? ORDER BY created_at DESC LIMIT 20`,peerKey,at);
+      const outputs=await read(`SELECT outbox_id,purpose,state,text,delivered_at,conflict,reconcile_state,reconcile_attempts,reconcile_next_at,reconcile_last_result,
+        (started_at IS NOT NULL AND provider_id IS NOT NULL AND conflict=0 AND reconcile_attempts<3
+          AND state IN('sending','accepted','sent','send_uncertain') AND reconcile_state IN('idle','pending','claimed')
+          AND created_at>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)) AS reconcile_available FROM sarin_wa_outbox WHERE peer_key=? AND expires_at>? ORDER BY created_at DESC LIMIT 20`,peerKey,at);
       return {...peer,events,outputs};
     }),
   };

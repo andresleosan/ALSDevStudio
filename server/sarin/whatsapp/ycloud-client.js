@@ -7,7 +7,7 @@ const ID = /^[A-Za-z0-9_-]{1,128}$/;
 const STATES = new Set(['accepted', 'sent', 'delivered', 'read', 'failed']);
 
 /** @typedef {'not_sent'|'rejected'|'uncertain'} DeliveryState */
-/** @typedef {'invalid_config'|'send_disabled'|'invalid_request'|'cancelled'|'timeout'|'network_error'|'provider_rejected'|'provider_unavailable'|'provider_redirect'|'invalid_response'|'response_too_large'} ErrorCode */
+/** @typedef {'invalid_config'|'send_disabled'|'invalid_request'|'cancelled'|'timeout'|'network_error'|'provider_rejected'|'provider_unavailable'|'provider_redirect'|'invalid_response'|'response_too_large'|'identity_conflict'} ErrorCode */
 
 /** Errores cerrados: nunca contienen el cuerpo, credenciales ni la causa externa. */
 export class YCloudClientError extends Error {
@@ -94,7 +94,7 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
   /**
    * El timeout incluye fetch y lectura, incluso si el transporte ignora abort.
    * @param {'POST'|'GET'} method @param {string} url
-   * @param {{to?:string,externalId?:string,id?:string}} expected
+   * @param {{to?:string,from?:string,wabaId?:string,externalId?:string,id?:string}} expected
    * @param {string|undefined} body @param {AbortSignal|undefined} signal
    */
   async function request(method, url, expected, body, signal) {
@@ -141,8 +141,15 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
         throw new YCloudClientError('provider_unavailable', 'uncertain');
       }
       const result = /** @type {Record<string, unknown>} */ (await readResponse(response, controller.signal));
+      if (method === 'GET' && expected.wabaId !== undefined && result && typeof result === 'object' && !Array.isArray(result)
+        && (result.id !== expected.id || ['wabaId','from','to','externalId'].some(field =>
+          field in result && expected[/** @type {'wabaId'|'from'|'to'|'externalId'} */(field)] !== undefined
+            && result[field] !== expected[/** @type {'wabaId'|'from'|'to'|'externalId'} */(field)]))) {
+        throw new YCloudClientError('identity_conflict', 'uncertain');
+      }
+      if (method === 'GET' && ['queued','sending','pending'].includes(/** @type {string} */(result?.status))) result.status = 'pending';
       if (!result || typeof result !== 'object' || Array.isArray(result)
-          || !validId(result.id) || typeof result.status !== 'string' || !STATES.has(result.status)
+          || !validId(result.id) || typeof result.status !== 'string' || !(STATES.has(result.status) || (method === 'GET' && result.status === 'pending'))
           || ('wamid' in result && (typeof result.wamid!=='string'||!/^[\x21-\x7e]{1,512}$/.test(result.wamid)))
           || (expected.id !== undefined && result.id !== expected.id)
           || ('from' in result && result.from !== businessPhone)
@@ -151,7 +158,8 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
             || (expected.externalId !== undefined && result.externalId !== expected.externalId)))) {
         throw new YCloudClientError('invalid_response', 'uncertain');
       }
-      return { providerId: /** @type {string} */ (result.id), status: result.status, ...('wamid' in result?{wamid:/** @type {string} */(result.wamid)}:{}) };
+      return { providerId: /** @type {string} */ (result.id), status: result.status,
+        ...(method==='GET'?{...('wabaId' in result?{wabaId:/** @type {string} */(result.wabaId)}:{}),...('from' in result?{from:/** @type {string} */(result.from)}:{}),...('to' in result?{to:/** @type {string} */(result.to)}:{}),...('externalId' in result?{externalId:/** @type {string} */(result.externalId)}:{})}:{}), ...('wamid' in result?{wamid:/** @type {string} */(result.wamid)}:{}) };
     }
 
     try {
@@ -175,10 +183,10 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
         from: businessPhone, to, type: 'text', text: { body: text, preview_url: false }, externalId,
       }), signal);
     },
-    /** @param {{id:string,signal?:AbortSignal}} input */
-    async getMessage({ id, signal } = /** @type {any} */ ({})) {
-      if (!validId(id)) throw new YCloudClientError('invalid_request', 'not_sent');
-      return request('GET', `${MESSAGES_URL}/${id}`, { id }, undefined, signal);
+    /** @param {{id:string,expected?:{wabaId:string,from:string,to:string,externalId:string},signal?:AbortSignal}} input */
+    async getMessage({ id, expected, signal } = /** @type {any} */ ({})) {
+      if (!validId(id) || (expected !== undefined && (!validPhone(expected.from) || expected.from!==businessPhone || !validPhone(expected.to) || !/^[1-9]\d{0,31}$/.test(expected.wabaId) || !validReference(expected.externalId)))) throw new YCloudClientError('invalid_request', 'not_sent');
+      return request('GET', `${MESSAGES_URL}/${id}`, { id, ...expected }, undefined, signal);
     },
   };
 }

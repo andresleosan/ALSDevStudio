@@ -42,8 +42,13 @@ CREATE TABLE sarin_wa_outbox (
   version TEXT, hash TEXT, external_id TEXT NOT NULL UNIQUE,
   state TEXT NOT NULL DEFAULT 'ready' CHECK(state IN('ready','sending','accepted','sent','delivered','read','rejected','failed','send_uncertain','cancelled','expired')),
   provider_id TEXT UNIQUE, wamid TEXT, started_at INTEGER, delivered_at INTEGER,
+  reconcile_state TEXT NOT NULL DEFAULT 'idle' CHECK(reconcile_state IN('idle','pending','claimed','complete','exhausted','conflict')),
+  reconcile_attempts INTEGER NOT NULL DEFAULT 0 CHECK(reconcile_attempts BETWEEN 0 AND 3),
+  reconcile_next_at INTEGER, reconcile_token TEXT, reconcile_lease_until INTEGER,
+  reconcile_last_result TEXT, reconcile_updated_at INTEGER,
   conflict INTEGER NOT NULL DEFAULT 0 CHECK(conflict IN(0,1)), created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
 );
+CREATE INDEX sarin_wa_outbox_reconcile ON sarin_wa_outbox(reconcile_state,reconcile_next_at);
 CREATE UNIQUE INDEX sarin_wa_fixed_once ON sarin_wa_outbox(context_id,purpose) WHERE purpose IN('notice','accepted');
 CREATE INDEX sarin_wa_outbox_peer ON sarin_wa_outbox(peer_key,state);
 CREATE TRIGGER sarin_wa_job_transition BEFORE UPDATE ON sarin_wa_jobs BEGIN
@@ -57,6 +62,7 @@ CREATE TRIGGER sarin_wa_job_transition BEFORE UPDATE ON sarin_wa_jobs BEGIN
     THEN RAISE(ABORT,'WA_WORK_DENIED') END;
 END;
 CREATE TRIGGER sarin_wa_outbox_transition BEFORE UPDATE ON sarin_wa_outbox BEGIN
+  SELECT CASE WHEN NEW.reconcile_attempts<OLD.reconcile_attempts THEN RAISE(ABORT,'WA_WORK_DENIED') END;
   SELECT CASE WHEN OLD.started_at IS NOT NULL AND (NEW.started_at IS NOT OLD.started_at OR NEW.state='ready')
     OR (OLD.wamid IS NOT NULL AND NEW.wamid IS NOT OLD.wamid)
     OR (OLD.provider_id IS NOT NULL AND NEW.provider_id IS NOT OLD.provider_id)

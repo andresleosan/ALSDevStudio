@@ -10,4 +10,10 @@
  * @typedef {{eventId:string,status:'accepted'|'sent'|'delivered'|'read'|'failed',at:number,providerId?:string,
  * externalId?:string,wabaId?:string,from?:string,to?:string,wamid?:string}} DeliveryObservation
  */
+/**
+ * @typedef {{wabaId:string,from:string,to:string}} Recipient
+ * @typedef {{status:'idle'|'pending'|'claimed'|'complete'|'exhausted'|'conflict',attempts:number,nextAt:number|null}} ReconciliationState
+ * @typedef {Recipient & {outboxId:string,providerId:string,externalId:string,contextId:string,epoch:string,attempt:number,leaseUntil:number}} ReconciliationPermit
+ * @typedef {{kind:'observation',observation:Omit<DeliveryObservation,'eventId'>}|{kind:'pending'}|{kind:'unavailable',code:string}|{kind:'identity_conflict'}} ReconciliationResult
+ */
 export {};
