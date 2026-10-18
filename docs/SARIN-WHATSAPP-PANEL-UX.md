@@ -13,7 +13,7 @@ Se adaptan patrones de interacción conservando los colores, tipografías y mate
 
 Cabecera compacta; estado global y condiciones del piloto en una franja. El contacto seleccionado tiene una barra propia con su estado y Reactivar/Pausar. Sólo `#wa-thread` desplaza los mensajes. Aceptación, instrucciones de reactivación y entregas siguen accesibles en desplegables. Las actualizaciones conservan posición, foco y apertura de los detalles. Los controles siguen requiriendo datos vigentes y revisión del servidor.
 
-No cambia la API, las credenciales, el consentimiento, la lista autorizada, el consumidor ni la configuración del bot. La comprobación de acciones utiliza exclusivamente el contacto ficticio del harness local; el participante real permanece pausado.
+No cambia la API, las credenciales, el consentimiento, la lista autorizada, el consumidor ni la configuración del bot. La comprobación de acciones utiliza exclusivamente el contacto ficticio del harness local; no se accionó el control del participante real.
 
 ## Validación
 
@@ -28,6 +28,8 @@ Capturas y mediciones locales: `test-results/sarin-panel-ux-20261018/` (ignorada
 
 ## Publicación y recuperación
 
-Se publica sólo la presentación mediante Pages, dentro del trabajo de publicación ya autorizado. El build conserva 223 recursos públicos y versiona los assets para refrescar caché. La versión anterior de Pages es `62a8afcd-a557-4bf6-8645-2cf8eb50474f`.
+Publicación completada en [Pages](https://75347c75.alsdevstudio.pages.dev), fuente `042a13c`. El build conserva 223 recursos públicos (5.442.557 bytes), revisión `b7b7c76f1088ab63`, con assets versionados para refrescar caché. HTML, CSS y JS devuelven 200 en el dominio oficial y muestran la revisión nueva. La sesión real restauró el acceso y la bandeja cargó correctamente. La versión anterior de Pages es `62a8afcd-a557-4bf6-8645-2cf8eb50474f`.
+
+En la comprobación final el contacto real ya figuraba activo y tenía una nueva entrada/respuesta a la 1:59 a. m. de Colombia. El botón visible muestra «Pausar Sarin» conforme a ese estado; cambia a «Reactivar Sarin» cuando el contacto está pausado. Ese cambio de estado ocurrió durante el trabajo, sin accionar controles reales desde esta revisión. Se conserva el estado encontrado.
 
 Para revertir, restaurar únicamente `control-sarin/index.html`, `styles/sarin-admin.css` y `scripts/modules/sarin-whatsapp-admin.js` desde `5d20739` mediante un nuevo commit en `main`, recompilar y publicar. También puede restaurarse la versión anterior de Pages. No se revierten D1, Queue, secretos ni Workers.
