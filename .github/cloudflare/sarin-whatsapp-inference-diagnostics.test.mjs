@@ -12,8 +12,8 @@ const reservations=f=>f.sqlite.prepare('SELECT stage,actual_micros FROM sarin_re
 for(const stage of ['classification','generation'])test('conserva invalid_output y diagnóstico cerrado de '+stage+' sin enviar ni reintentar',async t=>{
  const f=await prepared(t),before=f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_outbox').get().n;
  const fetch=async(url,init)=>{const response=await f.fetch(url,init),generation=JSON.parse(init.body).max_tokens===512;
-  return generation===(stage==='generation')?envelope(generation?{reply:'Puedo orientar tu tienda.',service:'store',examples:[],brief:{need:'DATO_INVENTADO'}}:{inScope:'sí'}):response;};
- const result=await run(f,fetch);assert.deepEqual(result.inferenceFailure,{stage,code:'invalid_output',diagnostic:stage==='generation'?'brief_not_literal':'clasif_contract'});
+  return generation===(stage==='generation')?envelope(generation?{reply:'Puedo orientar tu tienda.',service:'store',examples:['inventado'],brief:{}}:{inScope:'sí'}):response;};
+ const result=await run(f,fetch);assert.deepEqual(result.inferenceFailure,{stage,code:'invalid_output',diagnostic:stage==='generation'?'unknown_example':'clasif_contract'});
  assert.equal(latest(f,'sarin_wa_jobs').outcome,'invalid_output');assert.equal(latest(f,'sarin_wa_contexts').paused,1);
  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_outbox').get().n,before);assert.equal(f.calls.filter(c=>c.url.includes('ycloud')).length,0);
  const rows=reservations(f);assert.equal(rows.length,stage==='generation'?2:1);assert.equal(rows.at(-1).actual_micros,null);if(stage==='generation')assert.equal(rows[0].actual_micros,54);
@@ -40,7 +40,7 @@ test('worker registra sólo campos cerrados y acepta duplicados sin nuevas llama
 });
 test('logger fallido no produce retry ni cambia liquidación y pausa',async t=>{
  const f=await prepared(t),events=[];let attempts=0;t.mock.method(console,'warn',()=>{attempts++;throw Error(CANARY);});
- const worker=createWhatsAppWorker({store:f.store,now:f.now,fetch:async(url,init)=>JSON.parse(init.body).max_tokens===512?envelope({reply:'No válido',examples:[],brief:{need:'INVENTADO'}}):f.fetch(url,init)});
+ const worker=createWhatsAppWorker({store:f.store,now:f.now,fetch:async(url,init)=>JSON.parse(init.body).max_tokens===512?envelope({reply:'No válido',examples:['inventado'],brief:{}}):f.fetch(url,init)});
  await worker.queue({messages:[{body:f.hint,attempts:1,ack:()=>events.push('ack'),retry:()=>events.push('retry')}]},f.env);
  assert.equal(attempts,1);assert.deepEqual(events,['ack']);assert.equal(latest(f,'sarin_wa_contexts').paused,1);assert.equal(reservations(f).at(-1).actual_micros,null);
 });

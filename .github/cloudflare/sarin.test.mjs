@@ -142,7 +142,6 @@ for (const [name, outputs, expectedKind] of [
   ['clasificador', [{ inScope: 'yes' }], 'clasif_contract'],
   ['generación', [{ inScope: true }, { ...valid, unknown: 'fixture-private' }], 'generation_contract'],
   ['texto', [{ inScope: true }, { ...valid, reply: '<b>fixture-private</b>' }], 'reply_policy'],
-  ['borrador', [{ inScope: true }, { ...valid, brief: { business: 'fixture-private-inventado' } }], 'brief_not_literal'],
   ['ejemplo', [{ inScope: true }, { ...valid, examples: ['fixture-private-id'] }], 'unknown_example'],
   ['uso', [answer({ inScope: false }, null)], 'usage_contract'],
   ['sobre', [new Response(JSON.stringify({ choices: [] }), { headers: { 'Content-Type': 'application/json' } })], 'provider_envelope'],
@@ -160,6 +159,19 @@ for (const [name, outputs, expectedKind] of [
   assert.deepEqual(JSON.parse(warnings[0]), { event: 'validation_error', kind: expectedKind });
   assert.doesNotMatch(warnings.join('\n'), /fixture-private|192\.0\.2\.1|api\.deepseek|test-key|Bearer|Necesito/);
   assert.equal(result.error.diagnostic, undefined);
+});
+
+test('web entrega respuesta válida al omitir metadatos sin respaldo literal y liquida ambas llamadas',async()=>{
+ const message='Quiero un chat bot como Sarin Bot para mi tienda virtual y atender clientes por WhatsApp';
+ const generated={reply:'Podemos ayudarte a definir un chatbot personalizado. ¿Qué consultas debería atender?',service:'chatbot',examples:[],brief:{business:'mi tienda virtual',need:'fixture-private-inventado',features:'atender clientes por WhatsApp',budget:'500000'}};
+ const s=setup([{inScope:true},generated]),warnings=[],originalWarn=console.warn;
+ console.warn=value=>warnings.push(value);let response;
+ try{response=await handleSarin(request({message,requestId:REQUEST_ID}),env(),s.options);}
+ finally{console.warn=originalWarn;}
+ assert.equal(response.status,200);const result=await response.json();
+ assert.equal(result.reply,generated.reply);assert.deepEqual(result.brief,{business:'mi tienda virtual',features:'atender clientes por WhatsApp'});
+ assert.equal(s.calls.length,2);assert.equal(s.settles.length,2);assert.deepEqual(warnings,[]);
+ assert.doesNotMatch(JSON.stringify(result),/fixture-private-inventado|500000/);
 });
 
 for (const [name, content] of [['vacío', ''], ['espacios', ' \t\r\n ']]) {

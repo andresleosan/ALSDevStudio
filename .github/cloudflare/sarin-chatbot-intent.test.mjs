@@ -77,6 +77,6 @@ test('el resguardo conserva el borrador literal y no elude política de precios 
  const result=validateGeneration({...mistaken,brief:{business:'mi tienda'}},user);
  assert.deepEqual(result.brief,{business:'mi tienda'});
  assert.throws(()=>validateGeneration({...mistaken,reply:'Sarin Bot cuesta 500 pesos'},user),{diagnostic:'reply_policy'});
- assert.throws(()=>validateGeneration({...mistaken,brief:{business:'una barbería'}},user),{diagnostic:'brief_not_literal'});
+ assert.deepEqual(validateGeneration({...mistaken,brief:{business:'una barbería'}},user).brief,{});
  assert.throws(()=>validateGeneration({...mistaken,examples:['inventado']},user),{diagnostic:'unknown_example'});
 });

@@ -155,9 +155,11 @@ export function validateGeneration(value, input) {
   if (amountClaim.test(value.reply) || dateClaim.test(value.reply)) throw invalidOutput('reply_policy');
   const shared = [...input.history.filter(x => x.role === 'user').map(x => x.content), input.message]
     .join('\n').normalize('NFKC').toLocaleLowerCase('es');
-  for (const field of Object.values(value.brief)) {
+  // El borrador es opcional: conservar sólo valores válidos respaldados por el usuario.
+  const brief = {};
+  for (const [key, field] of Object.entries(value.brief)) {
     if (!plain(field, 240)) throw invalidOutput();
-    if (!shared.includes(field.normalize('NFKC').toLocaleLowerCase('es'))) throw invalidOutput('brief_not_literal');
+    if (shared.includes(field.normalize('NFKC').toLocaleLowerCase('es'))) brief[key] = field;
   }
   const examples = value.examples.map(id => {
     const item = CATALOG.find(x => x.id === id);
@@ -173,11 +175,11 @@ export function validateGeneration(value, input) {
     const channelKnown=/\b(?:whatsapp|web|instagram|telegram|messenger)\b/iu.test(shared);
     return {reply:'ALS Dev Studio puede ayudarte a definir un chatbot personalizado. '+(channelKnown
       ?'¿Qué tarea principal quieres que atienda?':'¿En qué canal quieres usarlo?'),
-      service:'chatbot',examples:[],brief:{...value.brief}};
+      service:'chatbot',examples:[],brief};
   }
   return {
     reply: value.reply.trim(), ...(value.service ? { service: value.service } : {}),
-    examples, brief: { ...value.brief },
+    examples, brief,
   };
 }
 
