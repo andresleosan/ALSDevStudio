@@ -5,6 +5,7 @@ import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
 import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
 import { processingConfiguration, recipientAllowed, validWorkHint } from './processing-config.js';
 import { WHATSAPP_NOTICE, WHATSAPP_NOTICE_VERSION, WHATSAPP_ACCEPTED } from './consent.js';
+import {createWhatsAppMenuButtons} from './menu.js';
 import {transcribeWhatsAppAudio} from './audio-client.js';
 const AUDIO_FAILURE_REASONS=new Set(['invalid_config','invalid_descriptor','unsupported_format','cancelled','timeout','download_failed',
  'invalid_audio','audio_too_large','audio_too_long','integrity_mismatch','permission_denied','inference_uncertain','invalid_transcription']);
@@ -43,7 +44,12 @@ export async function processWhatsAppWork(hint,env,options={}) {
    await store.finishSend({outboxId,token,result:{status:'uncertain'}});return {status:'denied'};
   }
   try {
-   const result=await client.sendText({to:permit.to,text:permit.text,externalId:permit.externalId,signal:controller.signal});
+   // La representación depende del aviso durable exacto; jamás se hace un segundo
+   // envío de texto como respaldo de una solicitud interactiva fallida o incierta.
+   const message={to:permit.to,text:permit.text,externalId:permit.externalId,signal:controller.signal};
+   const result=permit.purpose==='notice'&&permit.version===WHATSAPP_NOTICE_VERSION&&permit.text===WHATSAPP_NOTICE
+    ?await client.sendButtons({...message,buttons:createWhatsAppMenuButtons(permit.outboxId)})
+    :await client.sendText(message);
    await store.finishSend({outboxId,token,result:{status:'accepted',providerId:result.providerId,...(result.wamid?{wamid:result.wamid}:{})}});
    if(['sent','delivered','read','failed'].includes(result.status))await store.applyStatus({eventId:'post:'+outboxId,providerId:result.providerId,status:/** @type {'sent'|'delivered'|'read'|'failed'} */(result.status),at:now()});
    return {status:'accepted'};

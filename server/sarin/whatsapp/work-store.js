@@ -1,5 +1,5 @@
 // @ts-check
-import { classifyWhatsAppInput, WHATSAPP_NOTICE_VERSION } from './consent.js';
+import { classifyWhatsAppInput, WHATSAPP_NOTICE_VERSION, WHATSAPP_NOTICE } from './consent.js';
 import { normalizeWhatsAppMessage, digestWhatsApp } from './ingress-identity.js';
 /** @typedef {import('./work-contracts.js').Work} Work */
 /** @typedef {import('./work-contracts.js').SendPermit} SendPermit */
@@ -164,12 +164,34 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     requireThat(typeof autoStart==='boolean');
     const at=clock(),e=normalizeWhatsAppMessage(event,at);
     const business=e.kind==='inbound'?e.to:e.from,peer=e.kind==='inbound'?e.from:e.to;
-    const facts=[e.kind,e.messageId,e.wamid,e.wabaId,e.from,e.to,e.sentAt,e.mediaType,e.text,...(e.audio?[e.audio]:[])];
+    const facts=[e.kind,e.messageId,e.wamid,e.wabaId,e.from,e.to,e.sentAt,e.mediaType,e.text,...(e.audio?[e.audio]:[]),...(e.choice?[e.choice]:[])];
     const [peerKey,messageKey,eventHash,messageHash]=await Promise.all([
       digestWhatsApp('sarin-wa-peer-v1',[e.wabaId,business,peer]),
       digestWhatsApp('sarin-wa-message-v1',[e.kind,e.wabaId,business,e.wamid]),
       digestWhatsApp('sarin-wa-event-v1',[e.eventId,e.createdAt,...facts]),digestWhatsApp('sarin-wa-facts-v1',facts)]);
-    const kind=e.kind==='echo'?'echo':classifyWhatsAppInput(e);
+    // Los botones no se convierten en comandos antes de cotejar el aviso en el commit.
+    const kind=e.kind==='echo'?'echo':e.choice?'ignore':classifyWhatsAppInput(e);
+    const digit=e.kind==='inbound'&&e.mediaType==='text'?(e.text??'').trim():'';
+    const menuAction=e.choice?.action??(digit==='1'?'accept':digit==='2'?'human':digit==='3'?'stop':null);
+    const menuHash=menuAction?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(WHATSAPP_NOTICE))),b=>b.toString(16).padStart(2,'0')).join(''):'';
+    // El hash diferencia el menú nuevo del aviso v3 anterior, sin revocar sus pruebas.
+    // Esta expresión se evalúa dentro de cada transacción, nunca sobre una lectura previa.
+    // 2/3 siguen disponibles en un menú nunca aceptado tras una pausa por capacidad.
+    // La prueba durable impide reinterpretarlos después de aceptar y luego revocar.
+    const menuPause=e.choice&&e.choice.action!=='accept'?'1=1':!e.choice&&(digit==='2'||digit==='3')?
+      `NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs v WHERE v.notice_id=consent_notice_id
+        AND v.peer_key=sarin_wa_contexts.peer_key AND v.notice_context_id=sarin_wa_contexts.context_id)`:'paused=0';
+    const menuCurrent=`${menuPause} ${e.choice?'':'AND accepted_at IS NULL'} AND EXISTS(SELECT 1 FROM sarin_wa_outbox n
+      WHERE n.peer_key=sarin_wa_contexts.peer_key AND n.context_id=sarin_wa_contexts.context_id AND n.outbox_id=consent_notice_id
+        AND n.purpose='notice' AND n.version=? AND n.version=consent_version AND n.hash=? AND n.hash=consent_hash
+        AND n.started_at IS NOT NULL AND n.started_at<=? AND n.started_at<=? AND n.expires_at>?
+        AND n.conflict=0 AND n.state IN('sending','accepted','sent','delivered','read')
+        AND EXISTS(SELECT 1 FROM sarin_wa_pilot p WHERE p.enabled=1 AND p.epoch=n.epoch)
+        ${e.choice?'AND n.outbox_id=?':''})`;
+    const menuValues=[WHATSAPP_NOTICE_VERSION,menuHash,e.sentAt,e.createdAt,at,...(e.choice?[e.choice.outboxId]:[])];
+    const resolvedKind=menuAction?`CASE WHEN (${menuCurrent}) THEN ? ELSE ? END`:'?';
+    const resolvedValues=menuAction?[...menuValues,menuAction,kind]:[kind];
+    const observedKind='(SELECT classification FROM sarin_wa_control_events WHERE event_id=?)';
     if(at-e.sentAt>28800000||at-e.createdAt>28800000)return {status:'ignored',peerKey};
     const fresh=`EXISTS(SELECT 1 FROM sarin_wa_control_events v WHERE v.event_id=? AND v.applied=0 AND v.context_id=sarin_wa_contexts.context_id)
       AND ?>activation_at AND ?>activation_at AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)`;
@@ -185,12 +207,12 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         pending_acceptance_event_id=NULL,pending_accepted_at=NULL
         WHERE peer_key=? AND (paused=0 OR (?<>'echo' AND accepted_at IS NOT NULL))
           AND ?>activation_at AND ?>activation_at AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)
-          AND (? IN('stop','human','media') OR (?='echo' AND (SELECT COUNT(*) FROM sarin_wa_outbox o
+          AND ((${resolvedKind}) IN('stop','human','media') OR (?='echo' AND (SELECT COUNT(*) FROM sarin_wa_outbox o
             JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
             WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1
             AND NOT EXISTS(SELECT 1 FROM sarin_wa_handoff h WHERE h.started_at IS NOT NULL AND h.conflict=0
               AND h.wamid=? AND h.waba_id=? AND h.business_phone=? AND h.owner_phone=? AND h.receipt_expires_at>?)))`,
-        kind,kind,kind,peerKey,kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),kind,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at)]);
+        kind,kind,kind,peerKey,kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),...resolvedValues,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at)]);
       throw new WhatsAppWorkError(429,'work_capacity');
     };
     if(full)await pauseAtCapacity();
@@ -219,23 +241,25 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         WHERE peer_key=? AND context_id<>(SELECT context_id FROM sarin_wa_contexts WHERE peer_key=?)
           AND state IN('queued','claimed','inference_started','ready') AND NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id AND o.started_at IS NOT NULL)`,peerKey,peerKey),
       s(`INSERT INTO sarin_wa_control_events(event_id,message_key,event_hash,message_hash,peer_key,context_id,classification,sent_at,observed_at,expires_at)
-        SELECT ?,?,?,?,?,context_id,?,?,?,? FROM sarin_wa_contexts WHERE peer_key=? ON CONFLICT DO NOTHING`,e.eventId,messageKey,eventHash,messageHash,peerKey,kind,e.sentAt,at,at+2*DAY,peerKey),
+        SELECT ?,?,?,?,?,context_id,${resolvedKind},?,?,? FROM sarin_wa_contexts WHERE peer_key=? ON CONFLICT DO NOTHING`,e.eventId,messageKey,eventHash,messageHash,peerKey,...resolvedValues,e.sentAt,at,at+2*DAY,peerKey),
       s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1,
         accepted_at=CASE WHEN ?='echo' THEN accepted_at ELSE NULL END,consent_expires_at=CASE WHEN ?='echo' THEN consent_expires_at ELSE NULL END,
         acceptance_event_id=CASE WHEN ?='echo' THEN acceptance_event_id ELSE NULL END,pending_acceptance_event_id=NULL,pending_accepted_at=NULL
-        WHERE peer_key=? AND ${fresh} AND (? IN('stop','human','media') OR (?='echo' AND
+        WHERE peer_key=? AND ${fresh} AND (${observedKind} IN('stop','human','media') OR (?='echo' AND
           (SELECT COUNT(*) FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
             WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1
             AND NOT EXISTS(SELECT 1 FROM sarin_wa_handoff h WHERE h.started_at IS NOT NULL AND h.conflict=0
               AND h.wamid=? AND h.waba_id=? AND h.business_phone=? AND h.owner_phone=? AND h.receipt_expires_at>?)))`,
-        kind,kind,kind,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),kind,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at),
+        kind,kind,kind,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),e.eventId,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at),
       s(`UPDATE sarin_wa_contexts SET pending_acceptance_event_id=?,pending_accepted_at=?
-        WHERE peer_key=? AND ${fresh} AND ?='accept' AND paused=0 AND accepted_at IS NULL AND pending_acceptance_event_id IS NULL
+        WHERE peer_key=? AND ${fresh} AND ${observedKind}='accept' AND paused=0 AND accepted_at IS NULL AND pending_acceptance_event_id IS NULL
+          AND (? IS NULL OR consent_notice_id=?) ${menuAction?`AND (${menuCurrent})`:''}
           AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ? > activation_at AND ?>activation_at)
           AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=sarin_wa_contexts.context_id AND n.outbox_id=consent_notice_id
             AND n.purpose='notice' AND n.version='${WHATSAPP_NOTICE_VERSION}' AND n.started_at IS NOT NULL AND n.started_at<=? AND n.started_at<=?
             AND n.expires_at>? AND n.conflict=0 AND n.state IN('sending','accepted','sent','delivered','read'))`,
-        e.eventId,e.sentAt,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),kind,e.sentAt,e.createdAt,e.sentAt,e.createdAt,at),
+        e.eventId,e.sentAt,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),e.eventId,e.choice?.outboxId??null,e.choice?.outboxId??null,
+        ...(menuAction?menuValues:[]),e.sentAt,e.createdAt,e.sentAt,e.createdAt,at),
       s('UPDATE sarin_wa_control_events SET applied=1 WHERE event_id=?',e.eventId)]); }
     catch(error){
       // Otro webhook puede ocupar el último cupo entre la lectura y el commit.
@@ -568,7 +592,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       if(!finalResult)throw new WhatsAppWorkError(503,'work_unavailable');
       const r=finalResult.results[0];
       requireThat(r,'work_unavailable',503);
-      return /** @type {SendPermit} */({outboxId:r.outbox_id,externalId:r.external_id,text:r.text,wabaId:r.waba_id,from:r.business_phone,to:r.peer_phone,expiresAt:r.expires_at});
+      return /** @type {SendPermit} */({outboxId:r.outbox_id,externalId:r.external_id,text:r.text,purpose:r.purpose,version:r.version,wabaId:r.waba_id,from:r.business_phone,to:r.peer_phone,expiresAt:r.expires_at});
     }),
     finishSend:guarded(async(x)=>{
       requireThat(x&&randomId(x.outboxId)&&randomId(x.token)&&x.result&&['accepted','rejected','uncertain'].includes(x.result.status)

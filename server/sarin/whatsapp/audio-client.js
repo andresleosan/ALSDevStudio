@@ -76,7 +76,7 @@ function packetSamples(packet) {
 function oggDuration(bytes,check) {
   const view = new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   let offset=0, sequence=0, serial=-1, packetCount=0, packetLength=0, preSkip=0;
-  let decoded=0, lastSamples=0, previousGranule=0, ended=false;
+  let decoded=0, lastSamples=0, previousGranule=0, granuleOffset=-1, ended=false, lastAudioPageComplete=false;
   /** @type {Uint8Array[]} */ let parts=[];
   while (offset < bytes.length) {
     check();
@@ -96,8 +96,8 @@ function oggDuration(bytes,check) {
     // RFC 3533 permite EOS sin contenido. WhatsApp usa granule -1: la
     // duración sigue siendo la de los paquetes anteriores ya verificados.
     if(count===0) {
-      if(flags!==4 || !unset || packetLength || packetCount<3
-        || previousGranule<=preSkip || end!==bytes.length)fail('invalid_audio');
+      if(flags!==4 || !unset || packetLength || packetCount<3 || granuleOffset<0
+        || previousGranule-granuleOffset<=preSkip || end!==bytes.length)fail('invalid_audio');
       ended=true;offset=end;sequence++;continue;
     }
     let at=body;
@@ -130,18 +130,33 @@ function oggDuration(bytes,check) {
     if(packetCount<=2) {if(granule!==(completed?0:-1))fail('invalid_audio');}
     else if(!completed) {if(granule!==-1)fail('invalid_audio');}
     else {
-      if(granule<previousGranule || granule>decoded || (!(flags&4)&&granule!==decoded)
-        || ((flags&4)&&granule<=decoded-lastSamples))fail('invalid_audio');
+      // RFC 7845 §4.5 admite posición inicial positiva. Sólo se acepta el
+      // offset pre-skip observado en WhatsApp, constante en todas las páginas.
+      if(granuleOffset<0) {
+        const initialOffset=granule-decoded;
+        if(initialOffset===0 || initialOffset===preSkip)granuleOffset=initialOffset;
+        else if((flags&4) && initialOffset<0)granuleOffset=0;
+        else fail('invalid_audio');
+      }
+      const position=granule-granuleOffset;
+      if(granule<previousGranule || position>decoded || (!(flags&4)&&position!==decoded)
+        || ((flags&4)&&position<=decoded-lastSamples))fail('invalid_audio');
       previousGranule=granule;
     }
+    lastAudioPageComplete=completed && packetCount>=3 && packetLength===0 && flags===0;
     if(flags&4) {
-      if(packetCount<3 || packetLength || granule<=preSkip || end!==bytes.length)fail('invalid_audio');
+      if(packetCount<3 || packetLength || granule-granuleOffset<=preSkip || end!==bytes.length)fail('invalid_audio');
       ended=true;
     }
     offset=end;sequence++;
   }
-  if(!ended || packetLength)fail('invalid_audio');
-  const duration=(previousGranule-preSkip)/48000;
+  // RFC 7845 §3 contempla EOF sin EOS. Se limita a la variante observada:
+  // offset pre-skip positivo y última página íntegra, sin paquetes pendientes.
+  const completeWithoutEos=preSkip>0 && granuleOffset===preSkip && lastAudioPageComplete
+    && previousGranule-granuleOffset===decoded;
+  if((!ended && !completeWithoutEos) || packetLength)fail('invalid_audio');
+  const duration=(previousGranule-granuleOffset-preSkip)/48000;
+  if(duration<=0)fail('invalid_audio');
   if(duration>MAX_SECONDS)fail('audio_too_long');
   return duration;
 }

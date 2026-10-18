@@ -6,7 +6,7 @@
  * pilotRevision:number,input:string,source?:'text'|'audio',decision:'notice'|'accept_pending'|'confirm'|'generate'|'ignore',
  * history:Array<{role:'user'|'assistant',content:string}>,recipient:{wabaId:string,from:string,to:string},
  * expiresAt:number,leaseUntil:number}} Work
- * @typedef {{outboxId:string,externalId:string,text:string,wabaId:string,from:string,to:string,expiresAt:number}} SendPermit
+ * @typedef {{outboxId:string,externalId:string,text:string,purpose:'notice'|'accepted'|'reply',version:string|null,wabaId:string,from:string,to:string,expiresAt:number}} SendPermit
  * @typedef {{eventId:string,status:'accepted'|'sent'|'delivered'|'read'|'failed',at:number,providerId?:string,
  * externalId?:string,wabaId?:string,from?:string,to?:string,wamid?:string}} DeliveryObservation
  */

@@ -183,6 +183,31 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
         from: businessPhone, to, type: 'text', text: { body: text, preview_url: false }, externalId,
       }), signal);
     },
+    /** Un solo intento de botones; errores o resultados inciertos nunca generan otro POST.
+     * @param {{to:string,text:string,buttons:Array<{id:string,title:string}>,externalId:string,signal?:AbortSignal}} input */
+    async sendButtons(input = /** @type {any} */ ({})) {
+      if (sendEnabled !== true) throw new YCloudClientError('send_disabled', 'not_sent');
+      if (!input || typeof input !== 'object' || Array.isArray(input)
+          || Object.keys(input).some(key => !['to','text','buttons','externalId','signal'].includes(key))
+          || !validPhone(input.to) || typeof input.text !== 'string' || !input.text.trim() || input.text.length > 1024
+          || !validReference(input.externalId) || (input.signal !== undefined && !(input.signal instanceof AbortSignal))
+          || !Array.isArray(input.buttons) || input.buttons.length < 1 || input.buttons.length > 3
+          || !Array.from(input.buttons).every(button => button && typeof button === 'object' && !Array.isArray(button)
+            && Object.keys(button).length === 2 && Object.keys(button).every(key => ['id','title'].includes(key))
+            && typeof button.id === 'string' && button.id.length >= 1 && button.id.length <= 256
+            && button.id.trim() === button.id && !/[\u0000-\u001f\u007f-\u009f]/.test(button.id)
+            && typeof button.title === 'string' && button.title.trim().length >= 1 && button.title.length <= 20
+            && !/[\u0000-\u001f\u007f-\u009f]/.test(button.title))
+          || new Set(input.buttons.map(button => button.id)).size !== input.buttons.length
+          || new Set(input.buttons.map(button => button.title)).size !== input.buttons.length) {
+        throw new YCloudClientError('invalid_request', 'not_sent');
+      }
+      const { to, text, buttons, externalId, signal } = input;
+      return request('POST', MESSAGES_URL, { to, externalId }, JSON.stringify({
+        from: businessPhone, to, type: 'interactive', interactive: { type: 'button', body: { text },
+          action: { buttons: buttons.map(button => ({ type: 'reply', reply: { id: button.id, title: button.title } })) } }, externalId,
+      }), signal);
+    },
     /** @param {{id:string,expected?:{wabaId:string,from:string,to:string,externalId:string},signal?:AbortSignal}} input */
     async getMessage({ id, expected, signal } = /** @type {any} */ ({})) {
       if (!validId(id) || (expected !== undefined && (!validPhone(expected.from) || expected.from!==businessPhone || !validPhone(expected.to) || !/^[1-9]\d{0,31}$/.test(expected.wabaId) || !validReference(expected.externalId)))) throw new YCloudClientError('invalid_request', 'not_sent');

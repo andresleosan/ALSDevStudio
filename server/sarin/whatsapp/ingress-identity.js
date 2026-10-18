@@ -1,8 +1,9 @@
 // @ts-check
 import {validateWhatsAppAudioDescriptor} from './audio-client.js';
+import {parseWhatsAppMenuReply} from './menu.js';
 const MAX_TIME=8640000000000000-2*86400000;
 const encoder=new TextEncoder();
-const FIELDS = ['kind','eventId','createdAt','messageId','wamid','wabaId','from','to','sentAt','mediaType','text','audio'];
+const FIELDS = ['kind','eventId','createdAt','messageId','wamid','wabaId','from','to','sentAt','mediaType','text','audio','choice'];
 /** @param {unknown} value @returns {value is Record<string,any>} */
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 /** @param {unknown} value @param {string[]} keys @returns {value is Record<string,any>} */
@@ -21,6 +22,9 @@ export class WhatsAppIngressError extends Error {
 /** Sólo copia campos normalizados; nunca conserva el objeto ni payload original.
  * @param {unknown} event @param {number} at */
 export function normalizeWhatsAppMessage(event, at) {
+  const rawChoice=object(event)?event.choice:undefined;
+  const choice=closed(rawChoice,['outboxId','action'])&&typeof rawChoice.outboxId==='string'&&typeof rawChoice.action==='string'
+    ?parseWhatsAppMenuReply(`sarin.menu.v1:${rawChoice.action}:${rawChoice.outboxId}`):null;
   if (!closed(event, FIELDS) || !['inbound','echo'].includes(event.kind) || !id(event.eventId)
       || !id(event.messageId) || !id(event.wamid, 512) || typeof event.wabaId !== 'string' || !/^[1-9]\d{0,31}$/.test(event.wabaId)
       || !phone(event.from) || !phone(event.to) || !integer(event.createdAt) || !integer(event.sentAt)
@@ -29,13 +33,15 @@ export function normalizeWhatsAppMessage(event, at) {
       || (event.mediaType === 'text' && (typeof event.text !== 'string' || !event.text.trim()
         || event.text.length > 1200 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(event.text)))
       || (event.mediaType !== 'text' && event.text !== undefined)
-      || (event.audio !== undefined && (event.kind!=='inbound' || event.mediaType!=='audio' || !validateWhatsAppAudioDescriptor(event.audio)))) {
+      || (event.audio !== undefined && (event.kind!=='inbound' || event.mediaType!=='audio' || !validateWhatsAppAudioDescriptor(event.audio)))
+      || (event.choice !== undefined && (!choice || event.kind!=='inbound' || event.mediaType!=='text'
+        || event.text!=={accept:'ACEPTO',human:'HUMANO',stop:'SALIR'}[choice.action]))) {
     throw new WhatsAppIngressError(400, 'invalid_event');
   }
   return { kind: event.kind, eventId: event.eventId, createdAt: event.createdAt, messageId: event.messageId,
     wamid: event.wamid, wabaId: event.wabaId, from: event.from, to: event.to, sentAt: event.sentAt,
     mediaType: event.mediaType, text: event.mediaType === 'text' ? event.text : null,
-    ...(event.audio===undefined?{}:{audio:validateWhatsAppAudioDescriptor(event.audio)}) };
+    ...(event.audio===undefined?{}:{audio:validateWhatsAppAudioDescriptor(event.audio)}),...(choice?{choice}:{}) };
 }
 /** @param {string} domain @param {unknown[]} values */
 export async function digestWhatsApp(domain, values) {

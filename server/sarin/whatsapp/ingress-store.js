@@ -88,7 +88,7 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
       const business = normalized.kind === 'inbound' ? normalized.to : normalized.from;
       const peer = normalized.kind === 'inbound' ? normalized.from : normalized.to;
       const facts = [normalized.kind,normalized.messageId,normalized.wamid,normalized.wabaId,
-        normalized.from,normalized.to,normalized.sentAt,normalized.mediaType,normalized.text,...(normalized.audio?[normalized.audio]:[])];
+        normalized.from,normalized.to,normalized.sentAt,normalized.mediaType,normalized.text,...(normalized.audio?[normalized.audio]:[]),...(normalized.choice?[normalized.choice]:[])];
       const [peerKey, messageKey, messageHash, eventHash] = await Promise.all([
         digest('sarin-wa-peer-v1', [normalized.wabaId,business,peer]),
         digest('sarin-wa-message-v1', [normalized.kind,normalized.wabaId,business,normalized.wamid]),

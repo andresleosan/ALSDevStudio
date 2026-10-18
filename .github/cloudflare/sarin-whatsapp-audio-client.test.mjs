@@ -20,13 +20,25 @@ function page(packets,sequence,{flags=0,granule=0,serial=10}={}) {
   out.set(laces,27);let offset=27+laces.length;for(const packet of packets){out.set(packet,offset);offset+=packet.length;}
   out.writeUInt32LE(checksum(out),22);return out;
 }
-function voice(seconds=1,{channels=1,preSkip=0,granuleSamples,serial=10,emptyEos=false}={}) {
+function voice(seconds=1,{channels=1,preSkip=0,granuleSamples,serial=10,emptyEos=false,noEos=false,granuleOffset=0}={}) {
   const head=Buffer.alloc(19);head.write('OpusHead');head[8]=1;head[9]=channels;head.writeUInt16LE(preSkip,10);head.writeUInt32LE(48000,12);
   const tags=Buffer.alloc(16);tags.write('OpusTags');
   const packets=Array.from({length:Math.ceil(seconds*50)},()=>Buffer.from([0xf8,0xff,0xfe]));
   const pages=[page([head],0,{flags:2,serial}),page([tags],1,{serial})];let done=0;
-  while(packets.length){const batch=packets.splice(0,50);done+=batch.length*960;pages.push(page(batch,pages.length,{serial,flags:packets.length||emptyEos?0:4,granule:packets.length?done:(granuleSamples??done)}));}
+  while(packets.length){const batch=packets.splice(0,50);done+=batch.length*960;pages.push(page(batch,pages.length,{serial,flags:packets.length||emptyEos||noEos?0:4,granule:(packets.length?done:(granuleSamples??done))+granuleOffset}));}
   if(emptyEos)pages.push(page([],pages.length,{serial,flags:4,granule:0xffffffffffffffffn}));
+  return Buffer.concat(pages);
+}
+function recordedVoice({offset=312,offsetByPage={}}={}) {
+  // Sólo estructura sintética: 8 páginas, TOC 75, offset pre-skip y EOF sin EOS.
+  // Ningún byte procede de una grabación real ni contiene voz del participante.
+  const head=Buffer.alloc(19);head.write('OpusHead');head[8]=head[9]=1;head.writeUInt16LE(312,10);head.writeUInt32LE(16000,12);
+  const tags=Buffer.alloc(24);tags.write('OpusTags');tags.writeUInt32LE(8,8);tags.write('Fixture!',12);
+  const pages=[page([head],0,{flags:2}),page([tags],1)];let done=0;
+  for(const [index,count] of [20,15,15,15,16,7].entries()){
+    const packets=Array.from({length:count},(_,i)=>{const frames=index===5&&i===count-1?4:6;done+=frames*960;const packet=Buffer.alloc(2+frames*(i<[7,12,12,14,11,5][index]?43:1));packet[0]=75;packet[1]=frames;return packet;});
+    pages.push(page(packets,pages.length,{granule:done+(offsetByPage[index]??offset)}));
+  }
   return Buffer.concat(pages);
 }
 const sha=bytes=>createHash('sha256').update(bytes).digest('base64');
@@ -101,6 +113,26 @@ test('EOS vacío conserva el límite de 120 s y no oculta duración con otro gra
   const accepted=harness({bytes:voice(120,{emptyEos:true})});
   assert.equal((await transcribeWhatsAppAudio(accepted.options)).ok,true);assert.equal(accepted.calls.ai.length,1);
   for(const bytes of [voice(120.02,{emptyEos:true}),voice(121,{emptyEos:true,granuleSamples:48000})]){const h=harness({bytes});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'audio_too_long'});assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);}
+});
+test('nota WhatsApp con offset pre-skip y EOF completo sin EOS normaliza duración',async()=>{
+  const h=harness({bytes:recordedVoice()});
+  assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:true,text:'Necesito una tienda virtual.',durationSeconds:(504960-312)/48000});
+  assert.equal(h.calls.permission,1);assert.equal(h.calls.ai.length,1);
+  const denied=harness({bytes:recordedVoice(),beforeInference:async()=>false});
+  assert.deepEqual(await transcribeWhatsAppAudio(denied.options),{ok:false,reason:'permission_denied'});assert.equal(denied.calls.ai.length,0);
+});
+test('variante sin EOS no admite offset distinto, deriva, CRC roto ni truncado parcial',async()=>{
+  const damaged=recordedVoice();damaged[damaged.length-1]^=1;
+  const cases=[recordedVoice({offset:313}),recordedVoice({offset:-1}),recordedVoice({offsetByPage:{2:313}}),damaged,
+    recordedVoice().subarray(0,-1),Buffer.concat([recordedVoice(),Buffer.from([0])]),voice(1,{preSkip:312,noEos:true})];
+  for(const bytes of cases){const h=harness({bytes});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'invalid_audio'});assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);}
+});
+test('offset y EOF sin EOS conservan frontera de 120 s y rechazan exceso real',async()=>{
+  const accepted=harness({bytes:voice(120.02,{preSkip:960,granuleOffset:960,noEos:true})});
+  assert.deepEqual(await transcribeWhatsAppAudio(accepted.options),{ok:true,text:'Necesito una tienda virtual.',durationSeconds:120});
+  for(const bytes of [voice(120.04,{preSkip:960,granuleOffset:960,noEos:true}),voice(120.02,{preSkip:312,granuleOffset:312,noEos:true})]){
+    const h=harness({bytes});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'audio_too_long'});assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);
+  }
 });
 test('SHA distinto y MIME ajeno se rechazan sin permiso ni inferencia',async()=>{
   for(const change of [{descriptorPatch:{sha256:sha(Buffer.from('different'))}},{response:new Response(voice(),{headers:{'Content-Type':'text/html'}})},{descriptorPatch:{mimeType:'audio/mpeg'}}]){const h=harness(change);assert.equal((await transcribeWhatsAppAudio(h.options)).ok,false);assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);}
