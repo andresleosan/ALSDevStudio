@@ -31,15 +31,24 @@
       <noscript><p class="admin-note">Este panel necesita JavaScript y acceso autorizado. Puedes <a href="mailto:alsdevstudio@alsdevstudio.com">contactar con ALS Dev Studio por correo</a>.</p></noscript>
     </div>
     <div id="admin-workspace" hidden>
-      <nav class="admin-sections" aria-label="Canal de conversaciones">
-        <button id="admin-section-web" type="button" aria-pressed="true" aria-controls="admin-web-panel">Conversaciones web</button>
-        <button id="admin-section-wa" type="button" aria-pressed="false" aria-controls="wa-panel">WhatsApp</button>
-      </nav>
+      <div class="admin-workspace-toolbar">
+        <nav class="admin-sections" aria-label="Canal de conversaciones">
+          <button id="admin-section-web" type="button" aria-pressed="true" aria-controls="admin-web-panel">Conversaciones web</button>
+          <button id="admin-section-wa" type="button" aria-pressed="false" aria-controls="wa-panel">WhatsApp</button>
+        </nav>
+        <div class="admin-workspace-tools">
+          <details class="admin-retention" aria-labelledby="admin-retention-title">
+            <summary><span id="admin-retention-title">Historial · 30 días</span><span id="admin-maintenance-warning" hidden>Revisar limpieza</span></summary>
+            <div class="admin-maintenance"><p>Las conversaciones vencidas dejan de aparecer. Las señales técnicas requieren revisión y no prueban abuso.</p><p id="admin-purge" class="admin-purge">Comprobando la limpieza automática…</p></div>
+          </details>
+          <a id="admin-test-sarin" href="/?sarin=prueba" hidden>Probar Sarin en la web</a>
+          <details id="admin-consumption" class="admin-consumption" hidden>
+            <summary>Consumo <span>WhatsApp</span></summary>
+            <div id="admin-consumption-content" class="admin-consumption-content" aria-live="polite" aria-busy="false"></div>
+          </details>
+        </div>
+      </div>
       <div id="admin-web-panel" class="admin-channel-panel">
-      <section class="admin-retention" aria-labelledby="admin-retention-title">
-        <div><h2 id="admin-retention-title">Historial de 30 días</h2><p>Las conversaciones vencidas dejan de aparecer. Las señales técnicas requieren revisión y no prueban abuso.</p></div>
-        <div class="admin-maintenance"><p id="admin-purge" class="admin-purge">Comprobando la limpieza automática…</p><a id="admin-test-sarin" href="/?sarin=prueba" hidden>Probar Sarin en la web</a></div>
-      </section>
       <form id="admin-filters" class="admin-filters" aria-label="Filtrar conversaciones">
         <div><label for="admin-from">Desde</label><input id="admin-from" type="date"></div>
         <div><label for="admin-to">Hasta</label><input id="admin-to" type="date"></div>
@@ -59,7 +68,7 @@
       <section id="wa-panel" class="admin-channel-panel" aria-labelledby="wa-title" aria-busy="false" hidden>
         <div class="wa-heading">
           <div class="wa-channel-title"><span class="wa-channel-icon" aria-hidden="true">WA</span><div><h2 id="wa-title">WhatsApp</h2><p class="admin-note">Atención con Sarin · ALS Dev Studio</p></div></div>
-          <details class="wa-pilot-info"><summary>Cómo funciona Sarin</summary><div><p>Un contacto nuevo recibe el aviso al escribir. Debe responder ACEPTO antes de consultar con la IA. Si contestas desde WhatsApp Business, Sarin se pausa para ese contacto.</p><p>Contenido disponible hasta 24 horas; recibos mínimos hasta 48 horas. <a href="/privacidad.html#whatsapp">Aviso de privacidad</a></p><p>La activación no garantiza una respuesta: depende de la disponibilidad del servicio, los límites de uso, la aceptación y un mensaje nuevo.</p><p class="wa-warning">Un mensaje cuyo envío ya comenzó puede llegar después de pausar o apagar las respuestas.</p></div></details>
+          <details class="wa-pilot-info"><summary>Cómo funciona Sarin</summary><div><p>Un contacto nuevo recibe el aviso al escribir. Debe pulsar Aceptar antes de consultar con la IA. Si contestas desde WhatsApp Business, Sarin se pausa para ese contacto.</p><p>Contenido disponible hasta 24 horas; recibos mínimos hasta 48 horas. <a href="/privacidad.html#whatsapp">Aviso de privacidad</a></p><p>La activación no garantiza una respuesta: depende de la disponibilidad del servicio, los límites de uso, la aceptación y un mensaje nuevo.</p><p class="wa-warning">Un mensaje cuyo envío ya comenzó puede llegar después de pausar o apagar las respuestas.</p></div></details>
           <div id="wa-pilot"></div>
         </div>
         <p id="wa-status" role="status" aria-live="polite"></p>

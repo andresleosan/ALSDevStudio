@@ -48,7 +48,7 @@ test('antes de aceptar el nombre sólo provoca el aviso y no crea ficha',async t
 test('nombre inválido pide formato escrito sin guardar ni consultar IA',async t=>{
  const f=await processorFixture(t);await establishConsent(f,processWhatsAppWork);const job=await f.capture('NOMBRE: Ana <Pérez>');await run(f,job);
  assert.equal(aiCalls(f).length,0);assert.equal(saved(f),undefined);assert.equal(posts(f).length,1);
- assert.match(JSON.parse(posts(f)[0].init.body).text.body,/NOMBRE:/);
+ assert.match(JSON.parse(posts(f)[0].init.body).interactive.body.text,/NOMBRE:/);
  assert.equal(latest(f,'sarin_wa_jobs').inference_started_at,null);
 });
 
@@ -104,8 +104,8 @@ test('cuota agotada revierte perfil y confirmación juntos',async t=>{
  await run(f,await f.capture('NOMBRE: Ana Pérez'));assert.equal(posts(f).length,0);assert.equal(aiCalls(f).length,0);assert.equal(saved(f),undefined);
 });
 
-test('schema 8 detecta perfil y rechaza un guard de integridad ausente',async t=>{
- const f=await processorFixture(t);assert.equal(await detectWhatsAppSchema({db:f.db,repliesEnabled:true}),8);
+test('schema actual detecta perfil y rechaza un guard de integridad ausente',async t=>{
+ const f=await processorFixture(t);assert.equal(await detectWhatsAppSchema({db:f.db,repliesEnabled:true}),9);
  f.sqlite.exec('DROP TRIGGER sarin_wa_profile_validate_insert');await assert.rejects(detectWhatsAppSchema({db:f.db,repliesEnabled:true}),/wa_schema_invalid/);
 });
 

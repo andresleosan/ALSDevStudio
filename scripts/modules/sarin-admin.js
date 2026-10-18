@@ -2,6 +2,7 @@
 import {createSarinAdminAuth} from './sarin-admin-auth.js';
 import {validateSarinLead} from './sarin-lead.js';
 import {createWhatsAppAdmin,whatsAppPeerFromHash} from './sarin-whatsapp-admin.js';
+import {createConsumptionController} from './sarin-admin-consumption.js';
 /** Panel privado. Los mensajes permanecen en el DOM y nunca se interpretan como HTML. */
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const dateFormat=new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'});
@@ -39,6 +40,14 @@ function initSarinAdmin(){
   const confirm=/** @type {HTMLDialogElement} */(find('#admin-delete-confirm'));
   const webPanel=find('#admin-web-panel'),waPanel=find('#wa-panel');
   const webSection=/** @type {HTMLButtonElement} */(find('#admin-section-web')),waSection=/** @type {HTMLButtonElement} */(find('#admin-section-wa'));
+  const consumptionElement=/** @type {HTMLDetailsElement} */(find('#admin-consumption')),consumptionContent=find('#admin-consumption-content');
+  const consumption=createConsumptionController({request:options=>request('whatsapp/consumption',{...options,whatsapp:true}),onState:renderConsumption,fail:error=>fail(error)});
+  consumptionElement.addEventListener('toggle',()=>{
+    if(consumptionElement.open){const retention=document.querySelector('.admin-retention');if(retention instanceof HTMLDetailsElement)retention.open=false;}
+    void consumption.setOpen(consumptionElement.open);
+  });
+  document.querySelector('.admin-retention')?.addEventListener('toggle',event=>{if(event.currentTarget instanceof HTMLDetailsElement && event.currentTarget.open)consumptionElement.open=false;});
+  consumptionElement.addEventListener('keydown',event=>{if(event.key==='Escape' && consumptionElement.open){consumptionElement.open=false;consumptionElement.querySelector('summary')?.focus();}});
   const whatsapp=createWhatsAppAdmin({request:(path,options)=>request(`whatsapp/${path}`,{...options,whatsapp:true}),fail:error=>fail(error)});
   /** @param {boolean} wa @param {string} [peerKey] */
   const selectSection=(wa,peerKey='')=>{
@@ -69,7 +78,7 @@ function initSarinAdmin(){
   window.addEventListener('resize',updateScrollRegions);
   const clearDetail=()=>{scrollObserver?.disconnect();detail.replaceChildren(element('p','Elige una conversación para ver sus mensajes.','admin-note'));selected='';};
   const clearWorkspace=()=>{
-    whatsapp.clear();selectSection(false);
+    consumption.clear();whatsapp.clear();selectSection(false);
     csrf='';cursor='';operationGeneration++;bootstrapGeneration++;listGeneration++;detailGeneration++;
     listController?.abort();detailController?.abort();mutationController?.abort();bootstrapController?.abort();
     listPending=false;detailPending=false;mutationPending=false;deleteTrigger=null;deleteId='';
@@ -77,6 +86,7 @@ function initSarinAdmin(){
     list.setAttribute('aria-busy','false');detail.setAttribute('aria-busy','false');
     find('#admin-count').textContent='';find('#admin-delete-reference').textContent='';
     find('#admin-purge').textContent='Comprobando la limpieza automática…';
+    find('#admin-maintenance-warning').hidden=true;
     find('#admin-identity').textContent='Acceso privado';find('#admin-test-sarin').hidden=true;
   };
   const authentication=createSarinAdminAuth({onState:value=>{
@@ -131,8 +141,34 @@ function initSarinAdmin(){
     const stale=!Number.isSafeInteger(purge.lastSuccessAt) || Date.now()-purge.lastSuccessAt>7200000;
     const warning=purge.status!=='ok' || stale || purge.remaining===true;
     node.toggleAttribute('data-warning',warning);
+    find('#admin-maintenance-warning').hidden=!warning;
     node.textContent=purge.status==='never'?'Limpieza aún no ejecutada. Revisa su configuración.':purge.status==='error'?`La última limpieza falló. Último éxito: ${date(purge.lastSuccessAt)}.`:stale?`Limpieza atrasada. Último éxito: ${date(purge.lastSuccessAt)}.`:`Última limpieza: ${date(purge.lastSuccessAt)} (Colombia).`;
     if(purge.remaining===true)node.textContent+=' Quedan registros pendientes de limpieza.';
+  }
+  /** @param {import('./sarin-admin-consumption.js').ConsumptionState} value */
+  function renderConsumption(value){
+    consumptionContent.replaceChildren();consumptionContent.setAttribute('aria-busy',String(value.status==='loading'));
+    consumptionElement.hidden=value.status==='hidden';
+    if(value.status==='hidden'){consumptionElement.open=false;return;}
+    if(value.status==='idle')return;
+    if(value.status==='loading'){consumptionContent.append(element('p','Consultando consumo…'));return;}
+    if(value.status==='error' || value.status==='unavailable')consumptionContent.append(element('p',value.status==='error'?'No pudimos consultar el consumo. Vuelve a intentarlo.':'El registro de consumo aún no está disponible.'));
+    else{
+      consumptionContent.append(element('p',value.period,'admin-consumption-period'));
+      if(value.status==='empty')consumptionContent.append(element('p','Aún no hay recibos registrados este mes. Esto no significa que el consumo total sea cero.'));
+      else{
+        const totals=element('dl');definition('Gratuitos de servicio',value.freeService || '',totals);definition('Mensajes con pago',value.paid || '',totals);
+        if(value.freeEntry)definition('Otros mensajes gratuitos',value.freeEntry,totals);
+        const costs=element('div');costs.append(element('dt','Gasto WhatsApp confirmado'));
+        for(const amount of value.amounts || [])costs.append(element('dd',amount));
+        if(!value.amounts?.length)costs.append(element('dd',value.costLabel));
+        totals.append(costs);consumptionContent.append(totals);
+      }
+      consumptionContent.append(element('p',value.coverage,'admin-consumption-note'),element('p',value.limit,'admin-consumption-note'));
+      if(value.warning)consumptionContent.append(element('p',value.warning,'admin-consumption-warning'));
+      consumptionContent.append(element('p','Fuente: recibos de entrega o lectura de YCloud. No incluye costos de IA.','admin-consumption-note'));
+    }
+    const refresh=/** @type {HTMLButtonElement} */(element('button','Actualizar consumo'));refresh.type='button';refresh.addEventListener('click',()=>{void consumption.reload();});consumptionContent.append(refresh);
   }
   /** @param {string} label @param {string} value @param {HTMLElement} parent */
   function definition(label,value,parent){const wrap=element('div');wrap.append(element('dt',label),element('dd',value));parent.append(wrap);}
@@ -272,13 +308,13 @@ function initSarinAdmin(){
   confirm.addEventListener('close',()=>{deleteTrigger?.focus({preventScroll:true});});
   find('[data-admin-confirm-delete]').addEventListener('click',()=>{const id=deleteId;confirm.close();void mutate(id,'delete');});
   async function bootstrap(){
-    whatsapp.clear();selectSection(false);
+    consumption.clear();whatsapp.clear();selectSection(false);
     const current=++bootstrapGeneration;bootstrapController?.abort();bootstrapController=new AbortController();
     retry.hidden=true;workspace.hidden=true;document.body.dataset.adminState='access';find('#admin-test-sarin').hidden=true;csrf='';announce('Verificando acceso…');
     try{
       const value=await request('bootstrap',{signal:bootstrapController.signal});if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
-      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';whatsapp.setReady(true);clearDetail();
+      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';whatsapp.setReady(true);consumption.setReady(true);clearDetail();
       const peerKey=whatsAppPeerFromHash(location.hash);if(peerKey)selectSection(true,peerKey);await loadList();
     }catch(error){if(current===bootstrapGeneration && record(error).name!=='AbortError'){fail(error);login.hidden=false;retry.hidden=([401,403].includes(Number(record(error).status)));}}
   }

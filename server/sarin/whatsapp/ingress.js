@@ -82,15 +82,25 @@ export async function handleWhatsAppIngress(request, env, options = {}) {
       for(const hint of hints){try{void Promise.resolve(options.notifyWork(hint)).catch(()=>{});}catch{/* El commit ya es durable. */}}
     }
     if(event.kind==='status') {
-      if(!repliesEnabled||event.createdAt<config.since||at-event.createdAt>MAX_AGE||event.createdAt-at>MAX_FUTURE)return response({ok:true});
+      if(event.createdAt<config.since||at-event.createdAt>MAX_AGE||event.createdAt-at>MAX_FUTURE)return response({ok:true});
+      // El consumo observado abarca todos los envíos del número configurado,
+      // aunque no exista un outbox de Sarin o sus respuestas estén apagadas.
+      const billableObservation=['delivered','read'].includes(event.status)&&event.from===config.business
+        &&(event.wabaId===undefined||event.wabaId===config.wabaId);
+      if(!repliesEnabled&&!billableObservation)return response({ok:true});
       await committed(async()=>{
-        const replies=await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled});
-        if(!replies)return;
-        const observation={eventId:event.eventId,providerId:event.messageId,status:/** @type {import('./work-contracts.js').DeliveryObservation['status']} */(event.status),at:event.createdAt,
-          ...(event.externalId===undefined?{}:{externalId:event.externalId}),...(event.wamid===undefined?{}:{wamid:event.wamid}),
-          ...(event.from===undefined?{}:{from:event.from}),...(event.to===undefined?{}:{to:event.to}),...(event.wabaId===undefined?{}:{wabaId:event.wabaId})};
-        await replies.applyStatus(observation);
-        await createWhatsAppHandoffStore({db:env.SARIN_DB,now}).applyStatus(observation);
+        const replies=repliesEnabled?await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled}):null;
+        if(replies){
+          const observation={eventId:event.eventId,providerId:event.messageId,status:/** @type {import('./work-contracts.js').DeliveryObservation['status']} */(event.status),at:event.createdAt,
+            ...(event.externalId===undefined?{}:{externalId:event.externalId}),...(event.wamid===undefined?{}:{wamid:event.wamid}),
+            ...(event.from===undefined?{}:{from:event.from}),...(event.to===undefined?{}:{to:event.to}),...(event.wabaId===undefined?{}:{wabaId:event.wabaId})};
+          await replies.applyStatus(observation);
+          await createWhatsAppHandoffStore({db:env.SARIN_DB,now}).applyStatus(observation);
+        }
+        if(billableObservation){
+          const {recordWhatsAppBilling}=await import('./billing.js');
+          await recordWhatsAppBilling(env.SARIN_DB,{event,businessPhone:config.business,wabaId:config.wabaId,now});
+        }
         await notify(replies);
       },timeout,request.signal);
       return response({ok:true});

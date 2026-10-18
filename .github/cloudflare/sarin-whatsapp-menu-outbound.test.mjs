@@ -16,18 +16,21 @@ test('aviso vigente envía tres botones una sola vez aunque Queue se repita',asy
  assert.equal(outbox.purpose,'notice');assert.equal(outbox.version,WHATSAPP_NOTICE_VERSION);assert.equal(outbox.state,'accepted');assert.equal(latest(f,'sarin_wa_send_quota').consumed,1);
 });
 
-test('confirmación de aceptación y respuesta comercial conservan texto',async t=>{
+test('confirmación de aceptación y respuesta comercial incluyen botones propios',async t=>{
  const f=await processorFixture(t);await run(f,await f.capture('Hola'));let out=latest(f,'sarin_wa_outbox');await f.store.applyStatus({eventId:'notice_delivered',providerId:out.provider_id,status:'delivered',at:f.now()});f.reset();
- await run(f,await f.capture('ACEPTO'));assert.equal(JSON.parse(posts(f)[0].init.body).type,'text');assert.equal(latest(f,'sarin_wa_outbox').purpose,'accepted');
+ await run(f,await f.capture('ACEPTO'));assert.equal(JSON.parse(posts(f)[0].init.body).type,'interactive');assert.equal(latest(f,'sarin_wa_outbox').purpose,'accepted');
+ assert.deepEqual(JSON.parse(posts(f)[0].init.body).interactive.action.buttons.map(b=>b.reply.title),['Hablar con Andrés','Salir']);
  out=latest(f,'sarin_wa_outbox');await f.store.applyStatus({eventId:'accepted_delivered',providerId:out.provider_id,status:'delivered',at:f.now()});f.reset();
- await run(f,await f.capture('Quiero una tienda ficticia'));assert.equal(posts(f).length,1);assert.equal(JSON.parse(posts(f)[0].init.body).type,'text');assert.equal(latest(f,'sarin_wa_outbox').purpose,'reply');
+ await run(f,await f.capture('Quiero una tienda ficticia'));assert.equal(posts(f).length,1);assert.equal(JSON.parse(posts(f)[0].init.body).type,'interactive');assert.equal(latest(f,'sarin_wa_outbox').purpose,'reply');
+ const body=JSON.parse(posts(f)[0].init.body),saved=latest(f,'sarin_wa_outbox');assert.equal(body.interactive.body.text,saved.text);
+ assert.deepEqual(body.interactive.action.buttons.map(b=>b.reply.id),['sarin.menu.v1:human:'+saved.outbox_id,'sarin.menu.v1:stop:'+saved.outbox_id]);
 });
 
-test('aviso guardado con texto anterior conserva su representación textual',async t=>{
+test('aviso guardado con texto anterior conserva texto durable dentro de botones',async t=>{
  const f=await processorFixture(t),hint=await f.capture('Hola'),token=crypto.randomUUID();await f.store.claimGeneration({...hint,token});
  await f.store.createFixedReply({...hint,token,purpose:'notice',text:'Aviso anterior. Escribe ACEPTO.',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});
  f.setTime(f.now()+120001);await f.store.expireLeases({limit:1});await run(f,hint);
- assert.equal(posts(f).length,1);const body=JSON.parse(posts(f)[0].init.body);assert.equal(body.type,'text');assert.equal(body.text.body,'Aviso anterior. Escribe ACEPTO.');
+ assert.equal(posts(f).length,1);const body=JSON.parse(posts(f)[0].init.body);assert.equal(body.type,'interactive');assert.equal(body.interactive.body.text,'Aviso anterior. Escribe ACEPTO.');
 });
 
 for(const status of [400,500])test(`fallo HTTP ${status} del aviso no genera segundo POST al repetir Queue`,async t=>{

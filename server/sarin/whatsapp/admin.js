@@ -91,12 +91,13 @@ function detail(value,now){
 export async function handleWhatsAppAdmin(request,env,{admin,actor,now,store}){
   try{
     requireThat(admin && /^[a-f0-9]{64}$/.test(actor),403,'forbidden');
-    const url=new URL(request.url),route=/^\/api\/control-sarin\/whatsapp\/(peers(?:\/([A-Za-z0-9_-]{1,128})(?:\/(action))?)?|pilot|outbox\/([A-Za-z0-9_-]{1,128})\/reconcile)\/?$/.exec(url.pathname);
+    const url=new URL(request.url),route=/^\/api\/control-sarin\/whatsapp\/(peers(?:\/([A-Za-z0-9_-]{1,128})(?:\/(action))?)?|consumption|pilot|outbox\/([A-Za-z0-9_-]{1,128})\/reconcile)\/?$/.exec(url.pathname);
     requireThat(route,404,'not_found');
     const cursor=route[1]==='peers'?readCursor(url):'';
     if(route[1]!=='peers')requireThat(!url.search,400,'invalid_request');
-    const method=route[1]==='peers' || (route[2] && !route[3])?'GET':'POST';
+    const method=route[1]==='consumption' || route[1]==='peers' || (route[2] && !route[3])?'GET':'POST';
     if(request.method!==method)return adminResponse({error:{code:'method_not_allowed',message:'Método no permitido.'}},405,{Allow:method});
+    if(route[1]==='consumption')return await (await import('./consumption.js')).whatsAppConsumptionResponse(env,now);
     const peerKey=route[2],outbox=route[4];
     if(outbox)requireThat(outputId.test(outbox),400,'invalid_request');
     /** @type {Record<string,any>} */let body={};

@@ -2,6 +2,7 @@
 import { classifyWhatsAppInput, WHATSAPP_NOTICE_VERSION, WHATSAPP_NOTICE } from './consent.js';
 import { normalizeWhatsAppMessage, digestWhatsApp } from './ingress-identity.js';
 import {parseWhatsAppProfileInput,WHATSAPP_PROFILE_SAVED,WHATSAPP_PROFILE_INVALID} from './profile.js';
+import {approvedWhatsAppNotices,limitWhatsAppBody} from './menu.js';
 /** @typedef {import('./work-contracts.js').Work} Work */
 /** @typedef {import('./work-contracts.js').SendPermit} SendPermit */
 /** @typedef {import('./work-contracts.js').DeliveryObservation} DeliveryObservation */
@@ -160,6 +161,9 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
   /** @param {any} x @param {string} purpose @param {string} text @param {string|null} version @param {string|null} hash */
   async function output(x,purpose,text,version,hash) {
     own(x);requireThat(typeof text==='string'&&text.trim().length>0&&text.length<=1200&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(text));
+    // El aviso de consentimiento nunca se trunca; las respuestas sí se adaptan
+    // antes de persistir para que historial, cuota y transporte vean lo mismo.
+    if(purpose==='notice')requireThat(text.length<=1024);else text=limitWhatsAppBody(text);
     const at=clock(),outboxId=crypto.randomUUID(),externalId=crypto.randomUUID(),bytes=encoder.encode(text).byteLength;
     const fixed=purpose!=='reply';
     await batch([permission(x,at,fixed?"'claimed'":"'inference_started'",purpose==='accepted'?'confirm':purpose!=='notice'),
@@ -185,22 +189,31 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     const kind=e.kind==='echo'?'echo':e.choice?'ignore':classifyWhatsAppInput(e);
     const digit=e.kind==='inbound'&&e.mediaType==='text'?(e.text??'').trim():'';
     const menuAction=e.choice?.action??(digit==='1'?'accept':digit==='2'?'human':digit==='3'?'stop':null);
-    const menuHash=menuAction?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(WHATSAPP_NOTICE))),b=>b.toString(16).padStart(2,'0')).join(''):'';
-    // El hash diferencia el menú nuevo del aviso v3 anterior, sin revocar sus pruebas.
-    // Esta expresión se evalúa dentro de cada transacción, nunca sobre una lectura previa.
+    const noticeVariants=menuAction?(await approvedWhatsAppNotices()).filter(notice=>e.choice||notice.numeric):[];
+    const actionButton=!!e.choice&&e.choice.action!=='accept';
+    // La aceptación exige texto y hash de una variante aprobada, además del
+    // aviso actual durable. Salir/atención humana sólo revocan y admiten replies.
+    // La expresión se evalúa en cada transacción, nunca sobre una lectura previa.
     // 2/3 siguen disponibles en un menú nunca aceptado tras una pausa por capacidad.
     // La prueba durable impide reinterpretarlos después de aceptar y luego revocar.
     const menuPause=e.choice&&e.choice.action!=='accept'?'1=1':!e.choice&&(digit==='2'||digit==='3')?
       `NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs v WHERE v.notice_id=consent_notice_id
         AND v.peer_key=sarin_wa_contexts.peer_key AND v.notice_context_id=sarin_wa_contexts.context_id)`:'paused=0';
+    const noticeReference=actionButton?`n.purpose IN('notice','accepted','reply')`:
+      `n.outbox_id=consent_notice_id AND n.purpose='notice' AND n.version=? AND n.version=consent_version AND n.hash=consent_hash
+        AND (${noticeVariants.map(()=>'(n.hash=? AND n.text=?)').join(' OR ')||'0=1'})`;
     const menuCurrent=`${menuPause} ${e.choice?'':'AND accepted_at IS NULL'} AND EXISTS(SELECT 1 FROM sarin_wa_outbox n
-      WHERE n.peer_key=sarin_wa_contexts.peer_key AND n.context_id=sarin_wa_contexts.context_id AND n.outbox_id=consent_notice_id
-        AND n.purpose='notice' AND n.version=? AND n.version=consent_version AND n.hash=? AND n.hash=consent_hash
+      JOIN sarin_wa_jobs source_job ON source_job.job_id=n.job_id JOIN sarin_wa_inbox source_i ON source_i.event_id=source_job.event_id
+      WHERE n.peer_key=sarin_wa_contexts.peer_key AND n.context_id=sarin_wa_contexts.context_id AND (${noticeReference})
         AND n.started_at IS NOT NULL AND n.started_at<=? AND n.started_at<=? AND n.expires_at>?
-        AND n.conflict=0 AND n.state IN('sending','accepted','sent','delivered','read')
+        AND n.conflict=0 AND n.state IN('sending','accepted','sent','delivered','read'${actionButton?",'send_uncertain'":''})
+        AND source_job.peer_key=n.peer_key AND source_job.context_id=n.context_id AND source_job.epoch=n.epoch AND source_job.expires_at>?
+        AND source_i.peer_key=n.peer_key AND source_i.kind='inbound' AND source_i.expires_at>?
+        AND source_i.waba_id=? AND source_i.business_phone=? AND source_i.peer_phone=?
         AND EXISTS(SELECT 1 FROM sarin_wa_pilot p WHERE p.enabled=1 AND p.epoch=n.epoch)
         ${e.choice?'AND n.outbox_id=?':''})`;
-    const menuValues=[WHATSAPP_NOTICE_VERSION,menuHash,e.sentAt,e.createdAt,at,...(e.choice?[e.choice.outboxId]:[])];
+    const menuValues=[...(actionButton?[]:[WHATSAPP_NOTICE_VERSION,...noticeVariants.flatMap(notice=>[notice.hash,notice.text])]),
+      e.sentAt,e.createdAt,at,at,at,e.wabaId,business,peer,...(e.choice?[e.choice.outboxId]:[])];
     const resolvedKind=menuAction?`CASE WHEN (${menuCurrent}) THEN ? ELSE ? END`:'?';
     const resolvedValues=menuAction?[...menuValues,menuAction,kind]:[kind];
     const observedKind='(SELECT classification FROM sarin_wa_control_events WHERE event_id=?)';
@@ -557,7 +570,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         JOIN sarin_wa_inbox i ON i.event_id=j.event_id WHERE j.job_id=?`,x.jobId)]);
       const source=found[1].results[0];requireThat(source?.media_type==='text','work_denied',409);
       const input=parseWhatsAppProfileInput(source.text);requireThat(input.kind!=='none','work_denied',409);
-      const text=input.kind==='valid'?WHATSAPP_PROFILE_SAVED:WHATSAPP_PROFILE_INVALID;
+      const text=limitWhatsAppBody(input.kind==='valid'?WHATSAPP_PROFILE_SAVED:WHATSAPP_PROFILE_INVALID);
       const outcome=input.kind==='valid'?'profile_saved':'profile_invalid',bytes=encoder.encode(text).byteLength;
       const outboxId=crypto.randomUUID(),externalId=crypto.randomUUID();at=clock();
       await batch([permission(x,at,"'claimed'",true),
@@ -610,12 +623,19 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     beginSend:guarded(async(x)=>{
       requireThat(x&&randomId(x.outboxId)&&randomId(x.token));const at=clock(),{day,month}=periods(at);
       const o=(await read('SELECT * FROM sarin_wa_outbox WHERE outbox_id=?',x.outboxId))[0];requireThat(o,'work_denied',409);
+      requireThat(o.purpose!=='notice'||o.text.length<=1024,'work_denied',409);
+      const prepared=o.purpose==='notice'?o.text:limitWhatsAppBody(o.text),preparedBytes=encoder.encode(prepared).byteLength;
       const ownX={jobId:o.job_id,token:x.token};
       const result=await batch([permission(ownX,at,"'ready'",o.purpose==='accepted'?'confirm':o.purpose!=='notice'),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND (purpose='reply' OR version=?))`,[x.outboxId,WHATSAPP_NOTICE_VERSION]),
         ...(x.recipient?[guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
           WHERE j.job_id=? AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)`,[o.job_id,x.recipient.wabaId,x.recipient.from,x.recipient.to])]:[]),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND state='ready' AND started_at IS NULL AND expires_at>?)`,[x.outboxId,at]),
+        // Compatibilidad con ready anteriores de hasta1200: normalizar en este
+        // mismo commit, antes del primer POST y sin alterar un envío iniciado.
+        ...(prepared!==o.text?[guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND text=?)`,[x.outboxId,o.text]),
+          s('UPDATE sarin_wa_outbox SET text=?,stored_bytes=? WHERE outbox_id=?',prepared,preparedBytes,x.outboxId),
+          s('UPDATE sarin_wa_jobs SET reserved_bytes=? WHERE job_id=?',preparedBytes,o.job_id)]:[]),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs WHERE job_id=? AND quota_state='reserved')`,[o.job_id]),
         // Cambiar de día/mes no conserva un cupo del periodo anterior.
         closureGuard(at),...release(o.job_id),

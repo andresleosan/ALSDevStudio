@@ -2,6 +2,7 @@
 import { processWhatsAppWork, dispatchWhatsAppWork } from '../../server/sarin/whatsapp/processor.js';
 import { reconcileWhatsAppWork } from '../../server/sarin/whatsapp/reconciliation.js';
 import {processWhatsAppHandoff} from '../../server/sarin/whatsapp/handoff-processor.js';
+import {syncWhatsAppBilling} from '../../server/sarin/whatsapp/billing-sync.js';
 /** @typedef {import('../../server/sarin/whatsapp/processing-config.js').ProcessingEnv} ProcessingEnv */
 /** Dependencias internas para pruebas; ningún parámetro procede de HTTP.
  * @param {import('../../server/sarin/whatsapp/processor.js').Options} [options] */
@@ -22,7 +23,8 @@ export function createWhatsAppWorker(options={}) {return {
   /** @type {ReturnType<typeof setTimeout>|undefined} */let timer;
   const deadline=new Promise(resolve=>{timer=setTimeout(()=>{abort.abort();resolve(undefined);},60000);});
   const work=async()=>{await dispatchWhatsAppWork(env,options);if(!abort.signal.aborted)await processWhatsAppHandoff(env,{now:options.now,fetch:options.fetch,signal:abort.signal});
-    if(!abort.signal.aborted)await reconcileWhatsAppWork(env,{...options,signal:abort.signal});};
+    if(!abort.signal.aborted)await reconcileWhatsAppWork(env,{...options,signal:abort.signal});
+    if(!abort.signal.aborted)await syncWhatsAppBilling(env,{now:options.now,fetch:options.fetch,signal:abort.signal});};
   try{await Promise.race([work(),deadline]);}finally{clearTimeout(timer);}
  },
 };}

@@ -1,4 +1,5 @@
 // @ts-check
+import {readYCloudPricing} from './ycloud-webhook.js';
 
 const MESSAGES_URL = 'https://api.ycloud.com/v2/whatsapp/messages';
 const MAX_RESPONSE_BYTES = 65536;
@@ -95,9 +96,9 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
    * El timeout incluye fetch y lectura, incluso si el transporte ignora abort.
    * @param {'POST'|'GET'} method @param {string} url
    * @param {{to?:string,from?:string,wabaId?:string,externalId?:string,id?:string}} expected
-   * @param {string|undefined} body @param {AbortSignal|undefined} signal
+   * @param {string|undefined} body @param {AbortSignal|undefined} signal @param {number} [pricingAt]
    */
-  async function request(method, url, expected, body, signal) {
+  async function request(method, url, expected, body, signal, pricingAt) {
     if (signal?.aborted) throw new YCloudClientError('cancelled', 'not_sent');
     const controller = new AbortController();
     let started = false;
@@ -158,7 +159,8 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
             || (expected.externalId !== undefined && result.externalId !== expected.externalId)))) {
         throw new YCloudClientError('invalid_response', 'uncertain');
       }
-      return { providerId: /** @type {string} */ (result.id), status: result.status,
+      const charge=method==='GET'&&pricingAt!==undefined?readYCloudPricing(result,pricingAt):undefined;
+      return { providerId: /** @type {string} */ (result.id), status: result.status,...(charge?{pricing:charge}:{}),
         ...(method==='GET'?{...('wabaId' in result?{wabaId:/** @type {string} */(result.wabaId)}:{}),...('from' in result?{from:/** @type {string} */(result.from)}:{}),...('to' in result?{to:/** @type {string} */(result.to)}:{}),...('externalId' in result?{externalId:/** @type {string} */(result.externalId)}:{})}:{}), ...('wamid' in result?{wamid:/** @type {string} */(result.wamid)}:{}) };
     }
 
@@ -208,10 +210,13 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
           action: { buttons: buttons.map(button => ({ type: 'reply', reply: { id: button.id, title: button.title } })) } }, externalId,
       }), signal);
     },
-    /** @param {{id:string,expected?:{wabaId:string,from:string,to:string,externalId:string},signal?:AbortSignal}} input */
-    async getMessage({ id, expected, signal } = /** @type {any} */ ({})) {
-      if (!validId(id) || (expected !== undefined && (!validPhone(expected.from) || expected.from!==businessPhone || !validPhone(expected.to) || !/^[1-9]\d{0,31}$/.test(expected.wabaId) || !validReference(expected.externalId)))) throw new YCloudClientError('invalid_request', 'not_sent');
-      return request('GET', `${MESSAGES_URL}/${id}`, { id, ...expected }, undefined, signal);
+    /** El precio es optativo: las reconciliaciones existentes conservan su contrato.
+     * @param {{id:string,expected?:{wabaId:string,from:string,to:string,externalId:string},signal?:AbortSignal,includePricing?:boolean,observedAt?:number}} input */
+    async getMessage({ id, expected, signal, includePricing=false, observedAt=Date.now() } = /** @type {any} */ ({})) {
+      if (!validId(id) || typeof includePricing!=='boolean'
+        || (includePricing && (!Number.isSafeInteger(observedAt)||observedAt<0||observedAt>=253339228800000))
+        || (expected !== undefined && (!validPhone(expected.from) || expected.from!==businessPhone || !validPhone(expected.to) || !/^[1-9]\d{0,31}$/.test(expected.wabaId) || !validReference(expected.externalId)))) throw new YCloudClientError('invalid_request', 'not_sent');
+      return request('GET', `${MESSAGES_URL}/${id}`, { id, ...expected }, undefined, signal,includePricing?observedAt:undefined);
     },
   };
 }

@@ -6,6 +6,7 @@ import {createWhatsAppIngressStore} from '../../server/sarin/whatsapp/ingress-st
 import {readYCloudWebhook} from '../../server/sarin/whatsapp/ycloud-webhook.js';
 import {WHATSAPP_NOTICE,WHATSAPP_NOTICE_VERSION,classifyWhatsAppInput} from '../../server/sarin/whatsapp/consent.js';
 const menu=await import('../../server/sarin/whatsapp/menu.js').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+const legacyNumericNotice=(await menu.approvedWhatsAppNotices()).find(notice=>notice.numeric).text;
 const UUID='11111111-2222-4333-8444-555555555555';
 const canonical={accept:'ACEPTO',human:'HUMANO',stop:'SALIR'};
 const context=f=>f.sqlite.prepare('SELECT * FROM sarin_wa_contexts WHERE peer_key=?').get(f.peerKey);
@@ -100,7 +101,7 @@ test('current button waits for delivery before granting consent',async t=>{
  await f.store.applyStatus({eventId:'later_delivery',providerId:n.providerId,status:'delivered',at:f.now()});assert.ok(context(f).accepted_at);
 });
 for(const [digit,want] of [['1','accept'],['2','human'],['3','stop']])test('digit '+digit+' acts only in the pending current menu',async t=>{
- const f=await processorFixture(t);await notice(f);const e=event(f,digit);await capture(f,e);
+ const f=await processorFixture(t);await notice(f,{text:legacyNumericNotice});const e=event(f,digit);await capture(f,e);
  assert.equal(classification(f,e),want);assert.equal(context(f).paused,want==='accept'?0:1);
  assert.equal(Boolean(context(f).accepted_at),want==='accept');
  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_handoff').get().n,want==='human'?1:0);
@@ -131,7 +132,7 @@ test('old v3 notice cannot enable numeric aliases and its explicit acceptance st
  assert.equal(c.work.decision,'generate');assert.equal(context(f).accepted_at,proof.accepted_at);assert.equal(context(f).consent_hash,proof.consent_hash);
 });
 test('numeric pause rechecks the current notice in its atomic control batch',async t=>{
- const f=await processorFixture(t);await notice(f);let invalidated=false;
+ const f=await processorFixture(t);await notice(f,{text:legacyNumericNotice});let invalidated=false;
  const db={...f.db,batch:async statements=>{if(!invalidated&&statements.some(s=>s.sql.includes('INSERT INTO sarin_wa_control_events'))){invalidated=true;f.sqlite.prepare('UPDATE sarin_wa_contexts SET consent_notice_id=NULL WHERE peer_key=?').run(f.peerKey);}return f.db.batch(statements);}};
  const e=event(f,'2');await capture(f,e,db);assert.equal(invalidated,true);assert.equal(classification(f,e),'text');assert.equal(context(f).paused,0);
  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_handoff').get().n,0);
@@ -165,7 +166,7 @@ function fillControls(f) {
 }
 
 for(const [digit,want] of [['2','human'],['3','stop']])test('pending digit '+digit+' survives control saturation and retries once',async t=>{
- const f=await processorFixture(t);await notice(f);fillControls(f);const e=event(f,digit);
+ const f=await processorFixture(t);await notice(f,{text:legacyNumericNotice});fillControls(f);const e=event(f,digit);
  await assert.rejects(capture(f,e),error=>error.code==='ingress_capacity');
  assert.equal(context(f).paused,1);assert.equal(classification(f,e),undefined);
  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_control_events').get().n,20000);
@@ -178,7 +179,7 @@ for(const [digit,want] of [['2','human'],['3','stop']])test('pending digit '+dig
 });
 
 test('saturated numeric human clears pending acceptance and cannot gain consent on delivery',async t=>{
- const f=await processorFixture(t),n=await notice(f,{deliver:false}),a=event(f,'1');await capture(f,a);
+ const f=await processorFixture(t),n=await notice(f,{text:legacyNumericNotice,deliver:false}),a=event(f,'1');await capture(f,a);
  assert.equal(context(f).pending_acceptance_event_id,a.eventId);fillControls(f);const e=event(f,'2');
  await assert.rejects(capture(f,e),error=>error.code==='ingress_capacity');
  assert.equal(context(f).paused,1);assert.equal(context(f).pending_acceptance_event_id,null);
@@ -190,7 +191,7 @@ test('saturated numeric human clears pending acceptance and cannot gain consent 
 });
 
 test('digits after accepted conversation is paused never become menu commands',async t=>{
- const f=await processorFixture(t);await notice(f);await accepted(f);
+ const f=await processorFixture(t);await notice(f,{text:legacyNumericNotice});await accepted(f);
  const echo={...event(f,'Continúo yo'),kind:'echo',from:'+573000000002',to:'+573000000001'};await capture(f,echo);
  // Un STOP posterior revoca accepted_at; la prueba conserva que este menú ya se aceptó.
  await capture(f,event(f,'STOP'));assert.equal(context(f).paused,1);assert.equal(context(f).accepted_at,null);
@@ -200,7 +201,13 @@ test('digits after accepted conversation is paused never become menu commands',a
 });
 
 test('numeric acceptance stays blocked while an unaccepted menu is paused',async t=>{
- const f=await processorFixture(t);await notice(f);await f.pause();const e=event(f,'1');await capture(f,e);
+ const f=await processorFixture(t);await notice(f,{text:legacyNumericNotice});await f.pause();const e=event(f,'1');await capture(f,e);
  assert.equal(classification(f,e),'text');assert.equal(context(f).paused,1);assert.equal(context(f).accepted_at,null);
  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_consent_proofs').get().n,0);
+});
+
+test('new notice without numeric options does not reinterpret bare digits',async t=>{
+ const f=await processorFixture(t);await notice(f);
+ for(const digit of ['1','2','3']){const e=event(f,digit);await capture(f,e);assert.equal(classification(f,e),'text');}
+ assert.equal(context(f).accepted_at,null);assert.equal(context(f).paused,0);assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_handoff').get().n,0);
 });

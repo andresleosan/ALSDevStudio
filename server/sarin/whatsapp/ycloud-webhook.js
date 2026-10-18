@@ -157,9 +157,28 @@ function instant(value) {
   return parsed;
 }
 
+/** El precio opcional no invalida una actualización de entrega legítima.
+ * Sólo se conserva el contrato conocido; ausencia o valores inválidos no son cero.
+ * @param {Record<string,any>} message @param {number} createdAt
+ * @returns {StatusPricing|undefined} */
+export function readYCloudPricing(message,createdAt) {
+  const {pricingModel,pricingType,pricingCategory,totalPrice,currency}=message;
+  if(pricingModel!=='PMP' || !['regular','free_customer_service','free_entry_point'].includes(pricingType)
+    || !['marketing','utility','authentication','authentication_international','service','referral_conversion'].includes(pricingCategory)
+    || typeof totalPrice!=='number' || !Number.isFinite(totalPrice) || totalPrice<0 || totalPrice>1000000
+    || !/^\d+(?:\.\d{1,6})?$/.test(String(totalPrice)) || typeof currency!=='string' || !/^[A-Z]{3}$/.test(currency)
+    || (pricingType==='free_customer_service' && (totalPrice!==0 || pricingCategory!=='service'))
+    || (pricingType==='free_entry_point' && (totalPrice!==0 || pricingCategory!=='referral_conversion'))
+    || (pricingType==='regular' && pricingCategory==='referral_conversion'))return;
+  let deliverTime;try{deliverTime=instant(message.deliverTime);}catch{return;}
+  if(deliverTime<0 || deliverTime>createdAt+MAX_FUTURE_MS)return;
+  return {pricingModel,pricingType,pricingCategory,totalPrice,currency,deliverTime};
+}
+
 /**
  * @typedef {{kind:'ignored'}} IgnoredEvent
- * @typedef {{kind:'status',eventId:string,createdAt:number,messageId:string,status:string,wamid?:string,externalId?:string,from?:string,to?:string,wabaId?:string}} StatusEvent
+ * @typedef {{pricingModel:'PMP',pricingType:string,pricingCategory:string,totalPrice:number,currency:string,deliverTime:number}} StatusPricing
+ * @typedef {{kind:'status',eventId:string,createdAt:number,messageId:string,status:string,wamid?:string,externalId?:string,from?:string,to?:string,wabaId?:string,pricing?:StatusPricing}} StatusEvent
  * @typedef {{kind:'inbound'|'echo',eventId:string,createdAt:number,messageId:string,wamid:string,wabaId:string,from:string,to:string,sentAt:number,mediaType:string,text?:string,audio?:import('./audio-client.js').AudioDescriptor,choice?:import('./menu.js').WhatsAppMenuChoice}} MessageEvent
  * @typedef {IgnoredEvent|StatusEvent|MessageEvent} YCloudEvent
  */
@@ -176,12 +195,13 @@ function normalize(event) {
       || (Object.hasOwn(message, 'externalId') && !reference(message.externalId))
       || ['from','to'].some(key=>Object.hasOwn(message,key)&&(typeof message[key]!=='string'||!/^\+[1-9]\d{1,14}$/.test(message[key])))
       || (Object.hasOwn(message,'wabaId')&&(typeof message.wabaId!=='string'||! /^[1-9]\d{0,31}$/.test(message.wabaId)))) return fail('invalid_event');
+    const charge=readYCloudPricing(message,createdAt);
     return { kind: 'status', ...base,
       ...(Object.hasOwn(message,'from')?{from:message.from}:{}),
       ...(Object.hasOwn(message,'to')?{to:message.to}:{}),
       ...(Object.hasOwn(message,'wabaId')?{wabaId:message.wabaId}:{}), messageId: message.id, status: message.status,
       ...(Object.hasOwn(message, 'wamid') ? { wamid: message.wamid } : {}),
-      ...(Object.hasOwn(message, 'externalId') ? { externalId: message.externalId } : {}) };
+      ...(Object.hasOwn(message, 'externalId') ? { externalId: message.externalId } : {}),...(charge?{pricing:charge}:{}) };
   }
   const kind = event.type === 'whatsapp.inbound_message.received' ? 'inbound'
     : event.type === 'whatsapp.smb.message.echoes' ? 'echo' : null;

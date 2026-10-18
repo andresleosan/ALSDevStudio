@@ -15,7 +15,7 @@ const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth', 'sarin-whatsapp-admin'].map(name => `modules/${name}.js`)];
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth', 'sarin-admin-consumption', 'sarin-whatsapp-admin'].map(name => `modules/${name}.js`)];
 const functionRoutes = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
   '/api/sarin/whatsapp','/api/sarin/whatsapp/',
   '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];

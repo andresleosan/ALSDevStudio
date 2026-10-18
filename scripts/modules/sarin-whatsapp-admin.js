@@ -40,8 +40,8 @@ function consent(value){
   if(item.status==='accepted' && item.expiresAt>Date.now())return `Aceptación vigente hasta ${date(item.expiresAt)}`;
   if(item.status==='accepted' || item.status==='expired')return 'Aceptación vencida. Se requiere un nuevo aviso.';
   if(item.status==='revoked')return 'Aceptación revocada.';
-  if(item.status==='pending_delivery')return 'ACEPTO recibido. Esperando confirmar la entrega del aviso.';
-  return 'Aceptación pendiente. Esperando ACEPTO después del aviso entregado.';
+  if(item.status==='pending_delivery')return 'Aceptación recibida. Esperando confirmar la entrega del aviso.';
+  return 'Aceptación pendiente. Esperando aceptación después del aviso entregado.';
 }
 /** @param {Record<string,any>} value */
 function validPeer(value){return opaque(value.peerKey) && revision(value.revision) && typeof value.paused==='boolean' && typeof value.maskedPhone==='string' && value.maskedPhone.length<=40 && !/\d{5}/.test(value.maskedPhone) && /[•*…]/u.test(value.maskedPhone);}

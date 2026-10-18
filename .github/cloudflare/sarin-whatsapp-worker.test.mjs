@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 const impl=await import('../../workers/sarin-whatsapp/index.js').catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 test('consumer_has_no_public_fetch_and_acks_invalid_payload',async()=>{assert.equal(typeof impl.default?.queue,'function','Falta consumidor');assert.equal(impl.default.fetch,undefined);let ack=0,retry=0;await impl.default.queue({messages:[{body:{jobId:'bad',epoch:'bad',text:'forbidden'},attempts:1,ack:()=>ack++,retry:()=>retry++}]},{});assert.equal(ack,1);assert.equal(retry,0);});
-const createWhatsAppWorker=(options)=>{assert.equal(typeof impl.createWhatsAppWorker,'function','Falta factoría interna del consumidor');return impl.createWhatsAppWorker(options);};
+const createWhatsAppWorker=(options)=>{assert.equal(typeof impl.createWhatsAppWorker,'function','Falta factorÃ­a interna del consumidor');return impl.createWhatsAppWorker(options);};
 import {processorFixture,latest} from './sarin-whatsapp-processor-fixture.mjs';
 import {processWhatsAppWork} from '../../server/sarin/whatsapp/processor.js';
 test('scheduled_lookup_runs_while_sending_disabled_without_reactivation',async t=>{const f=await processorFixture(t);await processWhatsAppWork(await f.capture(),f.env,{store:f.store,now:f.now,fetch:f.fetch});f.env.SARIN_WHATSAPP_REPLIES_ENABLED='false';f.env.SARIN_WHATSAPP_SEND_ENABLED='false';f.reset();const worker=createWhatsAppWorker({store:f.store,now:f.now,fetch:async(url,init)=>{f.counts.fetch++;assert.equal(init.method,'GET');assert.match(url,/\/provider_1$/);return Response.json({id:'provider_1',status:'delivered'});}});await worker.scheduled({},f.env);assert.equal(latest(f,'sarin_wa_outbox').state,'delivered');assert.equal(latest(f,'sarin_wa_pilot').enabled,0);assert.equal(latest(f,'sarin_wa_outbox').reconcile_attempts,1);t.diagnostic('scheduled lookup disabled '+JSON.stringify(f.counts));});
@@ -22,9 +22,14 @@ test('pages_waitUntil_only_notifies_after_durable_capture_and_publish_failure_ke
  assert.equal(response.status,200);assert.equal(promises.length,1);await Promise.all(promises);assert.equal(latest(f,'sarin_wa_jobs').state,'queued');assert.equal(f.calls.length,0);
 });
 test('full_queue_confirm_generation_and_scheduled_maximum_measurements',async t=>{
- const f=await processorFixture(t),worker=createWhatsAppWorker({store:f.store,now:f.now,fetch:f.fetch});
+ const f=await processorFixture(t),worker=createWhatsAppWorker({store:f.store,now:f.now,fetch:async(url,init)=>{
+  if(init.method!=='GET')return f.fetch(url,init);
+  f.counts.fetch++;f.calls.push({url,init});const id=String(url).split('/').at(-1),out=f.sqlite.prepare('SELECT * FROM sarin_wa_outbox WHERE provider_id=?').get(id);
+  return Response.json({id,status:'read',from:'+573000000002',to:'+573000000001',wabaId:'12345',externalId:out.external_id,
+   pricingModel:'PMP',pricingType:'regular',pricingCategory:'service',totalPrice:0.0008,currency:'USD',deliverTime:new Date(out.delivered_at).toISOString()});
+ }});
  for(const [label,text] of [['notice','Hola'],['confirm','ACEPTO'],['generation','Necesito una tienda']]){const body=await f.capture(text);f.reset();await worker.queue({messages:[{body,attempts:1,ack(){},retry(){assert.fail('unexpected retry');}}]},f.env);t.diagnostic('full queue '+label+' '+JSON.stringify(f.counts));const o=latest(f,'sarin_wa_outbox');await f.store.applyStatus({eventId:'metric_'+label,providerId:o.provider_id,status:'delivered',at:f.now()});}
- const j=await f.capture(),token=crypto.randomUUID();await f.store.claimGeneration({...j,token});f.setTime(f.now()+120001);f.reset();await worker.scheduled({},f.env);t.diagnostic('scheduled expired safe claim + dispatch '+JSON.stringify(f.counts));assert.equal(f.counts.queue,1);assert.equal(f.counts.fetch,0);
+ const j=await f.capture(),token=crypto.randomUUID();await f.store.claimGeneration({...j,token});f.setTime(f.now()+120001);f.reset();await worker.scheduled({},f.env);t.diagnostic('scheduled expired safe claim + dispatch + billing '+JSON.stringify(f.counts));assert.equal(f.counts.queue,1);assert.equal(f.counts.fetch,3);assert.ok(f.calls.every(call=>call.init.method==='GET'));assert.ok(f.counts.bindings+f.counts.fetch<=50);
 });
 test('queue_failure_path_resource_measurements',async t=>{
  for(const scenario of ['pause_classification','ambiguous_post','storage_retry']){

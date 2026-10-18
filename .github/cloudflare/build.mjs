@@ -15,7 +15,7 @@ const FUNCTION_ROUTES = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/s
 const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
-    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth', 'sarin-whatsapp-admin'].map(name => `modules/${name}.js`)]
+    'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth', 'sarin-admin-consumption', 'sarin-whatsapp-admin'].map(name => `modules/${name}.js`)]
   .map(name => `scripts/${name}`);
 const BRAND_FILES = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg']

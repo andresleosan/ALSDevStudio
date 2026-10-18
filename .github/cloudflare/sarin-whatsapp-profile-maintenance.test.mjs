@@ -36,7 +36,7 @@ function restored(t,sql){
 
 test('respaldo schema8 preserva perfil real de fixture y sólo devuelve contadores',async t=>{
  const f=await populated(t),sql=exportSql(f),report=await verifySarinBackup(Buffer.from(sql));
- assert.equal(report.verified,true);assert.equal(report.whatsappSchemaVersion,8);
+ assert.equal(report.verified,true);assert.equal(report.whatsappSchemaVersion,9);
  assert.equal(report.counts.sarin_wa_profiles,1);assert.equal(report.counts.sarin_wa_audio_quota,1);
  assert.doesNotMatch(JSON.stringify(report),/Perfil|Sintético|573000|synthetic-profile/);
  assert.equal(count(f,'sarin_wa_profiles'),1,'Verificar no modifica el origen');

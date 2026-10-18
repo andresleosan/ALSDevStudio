@@ -44,12 +44,10 @@ export async function processWhatsAppWork(hint,env,options={}) {
    await store.finishSend({outboxId,token,result:{status:'uncertain'}});return {status:'denied'};
   }
   try {
-   // La representación depende del aviso durable exacto; jamás se hace un segundo
-   // envío de texto como respaldo de una solicitud interactiva fallida o incierta.
+   // Cada salida conserva controles propios. Jamás se hace un segundo envío
+   // de texto como respaldo de una solicitud interactiva fallida o incierta.
    const message={to:permit.to,text:permit.text,externalId:permit.externalId,signal:controller.signal};
-   const result=permit.purpose==='notice'&&permit.version===WHATSAPP_NOTICE_VERSION&&permit.text===WHATSAPP_NOTICE
-    ?await client.sendButtons({...message,buttons:createWhatsAppMenuButtons(permit.outboxId)})
-    :await client.sendText(message);
+   const result=await client.sendButtons({...message,buttons:createWhatsAppMenuButtons(permit.outboxId,permit.purpose)});
    await store.finishSend({outboxId,token,result:{status:'accepted',providerId:result.providerId,...(result.wamid?{wamid:result.wamid}:{})}});
    if(['sent','delivered','read','failed'].includes(result.status))await store.applyStatus({eventId:'post:'+outboxId,providerId:result.providerId,status:/** @type {'sent'|'delivered'|'read'|'failed'} */(result.status),at:now()});
    return {status:'accepted'};
@@ -83,7 +81,7 @@ export async function processWhatsAppWork(hint,env,options={}) {
         signal:controller.signal,beforeInference:async()=>{check();try{return await store.beginAudioInference(own);}catch{return false;}}}):/** @type {import('./audio-client.js').AudioResult} */({ok:false,reason:'invalid_descriptor'});
       check();await store.finishAudio({...own,result});check();
       if(result.ok===false){
-        out=await store.completeGeneration({...own,reply:'No pude transcribir ese audio. Envíame tu consulta por texto o una nota de voz de WhatsApp de hasta 2 minutos. También puedes escribir HUMANO para solicitar atención de Andrés.',outcome:'fallback'});
+        out=await store.completeGeneration({...own,reply:'No pude transcribir ese audio. Envíame tu consulta por texto o una nota de voz de WhatsApp de hasta 2 minutos. También puedes usar el botón Hablar con Andrés.',outcome:'fallback'});
         return {...await send(out.outboxId,recipient),audioFailure:safeAudioFailure(result.reason)};
       }
       work.input=result.text;

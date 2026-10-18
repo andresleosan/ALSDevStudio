@@ -6,6 +6,7 @@ import { detectWhatsAppSchema } from '../../server/sarin/whatsapp/work-schema.js
 import { purgeWhatsAppWork } from '../../server/sarin/whatsapp/work-maintenance.js';
 import { purgeWhatsAppHandoff } from '../../server/sarin/whatsapp/handoff-store.js';
 import { purgeWhatsAppAudioQuota } from '../../server/sarin/whatsapp/audio-maintenance.js';
+import { purgeWhatsAppBilling } from '../../server/sarin/whatsapp/billing.js';
 
 const BATCH_SIZE = 100;
 const MAX_BATCHES = 20;
@@ -23,7 +24,7 @@ const WHATSAPP_COUNTERS = [['inbox', 'whatsappInbox'], ['receipts', 'whatsappRec
 export async function runRetention(env, { store, now = () => Date.now(), maxBatches = MAX_BATCHES } = {}) {
   const totals = { sessions: 0, conversations: 0, rejections: 0, audits: 0, counters: 0, reservations: 0,
     whatsappInbox: 0, whatsappReceipts: 0, whatsappPeers: 0, whatsappJobs:0, whatsappOutbox:0, whatsappConsents:0, whatsappAudits:0, whatsappObservations:0,
-    whatsappHandoff:0,whatsappAudioQuota:0 };
+    whatsappHandoff:0,whatsappAudioQuota:0,whatsappBillingReceipts:0 };
   if (env.SARIN_RETENTION_ENABLED !== 'true') return { status: 'disabled', batches: 0, ...totals, remaining: false };
   let batches = 0;
   try {
@@ -68,6 +69,10 @@ export async function runRetention(env, { store, now = () => Date.now(), maxBatc
       if(version>=7&&env.SARIN_DB){
         const audio=await purgeWhatsAppAudioQuota({db:env.SARIN_DB,now:clock,limit:BATCH_SIZE});
         totals.whatsappAudioQuota+=audio.deleted;remaining ||= audio.remaining;
+      }
+      if(version>=9&&env.SARIN_DB){
+        const billing=await purgeWhatsAppBilling({db:env.SARIN_DB,now:clock,limit:BATCH_SIZE});
+        totals.whatsappBillingReceipts+=billing.deleted;remaining ||= billing.remaining;
       }
       if (whatsapp) {
         const captured = await whatsapp.purge({ limit: BATCH_SIZE });

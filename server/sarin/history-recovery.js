@@ -57,6 +57,7 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
       db.prepare(`UPDATE sarin_history_state SET text_bytes = 0,rejection_overflow = 0,last_run_at = NULL,
         last_success_at = NULL,last_error_at = NULL,purge_status = 'never',purge_remaining = 0 WHERE singleton = 1`),
       // Incluye remanentes huérfanos de un restore que deshabilitó foreign_keys.
+      // El ledger de cargos 0009 conserva sus recibos y cobertura parcial: no es historial de conversación.
       ...(version>=8 ? [db.prepare('DELETE FROM sarin_wa_profiles')] : []),
       ...(version>=5 ? getWhatsAppWorkRecoveryStatements({db,at}) : []),
       ...(version>=6 ? getWhatsAppHandoffRecoveryStatements({db,at}) : []),

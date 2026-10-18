@@ -9,7 +9,7 @@ import { schemaTokens } from '../../server/sarin/whatsapp/schema-tokens.js';
 
 const tables = ['sarin_conversations', 'sarin_messages', 'sarin_consents', 'sarin_reservations', 'sarin_counters'];
 const whatsappTables = ['sarin_wa_state', 'sarin_wa_inbox', 'sarin_wa_receipts', 'sarin_wa_peers'];
-const optionalTables = ['sarin_leads', ...whatsappTables,'sarin_wa_handoff','sarin_wa_audio','sarin_wa_audio_quota','sarin_wa_profiles'];
+const optionalTables = ['sarin_leads', ...whatsappTables,'sarin_wa_handoff','sarin_wa_audio','sarin_wa_audio_quota','sarin_wa_profiles','sarin_wa_billing_scopes','sarin_wa_billing_receipts'];
 
 /** Compara SQL ya aceptado por SQLite. Ignora formato, conserva literales y sólo
  * equipara identificadores citados conocidos; "NULL" nunca equivale a NULL.
@@ -103,13 +103,15 @@ export async function verifySarinBackup(bytes) {
     const handoffMigration=await readFile(new URL('../../migrations/sarin/0006_whatsapp_handoff.sql',import.meta.url),'utf8');
     const audioMigration=await readFile(new URL('../../migrations/sarin/0007_whatsapp_audio.sql',import.meta.url),'utf8');
     const profileMigration=await readFile(new URL('../../migrations/sarin/0008_whatsapp_profiles.sql',import.meta.url),'utf8');
+    const billingMigration=await readFile(new URL('../../migrations/sarin/0009_whatsapp_billing.sql',import.meta.url),'utf8');
     const prior=(await Promise.all(['0001_usage.sql','0002_history.sql','0003_leads.sql'].map(name=>readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8')))).join('\n');
     const validateWhatsAppSchema=whatsappSchema(prior+'\n'+whatsappMigration);
     const validateWorkSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration);
     const validateHandoffSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration);
     const validateAudioSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration);
     const validateProfileSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration);
-    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema,validateProfileSchema];
+    const validateBillingSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration+'\n'+billingMigration);
+    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema,validateProfileSchema,validateBillingSchema];
     let whatsappSchemaVersion=0;
     db.exec('PRAGMA foreign_keys = ON');
     restoreBackupSql(db, bytes.toString('utf8'));
@@ -119,13 +121,20 @@ export async function verifySarinBackup(bytes) {
       const names=db.prepare("SELECT name FROM sqlite_master WHERE lower(name) GLOB 'sarin_wa_*'").all();
       if(present===0){if(names.length)throw new Error();return null;}
       if(present!==whatsappTables.length)throw new Error();
-      if(names.some(row=>!validateProfileSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
+      if(names.some(row=>!validateBillingSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
       let index=0;
       for(let candidate=1;candidate<validators.length;candidate++){
         if(names.some(row=>validators[candidate].objectNames.has(row.name.toLowerCase())
           && !validators[candidate-1].objectNames.has(row.name.toLowerCase())))index=candidate;
       }
       validators[index](db);whatsappSchemaVersion=index+4;
+      if(whatsappSchemaVersion>=9){
+        const billing=db.prepare(`SELECT COUNT(*) AS scopes,COALESCE(SUM(receipt_rows),0) AS declared,
+          (SELECT COUNT(*) FROM sarin_wa_billing_receipts) AS receipts,
+          (SELECT COUNT(*) FROM sarin_wa_billing_scopes s WHERE s.receipt_rows<>(SELECT COUNT(*) FROM sarin_wa_billing_receipts r WHERE r.scope_key=s.scope_key)) AS mismatches
+          FROM sarin_wa_billing_scopes`).get();
+        if(billing.scopes>4||billing.receipts>100000||billing.declared!==billing.receipts||billing.mismatches)throw new Error();
+      }
       const row = db.prepare(`SELECT inbox_rows,receipt_rows,content_bytes,
         (SELECT COUNT(*) FROM sarin_wa_state) AS stateRows,
         (SELECT COUNT(*) FROM sarin_wa_inbox) AS inbox,
