@@ -1,12 +1,12 @@
 # Tareas — ALS DevStudio
 
-## SARIN-WA-PUBLICO · 2026-10-18 · preparado para validación y publicación
+## SARIN-WA-PUBLICO · 2026-10-18 · publicado
 
 - [x] Confirmar la autorización del titular para nuevos contactos: primer «Hola» recibe presentación/aviso; ACEPTO antes de IA; respuesta humana mantiene la pausa. Canal **ALS Dev Studio, +57 305 277 8047**.
 - [x] Preparar aviso público `whatsapp-service-2026-10-18-v2`, marca completa y políticas coherentes: aceptación del piloto no reutilizable, contenido durante 24 horas y recibos durante 48 horas y marcador durable de pausa separado. Ancla `#whatsapp` con alias anterior conservado.
 - [x] Documentar configuración pública, fecha de admisión, límites vigentes y reversión sin restaurar consentimiento antiguo. [Registro de la etapa](docs/SARIN-WHATSAPP-PUBLICO.md).
 - [x] Consolidar validación del candidato: 858 pruebas Node, dos contactos nuevos en workerd/D1/Queue con proveedores ficticios, revisión independiente y QA CUA con 106 contactos en escritorio/móvil. ACEPTO vigente, rechazo de eventos/consentimiento anteriores, pausa/STOP persistentes, capacidad/cuotas y paginación comprobados.
-- [ ] Publicar y verificar Pages/consumidor con `PUBLIC_SINCE` coordinado, preview cerrado y controles conservados; completar versiones, fecha y evidencia en el registro. No marcar la prueba real del piloto como prueba de apertura pública.
+- [x] Publicar fuente `67e7619`: Pages `92275127`, consumidor `0142e118`, `PUBLIC_SINCE` coordinado, preview cerrado, secretos y controles conservados. Recursos y acceso administrativo verificados; entrega real del nuevo aviso pendiente del titular. La prueba real del piloto no se presenta como prueba de esta apertura.
 
 ## SARIN-WA-PANEL-UX · 2026-10-18
 

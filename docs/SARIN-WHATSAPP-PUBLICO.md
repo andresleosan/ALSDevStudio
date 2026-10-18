@@ -1,10 +1,10 @@
 # Sarin en WhatsApp · atención pública · 18 de octubre de 2026
 
-**Estado: validado localmente, pendiente de publicación; apertura remota aún no acreditada en este registro.** El titular autorizó admitir nuevos contactos con el flujo «Hola → aviso → ACEPTO → consulta», conservando la pausa cuando conteste desde el celular. Canal exclusivo: **ALS Dev Studio, +57 305 277 8047**.
+**Estado: publicado y verificado el 18 de octubre de 2026, 2:23 a. m. de Colombia.** El titular autorizó admitir nuevos contactos con el flujo «Hola → aviso → ACEPTO → consulta», conservando la pausa cuando conteste desde el celular. Canal exclusivo: **ALS Dev Studio, +57 305 277 8047**. La nueva entrega real del aviso está pendiente de la comprobación del titular; las pruebas locales no se presentan como mensajes remotos.
 
-Este documento sustituye el alcance limitado a un contacto del [registro del piloto](SARIN-WHATSAPP-RESPUESTAS.md) cuando se complete la publicación. La prueba real anterior acredita el piloto, no la apertura pública de esta versión.
+Este documento sustituye el alcance limitado a un contacto del [registro del piloto](SARIN-WHATSAPP-RESPUESTAS.md). La prueba real anterior acredita el piloto, no la apertura pública de esta versión.
 
-## Comportamiento preparado
+## Comportamiento publicado
 
 - Un contacto nuevo que escriba un mensaje de texto, incluso «Hola», puede recibir la presentación y el aviso, sujeto a disponibilidad, capacidad y cupos. No necesita agregarse a una lista privada.
 - Aviso vigente: `whatsapp-service-2026-10-18-v2`, con la marca completa **ALS Dev Studio**, tratamiento internacional y enlace a `privacidad.html#whatsapp`. El ancla anterior `#whatsapp-piloto` se conserva como alias.
@@ -20,7 +20,7 @@ Pages y el consumidor deben compartir `SARIN_WHATSAPP_ACCESS_MODE=public` y un m
 
 `PUBLIC_SINCE` fija el inicio de la admisión pública. Las entradas y ecos con fecha de envío o creación anterior se ignoran, aunque el proveedor los entregue después. Se mantiene el filtro de cuenta empresarial y número de destino. No se importa el historial anterior ni se retrocede esta fecha para recuperar mensajes. Preview y la configuración base deben permanecer cerrados.
 
-| Control | Límite preparado |
+| Control | Límite vigente |
 | --- | --- |
 | Intentos de envío | 20 al día y 100 al mes; incluyen presentación, confirmación de aceptación y respuestas. Períodos UTC. |
 | Presupuesto interno de IA | USD 1 al día y USD 10 al mes, compartido con el chat web. Períodos UTC. |
@@ -42,10 +42,10 @@ Antes de marcar esta etapa publicada, registrar resultados de pruebas de admisi�
 | Evidencia de esta versión | Estado |
 | --- | --- |
 | Regresiones, revisión y QA del candidato | 858/858 pruebas Node, harness workerd/D1/Queue y QA CUA aprobados; detalles debajo. |
-| Commit fuente y revisión del artefacto | Pendiente. |
-| Pages y versión del consumidor | Pendiente. |
-| `PUBLIC_SINCE` remoto, UTC y equivalente Colombia | Pendiente. |
-| Verificación remota de configuración y recursos | Pendiente. |
+| Commit fuente y revisión del artefacto | `67e7619`, enviado a `main`; revisión `706ac4a106e73ae4`. |
+| Pages y versión del consumidor | Pages `92275127-3c90-44fe-8976-c73d9299deed`; consumidor `0142e118-a07e-4580-8085-454fe086d504` al 100 %. |
+| `PUBLIC_SINCE` remoto, UTC y equivalente Colombia | Piso de admisión `2026-10-18T07:19:24.000Z` = 2:19:24 a. m.; apertura publicada y confirmada a las 2:23 a. m. |
+| Verificación remota de configuración y recursos | Pages y consumidor en `public`, respuestas/envío habilitados, misma fecha; once secretos Pages y seis del consumidor conservados. Preview sin secretos, D1 ni Queue. Recursos públicos coinciden con el artefacto; API administrativa anónima 403 y webhook sin firma 401. |
 | Prueba de un contacto nuevo, si se realiza | Sin nueva evidencia registrada. |
 
 No registrar claves, teléfonos de clientes, cuerpos de conversaciones ni códigos de acceso en evidencias o Git. La prueba del piloto y el [arreglo previo del panel](SARIN-WHATSAPP-PANEL-UX.md) se conservan como antecedentes, sin presentarlos como validación de esta apertura.
@@ -60,6 +60,10 @@ No registrar claves, teléfonos de clientes, cuerpos de conversaciones ni códig
 - Build: 223 recursos públicos, 5.450.701 bytes, revisión `706ac4a106e73ae4`. Consumidor compilado con Wrangler 4.151.1 en `--dry-run`, 113,28 KiB (26,87 KiB gzip). Sin migraciones, dependencias ni cambios de credenciales.
 
 Artefactos locales ignorados por Git: `test-results/sarin-whatsapp-public-20261018/` (pruebas, evidencia de runtime y capturas). Para el despliegue, publicar primero el consumidor nuevo con sólo `SEND_ENABLED=false`, después Pages y finalmente el consumidor con envío habilitado. Mantener `REPLIES_ENABLED=true` durante esa transición evita cambiar el interruptor durable o las pausas existentes.
+
+Publicación coordinada completada en ese orden: versión temporal sin envío `fd7b9058-4210-4c63-949b-9c981ad1e15f`, Pages público y consumidor activo. Se verificaron los valores remotos en cada transición. El interruptor durable continuó habilitado; al cierre había un contexto activo, cero trabajos pendientes, cuatro intentos previos consumidos y ninguna aceptación v2 todavía. No se alteraron controles del contacto real ni se enviaron mensajes manuales desde esta revisión. La sesión del panel se restauró y mostró «Respuestas automáticas activas», marca completa y aceptación pendiente para el participante anterior. El historial conserva sus mensajes originales; el texto nuevo se utiliza en el siguiente aviso.
+
+Evidencias remotas: `remote-before.json`, `remote-hold.json`, `remote-pages.json`, `remote-active.json`, `public-smoke.json` y `panel-publicado.jpg` en la carpeta local anterior. Reporte visual: `qa/reports/sarin-whatsapp-public-20261018.html`. Pages anterior: `75347c75-b112-4956-ad7b-7ca91de9cfd9`; no restaurar su lógica antigua de consentimiento como procedimiento de reversión.
 
 ## Cierre y reversión
 
