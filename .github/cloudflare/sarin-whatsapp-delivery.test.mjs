@@ -28,3 +28,52 @@ test('identity_conflict_duplicate_is_inert',async t=>{const f=await setup(t);awa
 test('concurrent_provider_binding_conflict_fails_closed',async t=>{const f=await setup(t);let interleaved=false;const db={prepare:f.db.prepare,async batch(statements){if(!interleaved&&statements.some(s=>s.sql.includes('INSERT INTO sarin_wa_delivery_observations'))){interleaved=true;await f.store.finishSend({...f,result:{status:'accepted',providerId:'winner',wamid:'wamid.winner'}});}return f.db.batch(statements);}};const raced=createWhatsAppWorkStore({db,now:f.now});await raced.applyStatus({eventId:'raced',providerId:'loser',externalId:f.permit.externalId,wamid:'wamid.loser',status:'read',at:f.now()});assert.equal(f.out().provider_id,'winner');assert.equal(f.out().conflict,1);assert.equal(f.ctx().paused,1);});
 
 test('human_pause_during_post_does_not_hide_send_expiry',async t=>{const f=await setup(t);await f.capture('echo','wamid.human');const later=createWhatsAppWorkStore({db:f.db,now:()=>f.now()+120001});await later.expireLeases();assert.equal(f.out().state,'send_uncertain');assert.equal(f.sqlite.prepare('SELECT consumed FROM sarin_wa_send_quota').get().consumed,1);});
+
+test('early_accepted_allows_post_finalization_and_additional_wamid', async t => {
+  const f = await setup(t);
+  assert.equal((await f.status('accepted', 'early_accepted', { externalId: f.permit.externalId })).status, 'applied');
+  assert.equal(f.out().state, 'accepted');
+  await f.store.finishSend({ ...f, result: { status: 'accepted', providerId: 'provider_notice', wamid: 'wamid.post+/=' } });
+  assert.equal(f.out().state, 'accepted');
+  assert.equal(f.out().wamid, 'wamid.post+/=');
+  assert.equal(f.out().delivered_at, null);
+  assert.equal(f.ctx().paused, 0);
+  const job = f.sqlite.prepare('SELECT state,token,lease_until FROM sarin_wa_jobs').get();
+  assert.equal(job.state, 'completed');
+  assert.equal(job.token, null);
+  assert.equal(job.lease_until, null);
+  assert.equal(f.sqlite.prepare('SELECT consumed FROM sarin_wa_send_quota').get().consumed, 1);
+});
+
+test('early_accepted_conflicting_post_identity_persists_conflict', async t => {
+  const f = await setup(t);
+  await f.status('accepted', 'early_accepted', { externalId: f.permit.externalId, wamid: 'wamid.early' });
+  await assert.rejects(f.store.finishSend({ ...f, result: { status: 'accepted', providerId: 'other_provider', wamid: 'wamid.other' } }), e => e.code === 'work_conflict');
+  assert.equal(f.out().provider_id, 'provider_notice');
+  assert.equal(f.out().wamid, 'wamid.early');
+  assert.equal(f.out().conflict, 1);
+  assert.equal(f.out().delivered_at, null);
+  assert.equal(f.ctx().paused, 1);
+  const job = f.sqlite.prepare('SELECT state,token,lease_until FROM sarin_wa_jobs').get();
+  assert.equal(job.state, 'completed');
+  assert.equal(job.token, null);
+  assert.equal(job.lease_until, null);
+});
+
+test('late_accepted_preserves_uncertainty_and_records_observation', async t => {
+  const f = await setup(t);
+  await f.store.finishSend({ ...f, result: { status: 'uncertain' } });
+  const revision = f.ctx().revision;
+  const event = { externalId: f.permit.externalId, wamid: 'wamid.late' };
+  assert.equal((await f.status('accepted', 'late_accepted', event)).status, 'applied');
+  assert.equal(f.out().state, 'send_uncertain');
+  assert.equal(f.out().provider_id, 'provider_notice');
+  assert.equal(f.out().wamid, 'wamid.late');
+  assert.equal(f.out().delivered_at, null);
+  assert.equal(f.ctx().paused, 1);
+  assert.equal(f.ctx().revision, revision);
+  assert.equal((await f.status('accepted', 'late_accepted', event)).status, 'duplicate');
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_delivery_observations').get().n, 1);
+  assert.equal(f.sqlite.prepare('SELECT consumed FROM sarin_wa_send_quota').get().consumed, 1);
+  assert.deepEqual(await f.store.listDispatchable(), []);
+});

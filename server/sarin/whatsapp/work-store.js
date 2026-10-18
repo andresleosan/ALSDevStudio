@@ -297,7 +297,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         && (x.result.status!=='accepted'||providerId(x.result.providerId)) && (x.result.wamid===undefined||providerId(x.result.wamid,512)));
       const at=clock(),next=x.result.status==='uncertain'?'send_uncertain':x.result.status;
       const results=await batch([guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id WHERE o.outbox_id=?
-        AND j.token=? AND j.lease_until>? AND o.started_at IS NOT NULL AND o.state IN('sending','sent','delivered','read','failed'))`,[x.outboxId,x.token,at]),
+        AND j.token=? AND j.lease_until>? AND o.started_at IS NOT NULL AND o.state IN('sending','accepted','sent','delivered','read','failed'))`,[x.outboxId,x.token,at]),
         s(`UPDATE sarin_wa_outbox SET conflict=1 WHERE outbox_id=? AND
           ((provider_id IS NOT NULL AND ? IS NOT NULL AND provider_id<>?) OR (wamid IS NOT NULL AND ? IS NOT NULL AND wamid<>?)
            OR EXISTS(SELECT 1 FROM sarin_wa_outbox other WHERE other.outbox_id<>? AND other.provider_id=?)
@@ -344,7 +344,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         s(`UPDATE sarin_wa_outbox SET provider_id=COALESCE(provider_id,?),wamid=COALESCE(wamid,?),
           delivered_at=CASE WHEN ? IN('delivered','read') THEN COALESCE(delivered_at,?) ELSE delivered_at END,
           state=CASE WHEN state IN('failed','rejected','cancelled','expired') THEN state
-            WHEN ?='accepted' AND state IN('sent','delivered','read') THEN state WHEN state='read' THEN state WHEN state='delivered' AND ?='sent' THEN state ELSE ? END
+            WHEN ?='accepted' AND state IN('send_uncertain','sent','delivered','read') THEN state WHEN state='read' THEN state WHEN state='delivered' AND ?='sent' THEN state ELSE ? END
           WHERE outbox_id=? AND conflict=0 AND EXISTS(SELECT 1 FROM sarin_wa_delivery_observations WHERE event_id=? AND outbox_id=sarin_wa_outbox.outbox_id AND applied=0)`,
           event.providerId??null,event.wamid??null,event.status,event.at,event.status,event.status,event.status,o.outbox_id,event.eventId),
         s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1 WHERE peer_key=(SELECT peer_key FROM sarin_wa_outbox WHERE outbox_id=? AND context_id=sarin_wa_contexts.context_id AND (state='failed' OR conflict=1))
