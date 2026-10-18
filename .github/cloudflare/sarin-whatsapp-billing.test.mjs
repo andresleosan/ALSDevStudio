@@ -63,7 +63,8 @@ function exported(f){const objects=f.sqlite.prepare("SELECT type,name,sql FROM s
 test('capacidad transaccional, duplicado al límite, suma grande exacta y purga acotada',async t=>{const f=await fixture(t);await f.store.observe(event());
  assert.equal(f.sqlite.prepare('SELECT receipt_rows FROM sarin_wa_billing_scopes').get().receipt_rows,1);
  f.sqlite.exec(`WITH RECURSIVE n(x) AS(SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<99999)
- INSERT INTO sarin_wa_billing_receipts SELECT printf('%064x',n.x),r.scope_key,r.month_key,r.delivered_at,1,'regular','marketing',1000000000000,'USD',r.first_seen,r.last_seen,r.expires_at
+ INSERT INTO sarin_wa_billing_receipts(receipt_key,scope_key,month_key,delivered_at,quality,pricing_type,category,amount_micros,currency,first_seen,last_seen,expires_at)
+ SELECT printf('%064x',n.x),r.scope_key,r.month_key,r.delivered_at,1,'regular','marketing',1000000000000,'USD',r.first_seen,r.last_seen,r.expires_at
  FROM n CROSS JOIN (SELECT * FROM sarin_wa_billing_receipts LIMIT 1) r`);
  const s=await f.store.summary();assert.equal(s.observedMessages,100000);assert.deepEqual(s.amounts,[{currency:'USD',amountMicros:'99999000000000800'}]);
  assert.equal((await f.store.observe(event('overflow'))).recorded,false);assert.equal((await f.store.summary()).storageLimited,true);
@@ -72,9 +73,9 @@ test('capacidad transaccional, duplicado al límite, suma grande exacta y purga 
  assert.deepEqual(await billing.purgeWhatsAppBilling({db:f.db,now:()=>expires,limit:500}),{deleted:500,remaining:true});
  assert.equal(f.sqlite.prepare('SELECT receipt_rows FROM sarin_wa_billing_scopes').get().receipt_rows,99500);
 });
-test('schema9 se verifica en backup y recuperación de historia conserva recibos y cobertura parcial',async t=>{const f=await fixture(t);await f.store.observe(event());
- assert.equal(await detectWhatsAppSchema({db:f.db}),9);const before=await f.store.summary();
- const report=await verifySarinBackup(Buffer.from(exported(f)));assert.equal(report.whatsappSchemaVersion,9);assert.equal(report.counts.sarin_wa_billing_receipts,1);
+test('schema10 se verifica en backup y recuperación de historia conserva recibos y cobertura parcial',async t=>{const f=await fixture(t);await f.store.observe(event());
+ assert.equal(await detectWhatsAppSchema({db:f.db}),10);const before=await f.store.summary();
+ const report=await verifySarinBackup(Buffer.from(exported(f)));assert.equal(report.whatsappSchemaVersion,10);assert.equal(report.counts.sarin_wa_billing_receipts,1);
  f.sqlite.exec('PRAGMA foreign_keys=OFF');await clearRestoredHistory({db:f.db,now:()=>AT,maintenanceConfirmed:true,requestsDrained:true});
  assert.deepEqual(await f.store.summary(),before);assert.equal((await f.store.summary()).partial,true);
 });
@@ -86,7 +87,7 @@ test('fecha de entrega contradictoria entre meses degrada precisión sin sumar n
  await f.store.observe(event('conflict-month',{deliverTime:Date.parse('2026-09-30T23:59:59Z')}));await f.store.observe(event('conflict-month'));
  const s=await f.store.summary();assert.equal(s.precisionDegraded,true);assert.equal(s.paidMessagesObserved,0);assert.deepEqual(s.amounts,[]);
 });
-test('cron schema9 conserva recibos antes del TTL y los purga exactamente al vencer sin PII en logs',async t=>{const f=await fixture(t);await f.store.observe(event());
+test('cron schema10 conserva recibos antes del TTL y los purga exactamente al vencer sin PII en logs',async t=>{const f=await fixture(t);await f.store.observe(event());
  const expires=f.sqlite.prepare('SELECT expires_at FROM sarin_wa_billing_receipts').get().expires_at,logs=[];t.mock.method(console,'log',(...args)=>logs.push(args));
  const env={SARIN_RETENTION_ENABLED:'true',SARIN_DB:f.db};
  assert.equal((await runRetention(env,{now:()=>expires-1})).whatsappBillingReceipts,0);

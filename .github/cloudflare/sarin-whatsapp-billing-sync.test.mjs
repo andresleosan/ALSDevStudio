@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
 import {processorFixture,establishConsent,latest} from './sarin-whatsapp-processor-fixture.mjs';
 import {processWhatsAppWork} from '../../server/sarin/whatsapp/processor.js';
 import {createWhatsAppBillingStore} from '../../server/sarin/whatsapp/billing.js';
 import {createWhatsAppWorker} from '../../workers/sarin-whatsapp/index.js';
+import {handleWhatsAppIngress} from '../../server/sarin/whatsapp/ingress.js';
 
 const implementation=await import('../../server/sarin/whatsapp/billing-sync.js').catch(error=>{if(error.code==='ERR_MODULE_NOT_FOUND')return {};throw error;});
 const sync=(env,options)=>{assert.equal(typeof implementation.syncWhatsAppBilling,'function','Falta sincronización GET acotada');return implementation.syncWhatsAppBilling(env,options);};
@@ -18,6 +20,54 @@ async function fixture(t,{many=false}={}){
   pricingModel:'PMP',pricingType:'regular',pricingCategory:'service',totalPrice:0.0008,currency:'USD',deliverTime:new Date(out.delivered_at).toISOString(),...change};};
  return {...f,billing,response};
 }
+
+async function signedStatusWithoutPrice(f,status){
+ const out=latest(f,'sarin_wa_outbox'),secret='synthetic-billing-sync-webhook-secret',at=f.now();
+ const payload={id:'billing-status-'+status+'-'+at,type:'whatsapp.message.updated',apiVersion:'v2',createTime:new Date(at).toISOString(),
+  whatsappMessage:{id:out.provider_id,status,from:f.env.SARIN_WHATSAPP_BUSINESS_PHONE,to:'+573000000001',wabaId:f.env.SARIN_WHATSAPP_WABA_ID,
+   externalId:out.external_id,deliverTime:new Date(out.delivered_at).toISOString()}};
+ const body=JSON.stringify(payload),stamp=String(Math.floor(at/1000));
+ const request=new Request('https://local.invalid/api/sarin/whatsapp',{method:'POST',body,headers:{'Content-Type':'application/json',
+  'YCloud-Signature':`t=${stamp},s=${createHmac('sha256',secret).update(stamp+'.'+body).digest('hex')}`}});
+ const env={...f.env,SARIN_WHATSAPP_INGRESS_ENABLED:'true',SARIN_WHATSAPP_WEBHOOK_SECRET:secret,SARIN_WHATSAPP_ACCESS_MODE:'public',
+  SARIN_WHATSAPP_PUBLIC_SINCE:new Date(at-60000).toISOString(),SARIN_WHATSAPP_CAPTURE_SINCE:new Date(at-60000).toISOString()};
+ const response=await handleWhatsAppIngress(request,env,{now:f.now});assert.equal(response.status,200);assert.deepEqual(await response.json(),{ok:true});
+}
+
+for(const [status,pricingType,totalPrice] of [['delivered','free_customer_service',0],['read','regular',0.0008]]){
+ test('webhook '+status+' sin precio permite un único GET final '+pricingType,async t=>{
+  const f=await fixture(t),beforeQuota=f.sqlite.prepare('SELECT * FROM sarin_wa_send_quota').all();
+  await signedStatusWithoutPrice(f,status);
+  await signedStatusWithoutPrice(f,status==='read'?'delivered':'read');
+  assert.equal((await f.billing.summary()).unknownPricingObserved,1);
+  assert.equal(latest(f,'sarin_wa_billing_scopes').lookup_count,0);
+  const before=latest(f,'sarin_wa_billing_receipts');let calls=0;
+  const fetcher=async(url,init)=>{calls++;assert.equal(init.method,'GET');assert.equal(init.body,undefined);
+   const marker=latest(f,'sarin_wa_billing_receipts');assert.equal(marker.quality,0);assert.equal(marker.lookup_attempted,1,'Marcador durable antes del GET');
+   return Response.json(f.response(String(url).split('/').at(-1),{pricingType,totalPrice}));};
+  const result=await sync(f.env,{now:f.now,fetch:fetcher});
+  assert.equal(result.lookups,1,'Un webhook incompleto no debe impedir la primera consulta de precio');
+  assert.equal(before.lookup_attempted,0);assert.equal(result.enriched,1);assert.equal(result.unknown,0);
+  f.setTime(f.now()+1000);await signedStatusWithoutPrice(f,status);f.setTime(f.now()+60000);await sync(f.env,{now:f.now,fetch:fetcher});
+  assert.equal(calls,1);const summary=await f.billing.summary();assert.equal(summary.observedMessages,1);assert.equal(summary.unknownPricingObserved,0);
+  assert.equal(summary.freeServiceObserved,totalPrice===0?1:0);assert.equal(summary.paidMessagesObserved,totalPrice===0?0:1);
+  assert.deepEqual(summary.amounts,totalPrice===0?[]:[{currency:'USD',amountMicros:'800'}]);
+  assert.equal(latest(f,'sarin_wa_billing_receipts').lookup_attempted,1);
+  assert.deepEqual(f.sqlite.prepare('SELECT * FROM sarin_wa_send_quota').all(),beforeQuota);
+ });
+}
+
+test('webhook sin precio y GET fallido conservan marcador incluso tras otro webhook y minuto',async t=>{
+ const f=await fixture(t);await signedStatusWithoutPrice(f,'read');let calls=0;
+ const fetcher=async(url,init)=>{calls++;assert.equal(init.method,'GET');assert.equal(latest(f,'sarin_wa_billing_receipts').lookup_attempted,1);
+  return new Response('private-key private-phone',{status:401});};
+ const first=await sync(f.env,{now:f.now,fetch:fetcher});assert.equal(first.lookups,1);
+ assert.equal(latest(f,'sarin_wa_billing_receipts').quality,0);assert.equal(latest(f,'sarin_wa_billing_receipts').lookup_attempted,1);
+ await signedStatusWithoutPrice(f,'delivered');f.setTime(f.now()+60000);await sync(f.env,{now:f.now,fetch:fetcher});
+ assert.equal(calls,1);const summary=await f.billing.summary();assert.equal(summary.observedMessages,1);assert.equal(summary.unknownPricingObserved,1);
+ assert.equal(summary.freeServiceObserved,0);assert.equal(summary.paidMessagesObserved,0);assert.deepEqual(summary.amounts,[]);
+ assert.doesNotMatch(JSON.stringify(first),/private-key|private-phone|provider_/);
+});
 
 test('sincroniza sólo por GET tras marcador durable y no consume cuotas ni reactiva envíos',async t=>{
  const f=await fixture(t),calls=[],before=f.sqlite.prepare('SELECT * FROM sarin_wa_send_quota').all();

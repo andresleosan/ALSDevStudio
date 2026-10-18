@@ -104,6 +104,7 @@ export async function verifySarinBackup(bytes) {
     const audioMigration=await readFile(new URL('../../migrations/sarin/0007_whatsapp_audio.sql',import.meta.url),'utf8');
     const profileMigration=await readFile(new URL('../../migrations/sarin/0008_whatsapp_profiles.sql',import.meta.url),'utf8');
     const billingMigration=await readFile(new URL('../../migrations/sarin/0009_whatsapp_billing.sql',import.meta.url),'utf8');
+    const billingLookupMigration=await readFile(new URL('../../migrations/sarin/0010_whatsapp_billing_lookup.sql',import.meta.url),'utf8');
     const prior=(await Promise.all(['0001_usage.sql','0002_history.sql','0003_leads.sql'].map(name=>readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8')))).join('\n');
     const validateWhatsAppSchema=whatsappSchema(prior+'\n'+whatsappMigration);
     const validateWorkSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration);
@@ -111,7 +112,8 @@ export async function verifySarinBackup(bytes) {
     const validateAudioSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration);
     const validateProfileSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration);
     const validateBillingSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration+'\n'+billingMigration);
-    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema,validateProfileSchema,validateBillingSchema];
+    const validateBillingLookupSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration+'\n'+billingMigration+'\n'+billingLookupMigration);
+    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema,validateProfileSchema,validateBillingSchema,validateBillingLookupSchema];
     let whatsappSchemaVersion=0;
     db.exec('PRAGMA foreign_keys = ON');
     restoreBackupSql(db, bytes.toString('utf8'));
@@ -121,7 +123,7 @@ export async function verifySarinBackup(bytes) {
       const names=db.prepare("SELECT name FROM sqlite_master WHERE lower(name) GLOB 'sarin_wa_*'").all();
       if(present===0){if(names.length)throw new Error();return null;}
       if(present!==whatsappTables.length)throw new Error();
-      if(names.some(row=>!validateBillingSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
+      if(names.some(row=>!validateBillingLookupSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
       let index=0;
       for(let candidate=1;candidate<validators.length;candidate++){
         if(names.some(row=>validators[candidate].objectNames.has(row.name.toLowerCase())

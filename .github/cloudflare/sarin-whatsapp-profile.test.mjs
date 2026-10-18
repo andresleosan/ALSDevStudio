@@ -105,7 +105,7 @@ test('cuota agotada revierte perfil y confirmación juntos',async t=>{
 });
 
 test('schema actual detecta perfil y rechaza un guard de integridad ausente',async t=>{
- const f=await processorFixture(t);assert.equal(await detectWhatsAppSchema({db:f.db,repliesEnabled:true}),9);
+ const f=await processorFixture(t);assert.equal(await detectWhatsAppSchema({db:f.db,repliesEnabled:true}),10);
  f.sqlite.exec('DROP TRIGGER sarin_wa_profile_validate_insert');await assert.rejects(detectWhatsAppSchema({db:f.db,repliesEnabled:true}),/wa_schema_invalid/);
 });
 

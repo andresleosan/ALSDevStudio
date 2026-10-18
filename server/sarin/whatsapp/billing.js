@@ -52,7 +52,10 @@ function pricing(input,eventAt){
 function expiry(at){const d=new Date(at),day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+13);
  const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(day,last));return d.getTime();}
 /** @param {Database} db */
-async function available(db){const r=await db.batch([db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name IN('sarin_wa_billing_scopes','sarin_wa_billing_receipts')")]);return r[0]?.success===true&&r[0]?.results?.[0]?.n===2;}
+async function available(db){const r=await db.batch([db.prepare(`SELECT COUNT(*) AS n,
+ EXISTS(SELECT 1 FROM pragma_table_info('sarin_wa_billing_receipts') WHERE name='lookup_attempted') AS has_lookup
+ FROM sqlite_master WHERE type='table' AND name IN('sarin_wa_billing_scopes','sarin_wa_billing_receipts')`)]);
+ return r[0]?.success===true&&r[0]?.results?.[0]?.n===2?(r[0].results[0].has_lookup===1?10:9):0;}
 /** @param {Options} options */
 export function createWhatsAppBillingStore({db,now=Date.now,businessPhone,wabaId}){
  if(!db||typeof now!=='function'||!/^\+[1-9]\d{7,14}$/.test(businessPhone)||!/^\d{1,64}$/.test(wabaId))throw new Error('wa_billing_invalid');
@@ -69,14 +72,14 @@ export function createWhatsAppBillingStore({db,now=Date.now,businessPhone,wabaId
    const at=clock();if(!['delivered','read'].includes(String(event.status))||event.from!==businessPhone
     ||(event.wabaId!==undefined&&event.wabaId!==wabaId)||typeof event.messageId!=='string'||! /^[\x21-\x7e]{1,256}$/.test(event.messageId)
     ||!timestamp(event.createdAt))return {available:true,recorded:false};
-   if(!await available(db))return unavailable();
+   const schema=await available(db);if(!schema)return unavailable();
    const scope=await scopePromise,key=await hash(JSON.stringify([scope,event.messageId])),p=pricing(event.pricing,event.createdAt);
    const date=p?.deliveredAt??event.createdAt,expires=expiry(date);if(expires<=at)return {available:true,recorded:false};
    const month=new Date(date).toISOString().slice(0,7);
    const r=await db.batch([
     initialize(scope,at),
-    db.prepare(`INSERT INTO sarin_wa_billing_receipts(receipt_key,scope_key,month_key,delivered_at,quality,pricing_type,category,amount_micros,currency,first_seen,last_seen,expires_at)
-     SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM sarin_wa_billing_scopes WHERE scope_key=?)
+    db.prepare(`INSERT INTO sarin_wa_billing_receipts(receipt_key,scope_key,month_key,delivered_at,quality,pricing_type,category,amount_micros,currency,first_seen,last_seen,expires_at${schema>=10?',lookup_attempted':''})
+     SELECT ?,?,?,?,?,?,?,?,?,?,?,?${schema>=10?',0':''} WHERE EXISTS(SELECT 1 FROM sarin_wa_billing_scopes WHERE scope_key=?)
       AND ((SELECT COALESCE(SUM(receipt_rows),0) FROM sarin_wa_billing_scopes)<? OR EXISTS(SELECT 1 FROM sarin_wa_billing_receipts WHERE receipt_key=?))
      ON CONFLICT(receipt_key) DO UPDATE SET
       quality=CASE WHEN sarin_wa_billing_receipts.quality=2 OR (sarin_wa_billing_receipts.quality=1 AND excluded.quality=1 AND
@@ -105,12 +108,14 @@ export function createWhatsAppBillingStore({db,now=Date.now,businessPhone,wabaId
    return {state:!row?'missing':row.expires_at<=at?'expired':row.quality===1?'verified':row.quality===2?'conflict':'unknown'};
   },
   /** Reserva una única consulta por mensaje antes del GET externo. Un fallo de
-   * red conserva el marcador unknown; sólo un webhook posterior puede completarlo.
+   * red conserva lookup_attempted=1; sólo un webhook posterior puede completarlo.
+   * Los unknown de webhooks nuevos permiten su primer intento. En schema9 el
+   * barrido espera la migración, sin interrumpir captura ni resumen del consumo.
    * Tres reservas por minuto UTC y negocio; nunca consume cuota de mensajes.
    * @param {{limit?:number}} [options] */
   async claimMissing({limit=1}={}){
    if(!Number.isSafeInteger(limit)||limit<1||limit>3)throw new Error('wa_billing_invalid');
-   const at=clock();if(!await available(db))return [];
+   const at=clock();if(await available(db)<10)return [];
    const scope=await scopePromise,minute=Math.floor(at/60000);
    const scan=await db.batch([initialize(scope,at),
     db.prepare('UPDATE sarin_wa_billing_scopes SET lookup_minute=?,lookup_count=0 WHERE scope_key=? AND lookup_minute<?').bind(minute,scope,minute),
@@ -123,21 +128,24 @@ export function createWhatsAppBillingStore({db,now=Date.now,businessPhone,wabaId
     &&typeof row.to_phone==='string'&&/^\+[1-9]\d{1,14}$/.test(row.to_phone)&&timestamp(row.delivered_at)&&timestamp(row.started_at))
     .map(async row=>({...row,key:await hash(JSON.stringify([scope,row.message_id]))})));
    if(!candidates.length)return [];
-   // D1 Free admite50 parámetros por sentencia; cada lectura usa como máximo40.
+   // D1 Free admite50 parámetros por sentencia; cada lectura usa como máximo41.
    const chunks=[];for(let i=0;i<candidates.length;i+=40)chunks.push(candidates.slice(i,i+40));
-   const known=await db.batch(chunks.map(chunk=>db.prepare(`SELECT receipt_key FROM sarin_wa_billing_receipts WHERE receipt_key IN(${chunk.map(()=>'?').join(',')})`).bind(...chunk.map(row=>row.key))));
+   const known=await db.batch(chunks.map(chunk=>db.prepare(`SELECT receipt_key FROM sarin_wa_billing_receipts WHERE receipt_key IN(${chunk.map(()=>'?').join(',')})
+    AND (quality<>0 OR lookup_attempted<>0 OR expires_at<=?)`).bind(...chunk.map(row=>row.key),at)));
    if(known.some(row=>row.success!==true))throw new Error('wa_billing_failed');
    const seen=new Set(known.flatMap(row=>row.results.map(item=>item.receipt_key))),claims=[];
    for(const row of candidates){
     if(seen.has(row.key))continue;
     const r=await db.batch([
-     db.prepare(`${CANDIDATES} INSERT INTO sarin_wa_billing_receipts(receipt_key,scope_key,month_key,quality,first_seen,last_seen,expires_at)
-      SELECT ?,?,?,0,?,?,? FROM sarin_wa_billing_scopes s WHERE s.scope_key=? AND s.lookup_minute=? AND s.lookup_count<3
-       AND (SELECT COALESCE(SUM(receipt_rows),0) FROM sarin_wa_billing_scopes)<?
+     db.prepare(`${CANDIDATES} INSERT INTO sarin_wa_billing_receipts(receipt_key,scope_key,month_key,quality,first_seen,last_seen,expires_at,lookup_attempted)
+      SELECT ?,?,?,0,?,?,?,1 FROM sarin_wa_billing_scopes s WHERE s.scope_key=? AND s.lookup_minute=? AND s.lookup_count<3
+       AND ((SELECT COALESCE(SUM(receipt_rows),0) FROM sarin_wa_billing_scopes)<? OR EXISTS(SELECT 1 FROM sarin_wa_billing_receipts WHERE receipt_key=?))
        AND EXISTS(SELECT 1 FROM candidates c WHERE c.source_type=? AND c.source_id=? AND c.message_id=? AND c.external_id=?
         AND c.to_phone=? AND c.started_at=? AND c.delivered_at=? AND c.status=?)
-      ON CONFLICT(receipt_key) DO NOTHING RETURNING receipt_key`).bind(at,businessPhone,wabaId,row.key,scope,new Date(row.delivered_at).toISOString().slice(0,7),at,at,expiry(row.delivered_at),
-       scope,minute,MAX_RECEIPTS,row.source_type,row.source_id,row.message_id,row.external_id,row.to_phone,row.started_at,row.delivered_at,row.status),
+      ON CONFLICT(receipt_key) DO UPDATE SET lookup_attempted=1
+       WHERE sarin_wa_billing_receipts.quality=0 AND sarin_wa_billing_receipts.lookup_attempted=0 AND sarin_wa_billing_receipts.expires_at>?
+      RETURNING receipt_key`).bind(at,businessPhone,wabaId,row.key,scope,new Date(row.delivered_at).toISOString().slice(0,7),at,at,expiry(row.delivered_at),
+       scope,minute,MAX_RECEIPTS,row.key,row.source_type,row.source_id,row.message_id,row.external_id,row.to_phone,row.started_at,row.delivered_at,row.status,at),
      db.prepare('UPDATE sarin_wa_billing_scopes SET lookup_count=lookup_count+1 WHERE scope_key=? AND changes()=1').bind(scope),
      db.prepare(`UPDATE sarin_wa_billing_scopes SET storage_limited=1 WHERE scope_key=? AND
       (SELECT COALESCE(SUM(receipt_rows),0) FROM sarin_wa_billing_scopes)>=?`).bind(scope,MAX_RECEIPTS),

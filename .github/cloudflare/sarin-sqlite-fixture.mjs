@@ -11,7 +11,7 @@ export async function sqliteFixture({ history = false, leads = true, whatsapp = 
   if (whatsapp) sqlite.exec(await readFile(new URL('../../migrations/sarin/0004_whatsapp_ingress.sql', import.meta.url), 'utf8'));
   if (replies) sqlite.exec(await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql', import.meta.url), 'utf8'));
   if (replies && extensions) {
-    for(const name of ['0006_whatsapp_handoff.sql','0007_whatsapp_audio.sql','0008_whatsapp_profiles.sql','0009_whatsapp_billing.sql'])sqlite.exec(await readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8'));
+    for(const name of ['0006_whatsapp_handoff.sql','0007_whatsapp_audio.sql','0008_whatsapp_profiles.sql','0009_whatsapp_billing.sql','0010_whatsapp_billing_lookup.sql'])sqlite.exec(await readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8'));
   }
   function prepare(sql) {
     return {
