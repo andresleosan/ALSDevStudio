@@ -1,6 +1,7 @@
 // @ts-check
 import { classifyWhatsAppInput, WHATSAPP_NOTICE_VERSION, WHATSAPP_NOTICE } from './consent.js';
 import { normalizeWhatsAppMessage, digestWhatsApp } from './ingress-identity.js';
+import {parseWhatsAppProfileInput,WHATSAPP_PROFILE_SAVED,WHATSAPP_PROFILE_INVALID} from './profile.js';
 /** @typedef {import('./work-contracts.js').Work} Work */
 /** @typedef {import('./work-contracts.js').SendPermit} SendPermit */
 /** @typedef {import('./work-contracts.js').DeliveryObservation} DeliveryObservation */
@@ -47,12 +48,21 @@ const UNBLOCKED = `NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.peer_key=j
     OR (j.deferred_reason='waiting_notice' AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=j.context_id AND n.purpose='notice' AND n.delivered_at IS NOT NULL))
     OR j.deferred_reason='waiting_delivery')`;
 
-// Proyección compartida de Staff: no devuelve teléfonos ni acredita consentimiento sólo por una fecha.
+// Proyección privada de Staff: datos de contacto sólo mientras su fuente siga vigente.
+// No acredita consentimiento sólo por una fecha ni conserva una agenda permanente.
 // El fragmento requiere el contexto c y un único reloj t.at para lista y detalle.
 const PEER_SUMMARY = `c.peer_key,c.paused,c.revision,c.context_id,c.last_inbound_at,
   COALESCE((SELECT CASE WHEN length(i.peer_phone)>=7 THEN '*** '||substr(i.peer_phone,-4) ELSE '***' END
     FROM sarin_wa_inbox i WHERE i.peer_key=c.peer_key AND i.expires_at>t.at
     ORDER BY i.received_at DESC,i.event_id DESC LIMIT 1),'***') AS masked_phone,
+  (SELECT i.peer_phone FROM sarin_wa_inbox i WHERE i.peer_key=c.peer_key AND i.expires_at>t.at
+    ORDER BY i.received_at DESC,i.event_id DESC LIMIT 1) AS phone,
+  (SELECT i.expires_at FROM sarin_wa_inbox i WHERE i.peer_key=c.peer_key AND i.expires_at>t.at
+    ORDER BY i.received_at DESC,i.event_id DESC LIMIT 1) AS phone_expires_at,
+  (SELECT f.full_name FROM sarin_wa_profiles f JOIN sarin_wa_inbox i ON i.event_id=f.source_event_id
+    WHERE f.peer_key=c.peer_key AND i.peer_key=c.peer_key AND f.expires_at>t.at AND i.expires_at>t.at) AS full_name,
+  (SELECT f.expires_at FROM sarin_wa_profiles f JOIN sarin_wa_inbox i ON i.event_id=f.source_event_id
+    WHERE f.peer_key=c.peer_key AND i.peer_key=c.peer_key AND f.expires_at>t.at AND i.expires_at>t.at) AS name_expires_at,
   MAX(c.activation_at,c.last_inbound_at,
     COALESCE((SELECT MAX(v.observed_at) FROM sarin_wa_control_events v WHERE v.peer_key=c.peer_key),0),
     COALESCE((SELECT MAX(MAX(o.created_at,COALESCE(o.started_at,0),COALESCE(o.delivered_at,0),COALESCE(o.reconcile_updated_at,0)))
@@ -138,10 +148,12 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     const pairs=await read(`SELECT COALESCE(i.text,(SELECT a.transcript FROM sarin_wa_audio a WHERE a.event_id=i.event_id),'[Audio no transcrito]') AS input,o.text AS reply FROM sarin_wa_outbox o
       JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
       WHERE o.context_id=? AND o.purpose='reply' AND o.delivered_at IS NOT NULL AND o.conflict=0
+        AND COALESCE(j.outcome,'') NOT IN('profile_saved','profile_invalid')
         AND o.expires_at>? AND i.expires_at>? ORDER BY o.created_at DESC,o.outbox_id DESC LIMIT 4`,j.context_id,at,at);
+    const profileInput=r.consent && r.media_type==='text'?parseWhatsAppProfileInput(r.text):{kind:'none'};
     return {jobId:j.job_id,eventId:j.event_id,epoch:j.epoch,contextId:j.context_id,peerKey:j.peer_key,peerRevision:j.peer_revision,
       pilotRevision:r.pilot_revision,source:r.media_type==='audio'?'audio':'text',input:r.consent && classifyWhatsAppInput({mediaType:r.media_type,text:r.text})==='text'?r.text:'',
-      decision:r.confirm?'confirm':r.consent?'generate':!n&&!(r.consent_expires_at>at)?'notice':r.pending_acceptance_event_id===j.event_id?'accept_pending':'ignore',
+      decision:r.confirm?'confirm':r.consent?(profileInput.kind==='none'?'generate':'profile'):!n&&!(r.consent_expires_at>at)?'notice':r.pending_acceptance_event_id===j.event_id?'accept_pending':'ignore',
       history:(r.consent?pairs:[]).reverse().flatMap(p=>[{role:'user',content:p.input},{role:'assistant',content:p.reply}]),
       recipient:{wabaId:r.waba_id,from:r.business_phone,to:r.peer_phone},expiresAt:j.expires_at,leaseUntil:j.lease_until};
   }
@@ -536,6 +548,32 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     }),
     completeGeneration:guarded(async(x)=>{
       requireThat(['completed','out_of_scope','answered','blocked','fallback'].includes(x.outcome));return output(x,'reply',x.reply,null,null);
+    }),
+    // Nombre y confirmación se guardan juntos; nunca se abre una reserva de IA.
+    // El dato procede del inbox, no de Queue ni de un argumento del procesador.
+    completeProfile:guarded(async(x)=>{
+      own(x);let at=clock();
+      const found=await batch([permission(x,at,"'claimed'",true),s(`SELECT i.text,i.media_type FROM sarin_wa_jobs j
+        JOIN sarin_wa_inbox i ON i.event_id=j.event_id WHERE j.job_id=?`,x.jobId)]);
+      const source=found[1].results[0];requireThat(source?.media_type==='text','work_denied',409);
+      const input=parseWhatsAppProfileInput(source.text);requireThat(input.kind!=='none','work_denied',409);
+      const text=input.kind==='valid'?WHATSAPP_PROFILE_SAVED:WHATSAPP_PROFILE_INVALID;
+      const outcome=input.kind==='valid'?'profile_saved':'profile_invalid',bytes=encoder.encode(text).byteLength;
+      const outboxId=crypto.randomUUID(),externalId=crypto.randomUUID();at=clock();
+      await batch([permission(x,at,"'claimed'",true),
+        guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+          WHERE j.job_id=? AND i.media_type='text' AND i.text=?)`,[x.jobId,source.text]),
+        ...reserve(x,at,bytes),
+        ...(input.kind==='valid'?[s(`INSERT INTO sarin_wa_profiles(peer_key,context_id,source_event_id,full_name,stored_bytes,created_at,expires_at)
+          SELECT j.peer_key,j.context_id,i.event_id,?,?,i.received_at,i.expires_at FROM sarin_wa_jobs j
+            JOIN sarin_wa_inbox i ON i.event_id=j.event_id WHERE j.job_id=?
+          ON CONFLICT(peer_key) DO UPDATE SET context_id=excluded.context_id,source_event_id=excluded.source_event_id,
+            full_name=excluded.full_name,stored_bytes=excluded.stored_bytes,created_at=excluded.created_at,expires_at=excluded.expires_at`,
+          input.fullName,encoder.encode(input.fullName).byteLength,x.jobId)]:[]),
+        s(`INSERT INTO sarin_wa_outbox(outbox_id,job_id,peer_key,context_id,epoch,purpose,text,stored_bytes,external_id,created_at,expires_at)
+          SELECT ?,job_id,peer_key,context_id,epoch,'reply',?,?,?,?,expires_at FROM sarin_wa_jobs WHERE job_id=?`,outboxId,text,bytes,externalId,at,x.jobId),
+        s(`UPDATE sarin_wa_jobs SET state='ready',reserved_bytes=?,outcome=? WHERE job_id=?`,bytes,outcome,x.jobId)]);
+      return {outboxId};
     }),
     createFixedReply:guarded(async(x)=>{
       requireThat(['notice','accepted'].includes(x.purpose)&&x.version===WHATSAPP_NOTICE_VERSION&&typeof x.hash==='string'&&/^[a-f0-9]{64}$/.test(x.hash));

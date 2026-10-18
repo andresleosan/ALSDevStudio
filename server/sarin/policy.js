@@ -111,6 +111,28 @@ function plain(value, max) {
     && !/[<>`\[\]]|(?:https?:|www\.|javascript:|data:)|\b[\w-]+\.(?:com|dev|net|org|app|co|io)\b/iu.test(value);
 }
 
+/** Resguardo limitado a referencias explícitas al asistente actual. El prompt
+ * interpreta el resto del lenguaje; una palabra como «citas» no cambia por sí
+ * sola una solicitud de chatbot personalizado en una compra del producto.
+ * @param {SarinInput} input */
+function asksForThisChatbot(input) {
+  const messages=[...input.history.filter(item=>item.role==='user').map(item=>item.content),input.message];
+  for(const message of messages.reverse()) {
+    const normalized=message.normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('es');
+    const clauses=normalized.split(/[,.!?;\n]|\b(?:pero|sino)\b/).reverse();
+    for(const clause of clauses) {
+      const custom=/\b(?:chat\s*bot|bot|asistente)(?:\s+[\p{L}\d-]+){0,6}\s+(?:como|igual a|similar a|parecido a)\s+(?:sarin|este|tu|ti|el tuyo)\b/u.exec(clause);
+      const product=/\bsarin\s*bot\s*saas\b/u.exec(clause);
+      const negated=match=>/\b(?:no|nunca|tampoco|descarto|sin)\b/u.test(clause.slice(0,match.index));
+      if(product && (!custom || product.index>custom.index) && !negated(product))return false;
+      if(custom)return !negated(custom);
+    }
+    // Una consulta nueva de agenda sin comparación puede dirigirse al producto.
+    if(/\b(?:quiero|busco|necesito|interesa)\b[^.!?]{0,60}\b(?:agenda|citas|reservas)\b/u.test(normalized))return false;
+  }
+  return false;
+}
+
 /** @param {SarinInput} input */
 export function validateGeneration(value, input) {
   if (!closed(value, ['reply', 'service', 'examples', 'brief']) || !text(value.reply, 1200)
@@ -142,6 +164,17 @@ export function validateGeneration(value, input) {
     if (!item) throw invalidOutput('unknown_example');
     return { ...item };
   });
+  // Sólo corregir una derivación al producto; una respuesta de chatbot correcta
+  // mantiene su redacción. La validación de contratos/precios/borrador ya pasó.
+  const productConfusion=value.examples.includes('sarinbotsaas')
+    || (/\bsarin\s*bot(?:\s*saas)?\b/iu.test(value.reply)
+      && !/\b(?:personalizad[oa]|a medida|distint[oa]|diferente|otro producto)\b/iu.test(value.reply));
+  if(productConfusion && asksForThisChatbot(input)) {
+    const channelKnown=/\b(?:whatsapp|web|instagram|telegram|messenger)\b/iu.test(shared);
+    return {reply:'ALS Dev Studio puede ayudarte a definir un chatbot personalizado. '+(channelKnown
+      ?'¿Qué tarea principal quieres que atienda?':'¿En qué canal quieres usarlo?'),
+      service:'chatbot',examples:[],brief:{...value.brief}};
+  }
   return {
     reply: value.reply.trim(), ...(value.service ? { service: value.service } : {}),
     examples, brief: { ...value.brief },

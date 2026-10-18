@@ -374,7 +374,7 @@ test('runtime_schema_detects_changed_definitions_and_disabled_legacy',async t=>{
 });
 test('proof_manifest_matches_accumulated_schema_and_backup_restores_populated_synthetic_copy',async t=>{
  const f=await maintenanceFixture(t);await f.notice();await f.accept();seedWebAndMoney(f.sqlite);
- const {detectWhatsAppSchema}=await import('../../server/sarin/whatsapp/work-schema.js');assert.equal(await detectWhatsAppSchema({db:f.db}),7);
+ const {detectWhatsAppSchema}=await import('../../server/sarin/whatsapp/work-schema.js');assert.equal(await detectWhatsAppSchema({db:f.db}),8);
  const {verifySarinBackup,restoreBackupSql}=await import('./check-sarin-backup.mjs');const {DatabaseSync}=await import('node:sqlite');
  const objects=f.sqlite.prepare("SELECT type,name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT GLOB 'sqlite_*'").all();
  const quoted=value=>f.sqlite.prepare('SELECT quote(?) q').get(value).q;

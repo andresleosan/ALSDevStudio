@@ -72,7 +72,9 @@ export async function processWhatsAppWork(hint,env,options={}) {
    if(work.decision==='ignore'){await store.finishWithoutReply({...own,reason:'ignored'});return {status:'ignored'};}
    if(work.decision==='accept_pending'){await store.deferWork({...own,reason:'waiting_notice'});return {status:'deferred'};}
    let out;
-   if(work.decision==='generate') {
+   if(work.decision==='profile') {
+    out=await store.completeProfile(own);check();
+   }else if(work.decision==='generate') {
     const quotaIdentity=await identity(work.peerKey,config.identitySecret,now());check();
     await store.markInferenceStarted(own);externalStarted=true;check();
     if(work.source==='audio'){

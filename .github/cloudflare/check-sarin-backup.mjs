@@ -9,7 +9,7 @@ import { schemaTokens } from '../../server/sarin/whatsapp/schema-tokens.js';
 
 const tables = ['sarin_conversations', 'sarin_messages', 'sarin_consents', 'sarin_reservations', 'sarin_counters'];
 const whatsappTables = ['sarin_wa_state', 'sarin_wa_inbox', 'sarin_wa_receipts', 'sarin_wa_peers'];
-const optionalTables = ['sarin_leads', ...whatsappTables,'sarin_wa_handoff','sarin_wa_audio','sarin_wa_audio_quota'];
+const optionalTables = ['sarin_leads', ...whatsappTables,'sarin_wa_handoff','sarin_wa_audio','sarin_wa_audio_quota','sarin_wa_profiles'];
 
 /** Compara SQL ya aceptado por SQLite. Ignora formato, conserva literales y sólo
  * equipara identificadores citados conocidos; "NULL" nunca equivale a NULL.
@@ -102,12 +102,14 @@ export async function verifySarinBackup(bytes) {
     const replyMigration=await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
     const handoffMigration=await readFile(new URL('../../migrations/sarin/0006_whatsapp_handoff.sql',import.meta.url),'utf8');
     const audioMigration=await readFile(new URL('../../migrations/sarin/0007_whatsapp_audio.sql',import.meta.url),'utf8');
+    const profileMigration=await readFile(new URL('../../migrations/sarin/0008_whatsapp_profiles.sql',import.meta.url),'utf8');
     const prior=(await Promise.all(['0001_usage.sql','0002_history.sql','0003_leads.sql'].map(name=>readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8')))).join('\n');
     const validateWhatsAppSchema=whatsappSchema(prior+'\n'+whatsappMigration);
     const validateWorkSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration);
     const validateHandoffSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration);
     const validateAudioSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration);
-    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema];
+    const validateProfileSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration+'\n'+profileMigration);
+    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema,validateProfileSchema];
     let whatsappSchemaVersion=0;
     db.exec('PRAGMA foreign_keys = ON');
     restoreBackupSql(db, bytes.toString('utf8'));
@@ -117,7 +119,7 @@ export async function verifySarinBackup(bytes) {
       const names=db.prepare("SELECT name FROM sqlite_master WHERE lower(name) GLOB 'sarin_wa_*'").all();
       if(present===0){if(names.length)throw new Error();return null;}
       if(present!==whatsappTables.length)throw new Error();
-      if(names.some(row=>!validateAudioSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
+      if(names.some(row=>!validateProfileSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
       let index=0;
       for(let candidate=1;candidate<validators.length;candidate++){
         if(names.some(row=>validators[candidate].objectNames.has(row.name.toLowerCase())

@@ -41,7 +41,18 @@ function summary(value,now){
   let status=consentStates.includes(value.consent_status)?value.consent_status:'pending';
   const expiresAt=nullableTime(value.consent_expires_at);
   if(status==='accepted' && !(Number(expiresAt)>now))status='expired';
-  return {peerKey:value.peer_key,maskedPhone:value.masked_phone,revision:value.revision,paused:Boolean(value.paused),updatedAt:value.updated_at,consent:{status,expiresAt}};
+  let phone=null,phoneExpiresAt=null,fullName=null,nameExpiresAt=null;
+  if(value.phone!=null && Number(nullableTime(value.phone_expires_at))>now){
+    requireThat(typeof value.phone==='string' && /^\+[1-9]\d{1,14}$/.test(value.phone));
+    phone=value.phone;phoneExpiresAt=value.phone_expires_at;
+  }
+  if(value.full_name!=null && Number(nullableTime(value.name_expires_at))>now){
+    requireThat(typeof value.full_name==='string' && value.full_name.trim().length>0 && value.full_name.length<=160
+      && !/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u.test(value.full_name));
+    fullName=value.full_name;nameExpiresAt=value.name_expires_at;
+  }
+  return {peerKey:value.peer_key,maskedPhone:value.masked_phone,phone,phoneExpiresAt,fullName,nameExpiresAt,
+    revision:value.revision,paused:Boolean(value.paused),updatedAt:value.updated_at,consent:{status,expiresAt}};
 }
 /** @param {Record<string,any>} value @param {number} now */
 function detail(value,now){

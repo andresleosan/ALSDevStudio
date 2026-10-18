@@ -3,6 +3,21 @@ import test from 'node:test';
 
 const ui = await import('../../scripts/modules/sarin-whatsapp-admin.js');
 
+test('identidad usa nombre vigente y teléfono, o un único teléfono sin nombre',()=>{
+ const peer={maskedPhone:'*** 0001',phone:'+573000000001',phoneExpiresAt:2000,fullName:'María Pérez',nameExpiresAt:1500};
+ assert.equal(typeof ui.whatsAppPeerIdentity,'function');
+ assert.deepEqual(ui.whatsAppPeerIdentity(peer,1000),{title:'María Pérez',subtitle:'+573000000001',nextExpiry:1500});
+ assert.deepEqual(ui.whatsAppPeerIdentity(peer,1500),{title:'+573000000001',subtitle:'',nextExpiry:2000});
+ assert.deepEqual(ui.whatsAppPeerIdentity(peer,2000),{title:'*** 0001',subtitle:'',nextExpiry:null});
+ assert.deepEqual(ui.whatsAppPeerIdentity({maskedPhone:'*** 0001'},1000),{title:'*** 0001',subtitle:'',nextExpiry:null});
+});
+
+test('identidad no acepta un teléfono activo malformado ni texto de nombre de control',()=>{
+ assert.equal(typeof ui.whatsAppPeerIdentity,'function');
+ const peer={maskedPhone:'*** 0001',phone:'javascript:private',phoneExpiresAt:2000,fullName:'PRIVATE\u0000NAME',nameExpiresAt:2000};
+ assert.deepEqual(ui.whatsAppPeerIdentity(peer,1000),{title:'*** 0001',subtitle:'',nextExpiry:null});
+});
+
 test('el enlace de una alerta sólo admite una huella de contacto completa y exacta', () => {
   assert.equal(typeof ui.whatsAppPeerFromHash, 'function');
   const key = 'a1'.repeat(32);

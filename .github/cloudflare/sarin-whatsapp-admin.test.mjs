@@ -153,3 +153,36 @@ test('cursor de salida inconsistente falla cerrado sin divulgar datos internos',
   const f=await setup(waFixture({listPeers:async()=>({peers:[row],cursor})}));const response=await f.get('/peers');assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/PRIVATE_|573000000001/);
  }
 }));
+
+test('identidad completa sólo se proyecta en lista y detalle autenticados mientras está vigente',async()=>fixture(async()=>{
+ const identity={phone:'+573000000001',phone_expires_at:at+60000,full_name:'María José Pérez',name_expires_at:at+30000};
+ const store=waFixture(),original=store.getPeer;store.getPeer=async value=>({...await original(value),...identity});store.listPeers=async()=>({peers:[{...row,...identity}],cursor:null});
+ const f=await setup(store);
+ for(const suffix of ['/peers',`/peers/${peerKey}`]){
+  const response=await f.get(suffix);assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
+  const body=await response.json(),item=body.peer??body.items[0];
+  assert.equal(item.phone,'+573000000001');assert.equal(item.phoneExpiresAt,at+60000);
+  assert.equal(item.fullName,'María José Pérez');assert.equal(item.nameExpiresAt,at+30000);
+  assert.equal(item.maskedPhone,row.masked_phone);assert.doesNotMatch(JSON.stringify(body),/PRIVATE_|phone_expires_at|full_name/);
+ }
+ for(const token of [null,jwt({email:'other@example.test',sub:'another-user'})]){
+  const response=await f.handleSarinAdmin(request(base+'/peers',{token}),f.config,{whatsappStore:store,now:f.now});
+  assert.equal(response.status,403);assert.doesNotMatch(await response.text(),/573000000001|María/);
+ }
+}));
+
+test('identidad vencida o sin fecha se borra del DTO aunque el store retorne datos antiguos',async()=>fixture(async()=>{
+ for(const expires of [undefined,null,at-1,at]){
+  const f=await setup(waFixture({listPeers:async()=>({peers:[{...row,phone:'+573000000001',phone_expires_at:expires,full_name:'Nombre Privado',name_expires_at:expires}],cursor:null})}));
+  const response=await f.get('/peers');assert.equal(response.status,200);const body=await response.json();
+  assert.deepEqual([body.items[0].phone,body.items[0].phoneExpiresAt,body.items[0].fullName,body.items[0].nameExpiresAt],[null,null,null,null]);
+  assert.doesNotMatch(JSON.stringify(body),/573000000001|Nombre Privado/);
+ }
+}));
+
+test('identidad inválida falla cerrado sin filtrar valores o errores internos',async()=>fixture(async()=>{
+ for(const identity of [{phone:'javascript:private',phone_expires_at:at+60000},{full_name:'PRIVATE\u0000name',name_expires_at:at+60000},{full_name:'x'.repeat(161),name_expires_at:at+60000}]){
+  const f=await setup(waFixture({listPeers:async()=>({peers:[{...row,...identity}],cursor:null})}));const response=await f.get('/peers');
+  assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/javascript|PRIVATE|xxxx/);
+ }
+}));

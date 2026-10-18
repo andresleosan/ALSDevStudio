@@ -40,7 +40,8 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
           (SELECT COUNT(*) FROM sarin_wa_audit) AS whatsappAudits,
           ((SELECT COUNT(*) FROM sarin_wa_control_events)+(SELECT COUNT(*) FROM sarin_wa_delivery_observations)) AS whatsappObservations`:''}
         ${version>=6?`,(SELECT COUNT(*) FROM sarin_wa_handoff) AS whatsappHandoff`:''}
-        ${version>=7?`,(SELECT COUNT(*) FROM sarin_wa_audio) AS whatsappAudio`:''}`),
+        ${version>=7?`,(SELECT COUNT(*) FROM sarin_wa_audio) AS whatsappAudio`:''}
+        ${version>=8?`,(SELECT COUNT(*) FROM sarin_wa_profiles) AS whatsappProfiles`:''}`),
       // Corrige una capacidad restaurada discordante antes de que los triggers la resten.
       db.prepare('UPDATE sarin_history_state SET text_bytes = COALESCE((SELECT SUM(capacity_bytes) FROM sarin_conversations),0) WHERE singleton = 1'),
       db.prepare('DELETE FROM sarin_conversations'),
@@ -55,6 +56,8 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
       db.prepare('DELETE FROM sarin_admin_audit'),
       db.prepare(`UPDATE sarin_history_state SET text_bytes = 0,rejection_overflow = 0,last_run_at = NULL,
         last_success_at = NULL,last_error_at = NULL,purge_status = 'never',purge_remaining = 0 WHERE singleton = 1`),
+      // Incluye remanentes huérfanos de un restore que deshabilitó foreign_keys.
+      ...(version>=8 ? [db.prepare('DELETE FROM sarin_wa_profiles')] : []),
       ...(version>=5 ? getWhatsAppWorkRecoveryStatements({db,at}) : []),
       ...(version>=6 ? getWhatsAppHandoffRecoveryStatements({db,at}) : []),
       ...(whatsapp ? getWhatsAppRecoveryStatements({ db, at }) : []),
@@ -69,6 +72,7 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
       ...(version>=5?{whatsappJobs:counts.whatsappJobs,whatsappOutbox:counts.whatsappOutbox,whatsappConsents:counts.whatsappConsents,whatsappAudits:counts.whatsappAudits,whatsappObservations:counts.whatsappObservations}:{}),
       ...(version>=6?{whatsappHandoff:counts.whatsappHandoff}:{}),
       ...(version>=7?{whatsappAudio:counts.whatsappAudio}:{}),
+      ...(version>=8?{whatsappProfiles:counts.whatsappProfiles}:{}),
       ...(whatsapp ? { whatsappInbox: counts.whatsappInbox, whatsappReceipts: counts.whatsappReceipts, whatsappPeers: counts.whatsappPeers } : {}) };
   } catch {
     // No adjuntar la excepción SQL, datos de filas ni causas con contenido restaurado.

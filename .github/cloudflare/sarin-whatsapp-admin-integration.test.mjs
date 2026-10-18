@@ -67,13 +67,14 @@ async function consentIs(f,status,expiresAt=null){
   assert.deepEqual((await f.detail()).consent,{status,expiresAt});
 }
 
-test('SQLite real entrega lista y detalle con teléfono enmascarado y actividad durable',async t=>{
+test('SQLite real entrega número vigente sólo en proyección administrativa y actividad durable',async t=>{
   const f=await setup(t),listed=await f.listed(),detail=await f.detail();
   assert.match(listed.maskedPhone,/[*•…]/u);assert.ok(listed.maskedPhone.endsWith('0001'));
   assert.equal(listed.updatedAt,BASE+1000);assert.equal(detail.updatedAt,BASE+1000);
   assert.equal(listed.consent.status,'pending');
   assert.ok(detail.events.some(event=>event.content==='Consulta ficticia inicial' && event.at===BASE+1000 && event.expiresAt===BASE+1000+DAY));
-  assert.doesNotMatch(JSON.stringify([listed,detail,await f.store.listPeers(),await f.store.getPeer({peerKey:f.peerKey})]),/\+573000000001|\+573000000002/);
+  for(const peer of [listed,detail]){assert.equal(peer.phone,'+573000000001');assert.equal(peer.phoneExpiresAt,BASE+1000+DAY);assert.equal(peer.fullName,null);assert.equal(peer.nameExpiresAt,null);}
+  assert.doesNotMatch(JSON.stringify([listed,detail]),/\+573000000002/);
 });
 
 test('detalle real conserva entrada y salida vigentes y presenta el eco sin cuerpo',async t=>{
@@ -95,10 +96,12 @@ test('detalle expira cada contenido en su fecha y nunca recupera teléfono desde
   const partial=await f.detail();
   assert.ok(!partial.events.some(event=>event.content==='Consulta ficticia inicial'));
   assert.ok(partial.events.some(event=>event.content==='Aviso ficticio de la prueba'));
+  assert.equal(partial.phone,'+573000000001');assert.equal(partial.phoneExpiresAt,BASE+2000+DAY);
   f.setTime(BASE+2000+DAY);
   const expired=await f.detail();assert.deepEqual(expired.events,[]);assert.deepEqual(expired.outputs,[]);
   assert.equal((expired.maskedPhone.match(/\d/g)||[]).length,0);
   assert.equal((await f.listed()).maskedPhone,expired.maskedPhone);
+  assert.equal(expired.phone,null);assert.equal(expired.phoneExpiresAt,null);assert.equal((await f.listed()).phone,null);
   assert.equal(expired.updatedAt,BASE+2000,'Consultar no inventa actividad en el reloj actual');
 });
 
@@ -139,7 +142,8 @@ test('eco humano pausa sin revocar la aceptación y reactivación mantiene sólo
 test('enmascarado no revela completo un teléfono corto admitido por el transporte',async t=>{
   const f=await setup(t,{phone:'+12'}),peer=await f.listed();
   assert.match(peer.maskedPhone,/[*•…]/u);assert.equal((peer.maskedPhone.match(/\d/g)||[]).length,0);
-  assert.doesNotMatch(JSON.stringify(await f.store.getPeer({peerKey:f.peerKey})),/\+12/);
+  assert.equal((await f.detail()).phone,'+12');
+  assert.doesNotMatch((await f.store.getPeer({peerKey:f.peerKey})).masked_phone,/\+12/);
 });
 
 test('Staff presenta el estado durable del aviso HUMANO sin exponer el destinatario administrativo',async t=>{
