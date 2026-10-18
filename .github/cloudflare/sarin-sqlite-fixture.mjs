@@ -2,13 +2,14 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 
 // Ejecuta las sentencias y triggers reales; batch reproduce la transacción de D1.
-export async function sqliteFixture({ history = false, leads = true, whatsapp = false } = {}) {
+export async function sqliteFixture({ history = false, leads = true, whatsapp = false, replies = false } = {}) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
   sqlite.exec(await readFile(new URL('../../migrations/sarin/0001_usage.sql', import.meta.url), 'utf8'));
   if (history) sqlite.exec(await readFile(new URL('../../migrations/sarin/0002_history.sql', import.meta.url), 'utf8'));
   if (history && leads) sqlite.exec(await readFile(new URL('../../migrations/sarin/0003_leads.sql', import.meta.url), 'utf8'));
   if (whatsapp) sqlite.exec(await readFile(new URL('../../migrations/sarin/0004_whatsapp_ingress.sql', import.meta.url), 'utf8'));
+  if (replies) sqlite.exec(await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql', import.meta.url), 'utf8'));
   function prepare(sql) {
     return {
       sql, values: [],

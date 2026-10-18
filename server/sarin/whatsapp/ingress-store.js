@@ -120,6 +120,8 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
       const storedBytes = encoder.encode(JSON.stringify([normalized.eventId,peerKey,normalized.kind,'captured',
         normalized.messageId,normalized.wamid,normalized.wabaId,business,peer,normalized.mediaType,storedText,
         normalized.createdAt,normalized.sentAt,at,at + DAY])).byteLength;
+      // Con 0005, el INSERT del inbox admite el trabajo mediante trigger en esta
+      // misma transacción. Con 0004 conserva exclusivamente la recepción.
       const result = await batch([
         stmt(`INSERT INTO sarin_wa_capture(event_id,event_hash,message_key,message_hash,peer_key,kind,admission_token,
           message_id,wamid,waba_id,business_phone,peer_phone,media_type,text,created_at,sent_at,received_at,stored_bytes,
