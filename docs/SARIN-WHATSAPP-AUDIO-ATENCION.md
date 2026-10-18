@@ -1,6 +1,6 @@
 # Sarin · notas de voz y aviso a Andrés
 
-18 de octubre de 2026. **Estado: implementación y validación local; publicación y pruebas reales de esta ampliación todavía por registrar.** El titular solicitó avisar a su WhatsApp cuando un contacto elija HUMANO y procesar los audios entrantes. Esta ampliación corresponde únicamente a **ALS Dev Studio, +57 305 277 8047**. El destinatario del aviso queda fijado en configuración privada al número que autorizó Andrés, terminado en **2135**; no se acepta desde mensajes, colas ni solicitudes del navegador.
+**Publicado el 18 de octubre de 2026: audio y avisos HUMANO habilitados; la plantilla para avisar fuera de la ventana de 24 horas está creada y pendiente de aprobación de Meta, y faltan las pruebas reales de ambos flujos en WhatsApp.** El titular solicitó avisar a su WhatsApp cuando un contacto elija HUMANO y procesar los audios entrantes. Esta ampliación corresponde únicamente a **ALS Dev Studio, +57 305 277 8047**. El destinatario del aviso queda fijado como secreto al número que autorizó Andrés, terminado en **2135**; no se acepta desde mensajes, colas ni solicitudes del navegador.
 
 La recepción real del aviso público anterior v2 fue confirmada por el titular mediante «Recibí el aviso nuevo». Esa confirmación no prueba aceptación de v3, transcripción ni entrega de una alerta. El antecedente y sus despliegues se conservan en [Atención pública](SARIN-WHATSAPP-PUBLICO.md).
 
@@ -68,24 +68,37 @@ Retención, recuperación y backup: **133/133 pruebas focales** y tipado corresp
 
 Se verificó la copia privada anterior a 0006/0007 de **132.759 bytes**, SHA-256 `d67952e80df1a434ece672c4c6bec2a97105af12510687b8ce25122201e59f0e`. La restauración en memoria validó el esquema 5; aplicar allí 0006 y 0007 produjo el manifiesto completo de esquema 7, `integrity_check=ok` y cero errores de claves foráneas. Las **29 tablas existentes** conservaron todos sus conteos y hashes de filas, incluidos estados, cuotas, reservas y consentimientos. Las tres tablas nuevas quedaron vacías: no hay importación retroactiva de audios ni avisos.
 
-Evidencia local sin conversaciones ni teléfonos: `test-results/sarin-whatsapp-audio-handoff-20261018/backup-promotion.json`. Contiene además los hashes de las dos migraciones verificadas. El archivo de respaldo original permanece intacto y fuera de Git. Esta comprobación aplicó el SQL sólo en una base de memoria; **no acredita que la migración esté aplicada en producción**.
+Evidencia local sin conversaciones ni teléfonos: `test-results/sarin-whatsapp-audio-handoff-20261018/backup-promotion.json`. Contiene además los hashes de las dos migraciones verificadas. El archivo de respaldo original permanece intacto y fuera de Git. Esta comprobación aplicó el SQL sólo en una base de memoria; la aplicación posterior en producción tiene su propia evidencia remota, descrita abajo.
 
 Se añadieron tres escenarios a la suite browser existente: enlace a contacto fuera de primera página, ausencia de acceso por enlace sin autenticación y transcripción segura con entrega pendiente. **No se ejecutó Playwright CLI**. Chrome mediante CUA aprobó escritorio de 1.761 píxeles y ventana móvil 390 × 844, sin desbordamiento ni errores de consola. El enlace carga un contacto fuera de los primeros cien; Reactivar Sarin mediante Enter cambia a Sarin activo/Pausar Sarin y la pausa vuelve a mostrar Reactivar Sarin. Capturas: `panel-desktop.jpg`, `panel-mobile.jpg`, `panel-mobile-actions.jpg` y `panel-mobile-reactivated.jpg` en la carpeta de evidencias.
 
 Runtime local en modos retención y recuperación: ambos PASS, máximo de 23 llamadas al binding D1; manifiesto de fuente `539f2bb079dbcbe335f96fa6b4b93bcd7cff6c7bacdbd70b08e17c43f2c4a690`. Los JSON `runtime-retention.json` y `runtime-recovery.json` guardan la evidencia. Dieciocho pruebas focales de audio aprobadas después de corregir el aborto. Una nota sintética OGG de 10.239 bytes y 3,673 segundos se transcribió mediante el binding real de Workers AI (HTTP 200, 1.575 ms); no fue un audio de WhatsApp. La prueba REST previa no autenticó y no se utiliza como acreditación del proveedor.
 
-Reporte HTML local: `qa/reports/sarin-whatsapp-audio-handoff-20261018.html`, con enlaces al log, backup, escenarios de runtime y capturas. El envío productivo anterior quedó temporalmente cerrado con `SEND_ENABLED=false`, `REPLIES_ENABLED=true`, versión `d38f0ffb-9d65-4c8c-9cd0-09550b996130`. La nueva publicación sigue pendiente de registrar.
+Reporte HTML local: `qa/reports/sarin-whatsapp-audio-handoff-20261018.html`, con enlaces al log, backup, escenarios de runtime, capturas y comprobaciones de publicación. La revisión independiente final de seguridad de audio no encontró bloqueos.
 
-Antes de marcar publicado, completar en este documento la aplicación remota de las migraciones, pruebas del motor, revisión independiente, configuración de la plantilla, despliegues y comprobaciones remotas. No equiparar una respuesta 200/202 de YCloud con entrega ni una prueba sintética de Whisper con una transcripción real.
+### Publicación y comprobación remota
+
+| Componente | Identificador verificado |
+| --- | --- |
+| Pages de producción | `425fff39-86af-457f-a46d-7e241ce3c08c` |
+| Commit de fuente publicado | `8823c554a7c670a9804ef821a880cc054cca2989` |
+| Revisión de recursos | `23c0a7863504d47c` |
+| Worker de respuestas | `3fabd841-6b74-4b10-8e80-a2a75c02c315` |
+| Worker de retención | `e94aee08-e98e-4b39-9194-5961b19ccc04` |
+
+Las migraciones **0006 y 0007 están aplicadas en producción**. La lectura remota confirmó esquema **7**, coincidencia completa con el manifiesto, `quick_check=ok` y cero errores de claves foráneas. Es una comprobación remota `quick_check`, distinta del `integrity_check` completo realizado sobre la copia local. El destinatario está configurado como secreto, el binding AI está presente en el consumidor y `HANDOFF_ENABLED`, `REPLIES_ENABLED` y `SEND_ENABLED` están activos. La retención conserva el cron horario `0 * * * *`; las previews permanecen cerradas y sin credenciales productivas. Evidencia: `test-results/sarin-whatsapp-audio-handoff-20261018/remote-deployed.json`.
+
+La comprobación pública terminó en **PASS**: recursos publicados comparados por hash, marcadores de privacidad y panel verificados, API administrativa sin autenticación rechazada con **403** y webhook sin firma rechazado con **401**. Evidencia: `test-results/sarin-whatsapp-audio-handoff-20261018/public-smoke.json`.
+
+**Plantilla creada:** el titular completó la verificación de YCloud. La creación por API y la lectura posterior confirmaron `als_sarin_solicitud_humana_v1`, idioma `es`, categoría `UTILITY`, TTL de 3.600 segundos y contenido esperado coincidente. Su estado es **`PENDING`: pendiente de aprobación de Meta**, no aprobada todavía; aún no se configuró su variable en el consumidor. Metadatos sin credenciales ni identificadores de cuenta: `test-results/sarin-whatsapp-audio-handoff-20261018/handoff-template.json`.
+
+**Pendientes funcionales:** obtener la aprobación de la plantilla y configurarla en el consumidor. Actualmente el aviso de texto a Andrés sólo puede enviarse dentro de su propia ventana de 24 horas con el número empresarial. Fuera de ella queda `waiting_template`, sin afirmar que se envió. No se ha probado todavía una solicitud HUMANO real ni una nota de voz real recibida por WhatsApp después del aviso v3 y ACEPTO. La prueba sintética de Whisper y las comprobaciones de publicación no acreditan esos recorridos completos; una respuesta 200/202 de YCloud tampoco acredita entrega.
 
 ## Publicación coordinada y reversión
 
-La autorización del titular para publicar continúa vigente; esta sección describe operaciones todavía pendientes de registrar, no una publicación completada.
+La publicación autorizada se completó de forma coordinada: retención compatible, aplicación de 0006/0007, consumidor y Pages con aviso v3, privacidad y panel. Durante el cambio se mantuvo temporalmente `SARIN_WHATSAPP_SEND_ENABLED=false` con `REPLIES_ENABLED=true`; los envíos ya están activos con los componentes compatibles y las comprobaciones anteriores aprobadas. `REPLIES_ENABLED=false` altera el interruptor durable y no se utiliza como una simple pausa técnica de despliegue.
 
-1. Publicar la retención compatible con los esquemas 5, 6 y 7 antes de introducir las tablas nuevas. Conservar el cron horario y verificar su configuración.
-2. Mantener temporalmente `SARIN_WHATSAPP_SEND_ENABLED=false` en el consumidor durante el cambio coordinado. `REPLIES_ENABLED=false` altera el interruptor durable; no utilizarlo como una simple pausa técnica de despliegue.
-3. Aplicar 0006 y 0007 sin borrar tablas ni reiniciar cuotas; comprobar esquema, integridad y valores de control. Publicar el consumidor compatible y Pages con aviso v3, privacidad y panel correspondientes. Las previews continúan cerradas y sin credenciales productivas.
-4. Configurar el destinatario fijo y comprobar la plantilla, el binding AI y los permisos necesarios. Habilitar el envío tras verificar los componentes compatibles. Registrar identificadores de despliegue y evidencia de una prueba real por cada flujo; no enviar retrospectivamente el audio anterior a ACEPTO.
+Queda obtener la aprobación de Meta para la plantilla ya creada, configurarla y registrar una prueba real de HUMANO y otra de audio. Hasta entonces se mantiene el límite de la ventana de Andrés para las alertas. No se procesa retrospectivamente el audio anterior a ACEPTO.
 
 Si es necesario detener la ampliación, `SARIN_WHATSAPP_HANDOFF_ENABLED=false` cierra nuevos avisos del consumidor y `SARIN_WHATSAPP_SEND_ENABLED=false` cierra los envíos y el procesamiento que prepara las respuestas. Un efecto externo ya iniciado puede completarse. Para un cierre operativo general se usa el interruptor del panel y las flags correspondientes, preservando las pausas individuales.
 
