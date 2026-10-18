@@ -5,6 +5,82 @@ import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { verifySarinBackup, restoreBackupSql } from './check-sarin-backup.mjs';
 
+async function whatsappBackupSql() {
+  const sql = (await Promise.all(['0001_usage.sql', '0002_history.sql', '0003_leads.sql', '0004_whatsapp_ingress.sql']
+    .map(name => readFile(new URL(`../../migrations/sarin/${name}`, import.meta.url), 'utf8')))).join('\n');
+  return `${sql}
+    INSERT INTO sarin_wa_receipts(event_id,event_hash,message_key,message_hash,peer_key,kind,admission_token,received_at,expires_at)
+      VALUES ('evt_synthetic','hash-event','hash-message-key','hash-message','hash-peer','inbound','synthetic-token',1,172800001);
+    INSERT INTO sarin_wa_inbox(event_id,peer_key,kind,message_id,wamid,waba_id,business_phone,peer_phone,
+      media_type,text,created_at,sent_at,received_at,expires_at,stored_bytes)
+      VALUES ('evt_synthetic','hash-peer','inbound','message_synthetic','wamid.synthetic','12345','+573000000002',
+        '+573000000001','text','CANARIO-WA-RESTAURADO',1,1,1,86400001,300);
+    INSERT INTO sarin_wa_peers(peer_key,expires_at) VALUES ('hash-peer',86400001);
+    UPDATE sarin_wa_state SET inbox_rows = 1,receipt_rows = 1,content_bytes = 300;`;
+}
+
+function changeDefinition(sql, name, change) {
+  const db = new DatabaseSync(':memory:');
+  try {
+    restoreBackupSql(db, sql);
+    const definition = db.prepare('SELECT sql FROM sqlite_master WHERE name = ?').get(name)?.sql;
+    assert.ok(definition && sql.includes(definition), 'La mutación debe alcanzar el objeto real');
+    return sql.replace(definition, change(definition));
+  } finally { db.close(); }
+}
+
+const criticalObjects = [
+  'sarin_wa_capture', 'sarin_wa_receipt_added', 'sarin_wa_receipt_removed', 'sarin_wa_inbox_added',
+  'sarin_wa_inbox_removed', 'sarin_wa_admit', 'sarin_wa_receipts_message', 'sarin_wa_receipts_expiry',
+  'sarin_wa_receipts_peer_rate', 'sarin_wa_receipts_global_rate', 'sarin_wa_inbox_expiry',
+  'sarin_wa_inbox_peer', 'sarin_wa_peers_expiry',
+];
+
+for (const name of criticalObjects) {
+  test(`rechaza respaldo sin objeto WA crítico ${name}`, async () => {
+    let sql = await whatsappBackupSql();
+    // Sin vista también falta su trigger: llegar a validación, no sólo a un error de sintaxis.
+    if (name === 'sarin_wa_capture') sql = changeDefinition(sql, 'sarin_wa_admit', () => '');
+    sql = changeDefinition(sql, name, () => '');
+    await assert.rejects(() => verifySarinBackup(Buffer.from(sql)), error =>
+      error.stage === 'integrity' && error.reason === 'verification');
+  });
+}
+
+for (const name of ['sarin_wa_receipt_added', 'sarin_wa_receipt_removed', 'sarin_wa_inbox_added', 'sarin_wa_inbox_removed', 'sarin_wa_admit']) {
+  test(`rechaza trigger WA presente con cuerpo inoperante ${name}`, async () => {
+    const sql = changeDefinition(await whatsappBackupSql(), name, value => value.replace(/\bBEGIN\b[\s\S]*$/, 'BEGIN SELECT 1; END'));
+    await assert.rejects(() => verifySarinBackup(Buffer.from(sql)), error =>
+      error.stage === 'integrity' && error.reason === 'verification');
+  });
+}
+
+for (const [name, change] of [
+  ['sarin_wa_receipts_message', value => value.replace('UNIQUE INDEX', 'INDEX')],
+  ['sarin_wa_receipts_peer_rate', value => value.replace("kind = 'inbound'", "kind = 'echo'")],
+  ['sarin_wa_capture', value => value.replace('NULL AS event_id', '1 AS event_id')],
+  ['sarin_wa_capture', value => value.replace('NULL AS event_id', '"NULL" AS event_id')],
+]) {
+  test(`rechaza definición cambiada bajo el mismo nombre ${name}/${String(change)}`, async () => {
+    const sql = changeDefinition(await whatsappBackupSql(), name, change);
+    await assert.rejects(() => verifySarinBackup(Buffer.from(sql)), error =>
+      error.stage === 'integrity' && error.reason === 'verification');
+  });
+}
+
+test('acepta export equivalente con nombres entre comillas y MAIN sin confundir literales', async () => {
+  let sql = await whatsappBackupSql();
+  for (const name of [...criticalObjects, 'sarin_wa_state', 'sarin_wa_receipts', 'sarin_wa_inbox', 'sarin_wa_peers']) {
+    sql = changeDefinition(sql, name, value => value
+      .replace(/^(CREATE (?:UNIQUE )?(?:TABLE|INDEX|TRIGGER|VIEW)) (sarin_wa_[a-z_]+)/, '$1 MAIN."$2"')
+      .replace(/\bON (sarin_wa_[a-z_]+)/g, 'ON "$1"')
+      .replace(/\bCREATE\b/g, 'create').replace(/\bWHERE\b/g, 'where'));
+  }
+  const result = await verifySarinBackup(Buffer.from(sql));
+  assert.equal(result.verified, true);
+  assert.deepEqual(result.whatsapp, { inbox: 1, receipts: 1, peers: 1 });
+});
+
 test('restaura una copia 0002 sólo en memoria y comprueba la migración aditiva sin mostrar filas', async () => {
   const sql = (await Promise.all(['0001_usage.sql', '0002_history.sql'].map(name => readFile(new URL(`../../migrations/sarin/${name}`, import.meta.url), 'utf8')))).join('\n');
   const report = await verifySarinBackup(Buffer.from(sql));
@@ -13,8 +89,58 @@ test('restaura una copia 0002 sólo en memoria y comprueba la migración aditiva
   assert.equal(report.foreignKeyErrors, 0);
   assert.equal(report.additiveMigrationPreservesCounts, true);
   assert.equal(report.leads, 0);
+  assert.deepEqual(report.whatsapp, { inbox: 0, receipts: 0, peers: 0 });
   assert.equal(report.counts.sarin_conversations, 0);
   assert.match(report.sha256, /^[a-f0-9]{64}$/);
+});
+
+test('verifica una copia que ya incluye 0003 sin volver a crear sus tablas', async () => {
+  const sql = (await Promise.all(['0001_usage.sql', '0002_history.sql', '0003_leads.sql']
+    .map(name => readFile(new URL(`../../migrations/sarin/${name}`, import.meta.url), 'utf8')))).join('\n');
+  const report = await verifySarinBackup(Buffer.from(`${sql}
+    INSERT INTO sarin_conversations(id,token_hash,created_at,updated_at,session_expires_at,expires_at,max_events)
+      VALUES ('synthetic-existing','synthetic-existing-hash',1,1,86400001,86400001,32);
+    INSERT INTO sarin_leads(conversation_id,first_name,last_name,email)
+      VALUES ('synthetic-existing','CANARIO-NOMBRE','CANARIO-APELLIDO','canario@ejemplo.invalid');`));
+  assert.equal(report.verified, true);
+  assert.equal(report.leads, 1);
+  assert.equal(report.counts.sarin_conversations, 1);
+  assert.deepEqual(report.whatsapp, { inbox: 0, receipts: 0, peers: 0 });
+  assert.equal(JSON.stringify(report).includes('CANARIO'), false);
+});
+
+test('verifica respaldo 0004 sin reaplicar migraciones y preserva filas WA sin exponerlas', async () => {
+  const report = await verifySarinBackup(Buffer.from(await whatsappBackupSql()));
+  assert.equal(report.verified, true);
+  assert.deepEqual(report.whatsapp, { inbox: 1, receipts: 1, peers: 1 });
+  assert.equal(report.counts.sarin_wa_state, 1);
+  assert.equal(report.counts.sarin_wa_inbox, 1);
+  assert.equal(report.counts.sarin_wa_receipts, 1);
+  assert.equal(report.counts.sarin_wa_peers, 1);
+  assert.equal(report.additiveMigrationPreservesCounts, true);
+  assert.doesNotMatch(JSON.stringify(report), /CANARIO|573000|hash-peer|synthetic-token/);
+});
+
+for (const changed of ['inbox_rows = 0', 'receipt_rows = 0', 'content_bytes = 299']) {
+  test(`rechaza respaldo con contabilidad WA discordante: ${changed}`, async () => {
+    const sql = `${await whatsappBackupSql()} UPDATE sarin_wa_state SET ${changed};`;
+    await assert.rejects(() => verifySarinBackup(Buffer.from(sql)), error => {
+      assert.equal(error.stage, 'integrity');
+      assert.equal(error.reason, 'verification');
+      assert.equal(error.cause, undefined);
+      assert.doesNotMatch(JSON.stringify(error), /CANARIO|573000|hash-peer/);
+      return true;
+    });
+  });
+}
+
+test('rechaza esquema WA parcial antes de intentar migrarlo como si no existiera', async () => {
+  const sql = `${await whatsappBackupSql()} DROP TABLE sarin_wa_state;`;
+  await assert.rejects(() => verifySarinBackup(Buffer.from(sql)), error => {
+    assert.equal(error.stage, 'integrity');
+    assert.equal(error.reason, 'verification');
+    return true;
+  });
 });
 
 test('fallo de respaldo no expone texto SQL ni detalles personales en su error', async () => {

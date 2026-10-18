@@ -17,6 +17,7 @@ const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
     'marquee', 'mascot-scenes', 'nav', 'projects', 'reveal', 'space',
     'sarin-chat', 'sarin-api', 'sarin-summary', 'sarin-consent', 'sarin-lead', 'sarin-admin', 'sarin-admin-auth'].map(name => `modules/${name}.js`)];
 const functionRoutes = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
+  '/api/sarin/whatsapp','/api/sarin/whatsapp/',
   '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot-review.png', 'mascot-typing-a.png', 'mascot-typing-b.png', 'mascot-welcome.png',
   'mascot-global-typing-a.png', 'mascot-global-typing-b.png', 'mascot-process-typing-a.png', 'mascot-process-typing-b.png', 'og-image.jpg', 'world-map.svg'];
@@ -92,7 +93,7 @@ test('publica únicamente recursos del sitio aunque la raíz contenga material i
   ].sort());
 });
 
-test('solo permite chat, sesión y administración protegida sin Functions en recursos estáticos', async () => {
+test('solo permite chat, sesión, webhook firmado y administración sin Functions en recursos estáticos', async () => {
   const root = await fixture();
   await build(root);
   assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist/_routes.json'), 'utf8')),

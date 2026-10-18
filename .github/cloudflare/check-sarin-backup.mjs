@@ -6,6 +6,56 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const tables = ['sarin_conversations', 'sarin_messages', 'sarin_consents', 'sarin_reservations', 'sarin_counters'];
+const whatsappTables = ['sarin_wa_state', 'sarin_wa_inbox', 'sarin_wa_receipts', 'sarin_wa_peers'];
+const optionalTables = ['sarin_leads', ...whatsappTables];
+
+/** Compara SQL ya aceptado por SQLite. Ignora formato, conserva literales y sólo
+ * equipara identificadores citados conocidos; "NULL" nunca equivale a NULL.
+ */
+function schemaTokens(sql, identifiers, objectNames) {
+  const source = sql.match(/--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|"(?:[^"]|"")*"|`(?:[^`]|``)*`|\[[^\]]*\]|[A-Za-z_][A-Za-z_0-9$]*|\d+(?:\.\d+)?|[^\s]/g) || [];
+  const tokens = [];
+  for (const token of source) {
+    if (token.startsWith('--') || token.startsWith('/*')) continue;
+    if (token[0] === "'") tokens.push(['literal', token]);
+    else if (['"', '`', '['].includes(token[0])) {
+      const quote = token[0];
+      const name = token.slice(1, -1).replaceAll(quote + quote, quote).toLowerCase();
+      tokens.push(identifiers.has(name) ? ['word', name] : ['quoted', token]);
+    } else tokens.push(/^[A-Za-z_]/.test(token) ? ['word', token.toLowerCase()] : ['symbol', token]);
+  }
+  return JSON.stringify(tokens.filter((token, index) => {
+    if (token[0] === 'word' && token[1] === 'main' && tokens[index + 1]?.[1] === '.'
+      && objectNames.has(tokens[index + 2]?.[1])) return false;
+    if (token[1] === '.' && tokens[index - 1]?.[0] === 'word' && tokens[index - 1]?.[1] === 'main'
+      && objectNames.has(tokens[index + 1]?.[1])) return false;
+    return true;
+  }));
+}
+
+/** Referencia obtenida de la migración local, sin modificar el respaldo restaurado. */
+function whatsappSchema(migration) {
+  const reference = new DatabaseSync(':memory:');
+  try {
+    reference.exec(migration);
+    const objects = reference.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name GLOB 'sarin_wa_*' AND sql IS NOT NULL").all();
+    const objectNames = new Set(objects.map(row => row.name.toLowerCase()));
+    const identifiers = new Set([...objectNames, 'new', 'old']);
+    for (const object of objects.filter(row => ['table', 'view'].includes(row.type))) {
+      for (const column of reference.prepare('SELECT name FROM pragma_table_info(?)').all(object.name)) {
+        identifiers.add(column.name.toLowerCase());
+      }
+    }
+    return db => {
+      for (const expected of objects) {
+        const actual = db.prepare('SELECT type,tbl_name,sql FROM sqlite_master WHERE name = ? COLLATE NOCASE').get(expected.name);
+        if (!actual || actual.type !== expected.type || actual.tbl_name.toLowerCase() !== expected.tbl_name.toLowerCase()
+          || typeof actual.sql !== 'string'
+          || schemaTokens(actual.sql, identifiers, objectNames) !== schemaTokens(expected.sql, identifiers, objectNames)) throw new Error();
+      }
+    };
+  } finally { reference.close(); }
+}
 
 /** Separa SQL sin interpretar su contenido: literales, identificadores y comentarios
  * conservan sus bytes; un trigger acaba tras su END exterior, no en sus sentencias.
@@ -66,22 +116,51 @@ export async function verifySarinBackup(bytes) {
   const db = new DatabaseSync(':memory:');
   let stage = 'restore';
   try {
+    const whatsappMigration = await readFile(new URL('../../migrations/sarin/0004_whatsapp_ingress.sql', import.meta.url), 'utf8');
+    const validateWhatsAppSchema = whatsappSchema(whatsappMigration);
     db.exec('PRAGMA foreign_keys = ON');
     restoreBackupSql(db, bytes.toString('utf8'));
-    const counts = () => Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n]));
+    const exists = name => Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? COLLATE NOCASE").get(name));
+    const validateWhatsApp = () => {
+      const present = whatsappTables.filter(exists).length;
+      if (present === 0) return null;
+      if (present !== whatsappTables.length) throw new Error();
+      validateWhatsAppSchema(db);
+      const row = db.prepare(`SELECT inbox_rows,receipt_rows,content_bytes,
+        (SELECT COUNT(*) FROM sarin_wa_state) AS stateRows,
+        (SELECT COUNT(*) FROM sarin_wa_inbox) AS inbox,
+        (SELECT COUNT(*) FROM sarin_wa_receipts) AS receipts,
+        (SELECT COUNT(*) FROM sarin_wa_peers) AS peers,
+        COALESCE((SELECT SUM(stored_bytes) FROM sarin_wa_inbox),0) AS storedBytes
+        FROM sarin_wa_state WHERE id = 1`).get();
+      if (!row || row.stateRows !== 1 || row.inbox_rows !== row.inbox
+        || row.receipt_rows !== row.receipts || row.content_bytes !== row.storedBytes) throw new Error();
+      return { inbox: row.inbox, receipts: row.receipts, peers: row.peers };
+    };
+    const restoredTables = [...tables, ...optionalTables.filter(exists)];
+    const counts = () => Object.fromEntries(restoredTables.map(table => [table, db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n]));
     stage = 'counts';
     const before = counts();
     stage = 'integrity';
     const integrity = db.prepare('PRAGMA integrity_check').get().integrity_check;
     const foreignKeyErrors = db.prepare('PRAGMA foreign_key_check').all().length;
     if (integrity !== 'ok' || foreignKeyErrors) throw new Error();
+    validateWhatsApp();
     stage = 'migration';
-    db.exec(await readFile(new URL('../../migrations/sarin/0003_leads.sql', import.meta.url), 'utf8'));
+    if (!exists('sarin_leads')) {
+      db.exec(await readFile(new URL('../../migrations/sarin/0003_leads.sql', import.meta.url), 'utf8'));
+    }
+    if (!exists('sarin_wa_state')) {
+      db.exec(whatsappMigration);
+    }
     stage = 'comparison';
     if (JSON.stringify(before) !== JSON.stringify(counts()) || db.prepare('PRAGMA foreign_key_check').all().length) throw new Error();
+    const whatsapp = validateWhatsApp();
+    if (!whatsapp) throw new Error();
     return { verified: true, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length,
       integrity, foreignKeyErrors, counts: before, additiveMigrationPreservesCounts: true,
-      leads: db.prepare('SELECT COUNT(*) AS n FROM sarin_leads').get().n };
+      leads: db.prepare('SELECT COUNT(*) AS n FROM sarin_leads').get().n,
+      whatsapp };
   } catch (error) {
     const safeSqlError = /^(?:no such (?:table|column|function)|object name reserved for internal use): (?:main\.)?(?:sarin_[a-z_]+|sqlite_sequence)$/;
     const reason = error?.message?.includes('FOREIGN KEY constraint failed') ? 'foreign_key'

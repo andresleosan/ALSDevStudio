@@ -1,5 +1,17 @@
 # Tareas — ALS DevStudio
 
+## SARIN-YCLOUD · WhatsApp del bot comercial de ALS · 2026-10-17 · preparación local
+
+- [x] Confirmar alcance: bot de la web de ALS, número actual atendido desde la app móvil, Coexistencia y proveedor YCloud Free elegido por el titular. Evaluación y costos en `docs/SARIN-WHATSAPP-EVALUACION.md`; SaaS de citas fuera de alcance.
+- [x] Preparar transporte interno autenticado sin dependencias, rutas públicas, datos remotos ni envíos reales. Envíos apagados por defecto, firma sobre bytes exactos, límites de tamaño, timeout de salida y resultados inciertos sin reintentos.
+- [x] RED/GREEN y revisión independiente: 147 pruebas nuevas + 206 regresiones aprobadas por raíz; TSC estricto y build de 222 recursos correctos. Corregido P2 de correlación Unicode/espacios internos con prueba de ida y vuelta; sin P1/P2 abiertos en esta fase interna.
+- [x] Completar registro del titular y confirmar Free en el panel: empresa, web, Colombia, Software, fundador, rango 1–10 y casos de uso API/captación/atención. Credenciales y verificación completadas por el titular; sin datos de pago. Evidencia local `test-results/ycloud-als-free-confirmado.png`.
+- [x] El titular completó Coexistencia; YCloud confirma `Connected` y Free para el número terminado en 8047, elegido expresamente por el titular. Verificación empresarial pendiente. Los tres eventos del transporte aparecen habilitados en Developers; formulario cerrado sin guardar. Sin clave revelada, webhook creado ni mensajes enviados. Evidencia `test-results/ycloud-numero-conectado.png`.
+- [x] Recepción durable local preparada: deadline, captura D1 deduplicada y pausada, filtros de cuenta/piloto, ACK tras commit, retención/recuperación y núcleo comercial extraído. Validación final raíz: **616/616** pruebas, TSC estricto del nuevo canal, Functions y Worker compilados, smoke de bundle completo en workerd/D1 sin red, build de 222 recursos. Revisión independiente sin P1/P2: corregidos recuperación con piso de cinco minutos, contadores de purga y respaldo incompleto sin triggers. Respaldo privado remoto restaurado sólo en memoria: íntegro y migración aditiva conserva conteos. [Operación y evidencia](docs/SARIN-WHATSAPP-PILOTO.md).
+- [ ] Publicar y conectar piloto confirmado 2135→8047. Borrador YCloud preparado con URL exacta y sólo entrada/eco; no se pulsó Confirm. Se requiere autorización concreta de publicación y de acceso del webhook. Ruta apagada; sin migración o publicación WhatsApp remota, secretos nuevos ni envíos reales.
+- [ ] Para respuestas reales: consentimiento WhatsApp, outbox y reconciliación de envíos inciertos, conexión al núcleo, pausa/reactivación humana, Staff y piloto autorizado. Capturar mensajes no equivale a un bot operativo.
+
+
 ## TILT-PROYECTOS · Inclinación en las 20 tarjetas · 2026-10-17
 
 - [x] El titular solicita el mismo efecto de inclinación del hero en todos los proyectos y confirma «Sí, aplicar y publicar». Conservar el diseño, los 20 enlaces, el orden y los límites de movimiento reducido/táctil existentes.

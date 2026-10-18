@@ -1,5 +1,15 @@
 # Restauración conservadora de Sarin
 
+## Extensión WhatsApp del piloto (0004)
+
+Cuando exista `0004_whatsapp_ingress.sql`, incluir `SARIN_WHATSAPP_INGRESS_ENABLED=false` al cerrar y drenar. El helper detecta las cuatro tablas del canal: una estructura parcial provoca error, sin borrar una parte ni acreditar éxito. La limpieza web y WhatsApp comparte una sola transacción. También elimina inbox, recibos y contactos, reconcilia contadores y conserva intactas las tablas monetarias.
+
+El piso temporal queda al menos cinco minutos después del reloj de recuperación, cubriendo eventos con fechas futuras toleradas previamente. Esperar a superar ese piso antes de reabrir captura; `createdAt` y `sentAt` deben ser posteriores. Restablecer explícitamente el inicio del piloto. La pausa global permanece activa y no existe procesador que reenvíe capturas.
+
+El cron detecta el esquema WhatsApp y lo purga incluso con la recepción apagada. Ejecuta ambas purgas en lotes acotados y combina sus pendientes. No volver al Worker anterior hasta eliminar por retención los datos del canal. El verificador de respaldo aplica sólo migraciones ausentes (0003/0004), compara conteos y contabilidad; una copia ya migrada no se migra otra vez. [Operación del piloto](SARIN-WHATSAPP-PILOTO.md).
+
+## Procedimiento común
+
 Procedimiento de esta entrega: después de recuperar una copia se elimina **todo** el historial restaurado antes de reabrir. Incluye conversaciones aún vigentes, datos de contacto, sesiones, mensajes, turnos, pruebas de autorización, vínculos de turnos con reservas, eventos, rechazos y auditoría administrativa. Así no vuelven a aparecer conversaciones que se hubieran suprimido después de la copia. Las reservas y los contadores de dinero se conservan y se concilian por separado; recuperar una copia antigua no acredita presupuesto disponible.
 
 1. **Cerrar y drenar.** Desactivar `SARIN_ENABLED`, `SARIN_HISTORY_ENABLED`, `SARIN_ADMIN_ENABLED` y `SARIN_PRIVATE_TEST_ENABLED` en todos los despliegues con acceso a la base. Conservar la autorización exclusiva de Firebase/Google en interfaz y API; no introducir un bypass de mantenimiento. Desactivar temporalmente `SARIN_RETENTION_ENABLED` para evitar purgas concurrentes durante la recuperación. Comprobar que no entran peticiones nuevas y esperar a que terminen o se cancelen las inferencias y escrituras activas. Cambiar flags no cancela una petición que ya empezó. No continuar hasta confirmar el drenaje.

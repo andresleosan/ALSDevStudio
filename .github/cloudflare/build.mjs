@@ -10,6 +10,7 @@ const MAX_FILES = 20000;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const HTML_FILES = ['index.html', 'privacidad.html', 'terminos.html', 'cookies.html', '404.html', 'control-sarin/index.html'];
 const FUNCTION_ROUTES = ['/api/sarin','/api/sarin/','/api/sarin/session','/api/sarin/session/',
+  '/api/sarin/whatsapp','/api/sarin/whatsapp/',
   '/control-sarin','/control-sarin/*','/api/control-sarin','/api/control-sarin/*'];
 const SCRIPT_FILES = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
@@ -213,7 +214,7 @@ function validateFunctionRoutes(content) {
       !Array.isArray(routes.include) || routes.include.length !== FUNCTION_ROUTES.length ||
       [...routes.include].sort().join(',') !== [...FUNCTION_ROUTES].sort().join(',') ||
       !Array.isArray(routes.exclude) || routes.exclude.length !== 0) {
-    throw new Error('Las rutas de Functions deben limitarse al chat, sesión y administración protegida de Sarin.');
+    throw new Error('Las rutas de Functions deben limitarse al chat, sesión, webhook firmado y administración de Sarin.');
   }
 }
 

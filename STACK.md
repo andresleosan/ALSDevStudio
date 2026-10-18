@@ -1,5 +1,13 @@
 # Stack — ALS DevStudio
 
+### YCloud Free para Sarin comercial · 2026-10-17 · preparación local
+
+El titular eligió conectar el WhatsApp Business móvil existente de ALS por Coexistencia con YCloud Free. Confirmados Free y `Connected` para el número terminado en 8047, elegido por el titular; verificación empresarial pendiente. El transporte vanilla autenticado tiene pruebas locales (147 iniciales + 206 regresiones), sin dependencias ni envíos reales. Se prepara recepción durable D1 del piloto y núcleo comercial compartido: endpoint exacto cerrado por defecto, capturas separadas de sesiones web, deduplicación, pausa, caducidad y recuperación. No se han revelado claves, creado webhooks ni aplicado migraciones o despliegues WhatsApp remotos. [Estado, límites, costos y fuentes](docs/SARIN-WHATSAPP-EVALUACION.md), [contrato del piloto](docs/superpowers/specs/2026-10-17-sarin-whatsapp-ingress-design.md).
+
+YCloud publica US$0 de suscripción Free; mensajería Meta, IA y otros consumos no quedan cubiertos por ese precio. No se activaron saldo, recarga automática ni alertas del proveedor. No se cambió la retención publicada de ALS; la retención del proveedor debe resolverse antes de tráfico real.
+
+Continuación local lista: 616 pruebas aprobadas, canal nuevo con TSC estricto, Functions y Worker de retención compilados y bundle completo probado con workerd/D1 local, sin llamadas salientes. Piloto confirmado 2135→8047, borrador de webhook sin guardar y receptor apagado. Respaldo privado verificado; migración sólo ensayada localmente. [Operación, reversión y límites](docs/SARIN-WHATSAPP-PILOTO.md). Sin P1/P2 abiertos en revisión independiente; el TSC global de backend conserva deuda anterior, sin diagnósticos nuevos en los archivos añadidos/revisados.
+
 ### Adaptación de referencias Mobbin · 2026-10-17 · publicado
 
 Dirección aprobada al retomar la propuesta acotada: acceso centrado, bandeja administrativa de lista/mensajes/contexto y landing con proyectos antes del mapa, encabezados compactos y un único título de contacto. Referencias estructurales, no copias de contenido: [Gumloop, acceso](https://mobbin.com/screens/4dd9332d-aa55-4cce-a84e-c968ef13f263), [Intercom, bandeja](https://mobbin.com/screens/51e34cc2-3be7-4d97-8cf0-e487b14656a5) y [Cloudstudio, trabajos](https://mobbin.com/sites/sections/48890788-7d16-4887-baaa-5b22583ef055).

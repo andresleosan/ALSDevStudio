@@ -1,8 +1,7 @@
 ﻿// @ts-check
 import { createQuota } from './quota.js';
-import { CLASSIFICATION_PROMPT, GENERATION_PROMPT, OUT_OF_SCOPE } from './knowledge.js';
-import { SarinError, VALIDATION_REASONS, invalidOutput, readBoundedJson, validateChatRequest, validateInput, validateClassification, validateGeneration, buildPayload } from './policy.js';
-import { callDeepSeek, reservationMicros, verifiedCost } from './deepseek.js';
+import { SarinError, VALIDATION_REASONS, readBoundedJson, validateChatRequest } from './policy.js';
+import { runCommercialTurn } from './run-commercial-turn.js';
 import { ensureHistoryConfiguration, validatePost, readSessionToken, hashSessionToken, requestIdentity, historyStore, publicResponse, publicFailure } from './sessions.js';
 
 function configuration(env) {
@@ -36,38 +35,15 @@ export async function handleSarin(request,env,options={}) {
     store=await historyStore(env,options);
     turn=await store.beginTurn({tokenHash,requestId:submission.requestId,message:submission.message});
     if(turn.replay)return publicResponse(turn.replay.body,turn.replay.status);
-    const input=validateInput({message:submission.message,history:turn.history});
-    const classification=buildPayload(input,CLASSIFICATION_PROMPT,128,8192);
-    const generation=buildPayload(input,GENERATION_PROMPT,512,32768);
-    const quota=options.quota||createQuota({db:env.SARIN_DB,identity,now,
-      limits:{perMinute:10,perDay:50,dailyMicros:config.dailyMicros,monthlyMicros:config.monthlyMicros}});
-    const fetcher=options.fetch||globalThis.fetch.bind(globalThis);
-    async function execute(stage,payload,validate,timeoutMs) {
-      if(request.signal.aborted)throw new SarinError(504,'timeout');
-      const id=crypto.randomUUID();
-      const amountMicros=reservationMicros(payload.bytes,payload.maxTokens,config.inputPrice,config.outputPrice);
-      await quota.reserve({id,stage,amountMicros});
-      try {
-        await store.attachReservation({conversationId:turn.conversationId,requestId:submission.requestId,reservationId:id});
-        if(request.signal.aborted)throw new SarinError(504,'timeout');
-      } catch(error) {
-        // No se invoco fetch: solo este gasto se conoce como cero.
-        await quota.settle(id,0);
-        throw error;
-      }
-      const result=await callDeepSeek({body:payload.body,key:env.DEEPSEEK_API_KEY,fetcher,signal:request.signal,timeoutMs});
-      const cost=verifiedCost(result.usage,payload,config.inputPrice,config.outputPrice);
-      if(cost.excess||cost.actualMicros>amountMicros){await quota.block();throw invalidOutput('usage_contract');}
-      const output=validate(result.content);
-      if(request.signal.aborted)throw new SarinError(504,'timeout');
-      await quota.settle(id,cost.actualMicros);
-      return output;
-    }
-    const scope=await execute('classification',classification,validateClassification,10000);
-    const output=scope.inScope ? await execute('generation',generation,value=>validateGeneration(value,input),20000) : OUT_OF_SCOPE;
+    const {output,outcome}=await runCommercialTurn({message:submission.message,history:turn.history,signal:request.signal},{
+      config,apiKey:env.DEEPSEEK_API_KEY,fetch:options.fetch,
+      createQuota:()=>options.quota||createQuota({db:env.SARIN_DB,identity,now,
+        limits:{perMinute:10,perDay:50,dailyMicros:config.dailyMicros,monthlyMicros:config.monthlyMicros}}),
+      attachReservation:reservationId=>store.attachReservation({conversationId:turn.conversationId,requestId:submission.requestId,reservationId}),
+    });
     const body={...output,conversationId:turn.conversationId,requestId:submission.requestId,turn:turn.turn,expiresAt:turn.expiresAt};
     finished=true;
-    const saved=await store.finishTurn({tokenHash,requestId:submission.requestId,body,status:200,outcome:scope.inScope?'completed':'out_of_scope'});
+    const saved=await store.finishTurn({tokenHash,requestId:submission.requestId,body,status:200,outcome});
     if(!saved.applied)throw new SarinError(410,'conversation_expired');
     return publicResponse(body);
   } catch(error) {

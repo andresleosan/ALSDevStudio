@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/sarin", "/api/sarin/", "/api/sarin/session", "/api/sarin/session/", "/control-sarin", "/control-sarin/*", "/api/control-sarin", "/api/control-sarin/*"],
+  "include": ["/api/sarin", "/api/sarin/", "/api/sarin/session", "/api/sarin/session/", "/api/sarin/whatsapp", "/api/sarin/whatsapp/", "/control-sarin", "/control-sarin/*", "/api/control-sarin", "/api/control-sarin/*"],
   "exclude": []
 }
