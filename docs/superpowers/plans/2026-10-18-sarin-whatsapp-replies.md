@@ -44,7 +44,7 @@
 
 Tareas 2 y 4 pueden trabajarse en paralelo después del contrato de 1; coordinar los cambios de `ingress-store.js`. Tarea 3 depende de 1/2. Tarea 5 consume los contratos de 1/2 y no cambia su semántica. Integración y publicación son secuenciales. Cada implementador sólo modifica los archivos asignados y entrega resultados al integrador.
 
-## Tarea 1: estado durable, exclusión y cupos
+## Task 1: estado durable, exclusión y cupos
 
 **Archivos:** crear `migrations/sarin/0005_whatsapp_replies.sql`, `server/sarin/whatsapp/work-store.js`, `server/sarin/whatsapp/work-contracts.js`, `.github/cloudflare/sarin-whatsapp-work-store.test.mjs`; modificar `.github/cloudflare/sarin-sqlite-fixture.mjs` y la integración mínima en `server/sarin/whatsapp/ingress-store.js`.
 
@@ -78,7 +78,7 @@ La recuperación de un trabajo diferido sólo vuelve a ser elegible al cambiar s
 - [ ] Ejecutar suite nueva y `sarin-whatsapp-ingress-store.test.mjs`; exigir cero fallos y pruebas de rollback reales.
 - [ ] Revisar y hacer commit enfocado con `[CI Skip]`; registrar esquema y contratos definitivos en este plan antes de delegar consumidores.
 
-## Tarea 2: aceptación, pausas y eventos de entrega
+## Task 2: aceptación, pausas y eventos de entrega
 
 **Archivos:** crear `server/sarin/whatsapp/consent.js`, `.github/cloudflare/sarin-whatsapp-consent.test.mjs`, `.github/cloudflare/sarin-whatsapp-delivery.test.mjs`; modificar `work-store.js`, `ingress.js`, `ingress-store.js`, `ycloud-webhook.js`, `ycloud-client.js` y sus pruebas.
 
@@ -94,7 +94,7 @@ Eventos de estado normalizados incorporan campos opcionales `from`, `to`, `wabaI
 - [ ] Ejecutar `node --test .github/cloudflare/sarin-whatsapp-consent.test.mjs .github/cloudflare/sarin-whatsapp-delivery.test.mjs .github/cloudflare/sarin-whatsapp-ingress.test.mjs .github/cloudflare/sarin-ycloud-webhook.test.mjs .github/cloudflare/sarin-ycloud-client.test.mjs`; cero fallos.
 - [ ] Revisión independiente del límite de cuenta, secretos, consentimiento y carrera humana; commit enfocado.
 
-## Tarea 3: procesador y Worker de Queue
+## Task 3: procesador y Worker de Queue
 
 **Archivos:** crear `server/sarin/whatsapp/processor.js`, `server/sarin/whatsapp/processing-config.js`, `workers/sarin-whatsapp/index.js`, `workers/sarin-whatsapp/wrangler.jsonc`, `.github/cloudflare/sarin-whatsapp-processor.test.mjs`, `.github/cloudflare/sarin-whatsapp-worker.test.mjs`; modificar `functions/api/sarin/whatsapp.js` para avisar a Queue después del commit.
 
@@ -109,7 +109,7 @@ Config cerrada: `SARIN_WHATSAPP_REPLIES_ENABLED`, `SARIN_WHATSAPP_SEND_ENABLED`,
 - [ ] Ejecutar las suites nuevas más `sarin-commercial-turn.test.mjs` y `sarin-quota.test.mjs`; compilar Worker con `deploy --dry-run`. Ningún recurso remoto se crea en este paso.
 - [ ] Revisión de efectos externos, serialización por contacto y cupos; commit enfocado.
 
-## Tarea 4: retención, respaldo y restauración
+## Task 4: retención, respaldo y restauración
 
 **Archivos:** crear `server/sarin/whatsapp/work-maintenance.js`; modificar `workers/sarin-retention/index.js`, `server/sarin/history-recovery.js`, `.github/cloudflare/check-sarin-backup.mjs`, `.github/cloudflare/check-sarin-backup.test.mjs`, `.github/cloudflare/sarin-whatsapp-maintenance.test.mjs`, `.github/cloudflare/sarin-retention.test.mjs`, `docs/SARIN-RESTAURACION.md`.
 
@@ -121,7 +121,7 @@ Config cerrada: `SARIN_WHATSAPP_REPLIES_ENABLED`, `SARIN_WHATSAPP_SEND_ENABLED`,
 - [ ] Ejecutar `node --test .github/cloudflare/sarin-whatsapp-maintenance.test.mjs .github/cloudflare/sarin-retention.test.mjs .github/cloudflare/check-sarin-backup.test.mjs`; cero fallos. Restaurar solamente copias sintéticas/locales en estas pruebas.
 - [ ] Revisión independiente de conservación/cupos y actualización del procedimiento de rollback; commit.
 
-## Tarea 5: Staff y aviso del piloto
+## Task 5: Staff y aviso del piloto
 
 **Archivos:** crear `server/sarin/whatsapp/admin.js`, `scripts/modules/sarin-whatsapp-admin.js`, `.github/cloudflare/sarin-whatsapp-admin.test.mjs`, `.github/cloudflare/sarin-whatsapp-admin-ui.test.mjs`; modificar `server/sarin/admin.js`, `control-sarin/index.html`, `scripts/modules/sarin-admin.js`, `styles/sarin-admin.css` y `privacidad.html`.
 
@@ -136,7 +136,7 @@ Config cerrada: `SARIN_WHATSAPP_REPLIES_ENABLED`, `SARIN_WHATSAPP_SEND_ENABLED`,
 - [ ] Ejecutar nuevas suites y `sarin-admin.test.mjs`, `sarin-admin-ui.test.mjs`, `sarin-ui.test.mjs`, `build.test.mjs`. Validar visualmente escritorio/móvil con datos sintéticos y teclado; guardar capturas ignoradas.
 - [ ] Revisión de acceso, copia visible y recorrido completo; commit.
 
-## Tarea 6: candidato integrado y auditoría
+## Task 6: candidato integrado y auditoría
 
 **Archivos:** `wrangler.jsonc`, `_routes.json` sólo si hacen falta rutas exactas nuevas, `.github/cloudflare/build.mjs`/pruebas, documentación de operación `docs/SARIN-WHATSAPP-PILOTO.md`, `STACK.md`, `tasks.md`. Harnesses locales/evidencias en `.wrangler/` y `test-results/`, ignorados.
 
@@ -147,7 +147,7 @@ Config cerrada: `SARIN_WHATSAPP_REPLIES_ENABLED`, `SARIN_WHATSAPP_SEND_ENABLED`,
 - [ ] Revisión independiente final del conjunto: carreras, pausa con capacidad llena, incertidumbres, mezcla de cuentas, consentimiento, coste y restauración. Corregir P1/P2 y repetir sólo pruebas afectadas y la integración final.
 - [ ] Presentar candidato concreto: comportamiento, evidencia, límites, recursos/secreto necesarios y reversión. Solicitar al titular la publicación/configuración y una prueba de envío al participante autorizado; no abrir destinatarios públicos ni usar claves antes de ese paso.
 
-## Tarea 7: publicación y piloto autorizado
+## Task 7: publicación y piloto autorizado
 
 Depende de candidato probado y confirmación concreta, porque introduce envíos y uso de proveedores además de la recepción ya autorizada.
 
@@ -163,4 +163,4 @@ Depende de candidato probado y confirmación concreta, porque introduce envíos 
 
 Cobertura: tareas 1–3 cubren procesamiento/consentimiento/entrega; 4 conservación/restauración; 5 operador/aviso; 6 pruebas y candidato; 7 activación. Los cinco riesgos de Review Focus tienen pruebas asignadas. Interfaces y nombres se comparten por `work-contracts.js`; las tareas posteriores no inventan métodos de store. No se estimula ningún envío remoto durante desarrollo.
 
-Estado de revisión: diseño aprobado; plan preparado para lectura del titular y elección del método de ejecución. Recomendación: implementación por tareas con agentes y revisión independiente, por las carreras y efectos externos de esta integración.
+Estado de revisión: diseño y plan aprobados por el titular el 18 de octubre de 2026; ejecución por tareas con agentes y revisión independiente aprobada. Activación pendiente del candidato probado.
