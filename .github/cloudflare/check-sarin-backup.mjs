@@ -9,7 +9,7 @@ import { schemaTokens } from '../../server/sarin/whatsapp/schema-tokens.js';
 
 const tables = ['sarin_conversations', 'sarin_messages', 'sarin_consents', 'sarin_reservations', 'sarin_counters'];
 const whatsappTables = ['sarin_wa_state', 'sarin_wa_inbox', 'sarin_wa_receipts', 'sarin_wa_peers'];
-const optionalTables = ['sarin_leads', ...whatsappTables];
+const optionalTables = ['sarin_leads', ...whatsappTables,'sarin_wa_handoff','sarin_wa_audio','sarin_wa_audio_quota'];
 
 /** Compara SQL ya aceptado por SQLite. Ignora formato, conserva literales y sólo
  * equipara identificadores citados conocidos; "NULL" nunca equivale a NULL.
@@ -100,9 +100,15 @@ export async function verifySarinBackup(bytes) {
   try {
     const whatsappMigration = await readFile(new URL('../../migrations/sarin/0004_whatsapp_ingress.sql', import.meta.url), 'utf8');
     const replyMigration=await readFile(new URL('../../migrations/sarin/0005_whatsapp_replies.sql',import.meta.url),'utf8');
+    const handoffMigration=await readFile(new URL('../../migrations/sarin/0006_whatsapp_handoff.sql',import.meta.url),'utf8');
+    const audioMigration=await readFile(new URL('../../migrations/sarin/0007_whatsapp_audio.sql',import.meta.url),'utf8');
     const prior=(await Promise.all(['0001_usage.sql','0002_history.sql','0003_leads.sql'].map(name=>readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8')))).join('\n');
     const validateWhatsAppSchema=whatsappSchema(prior+'\n'+whatsappMigration);
     const validateWorkSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration);
+    const validateHandoffSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration);
+    const validateAudioSchema=whatsappSchema(prior+'\n'+whatsappMigration+'\n'+replyMigration+'\n'+handoffMigration+'\n'+audioMigration);
+    const validators=[validateWhatsAppSchema,validateWorkSchema,validateHandoffSchema,validateAudioSchema];
+    let whatsappSchemaVersion=0;
     db.exec('PRAGMA foreign_keys = ON');
     restoreBackupSql(db, bytes.toString('utf8'));
     const exists = name => Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? COLLATE NOCASE").get(name));
@@ -111,8 +117,13 @@ export async function verifySarinBackup(bytes) {
       const names=db.prepare("SELECT name FROM sqlite_master WHERE lower(name) GLOB 'sarin_wa_*'").all();
       if(present===0){if(names.length)throw new Error();return null;}
       if(present!==whatsappTables.length)throw new Error();
-      const work=names.some(row=>validateWorkSchema.objectNames.has(row.name.toLowerCase())&&!validateWhatsAppSchema.objectNames.has(row.name.toLowerCase()));
-      if(work)validateWorkSchema(db);else validateWhatsAppSchema(db);
+      if(names.some(row=>!validateAudioSchema.objectNames.has(row.name.toLowerCase())))throw new Error();
+      let index=0;
+      for(let candidate=1;candidate<validators.length;candidate++){
+        if(names.some(row=>validators[candidate].objectNames.has(row.name.toLowerCase())
+          && !validators[candidate-1].objectNames.has(row.name.toLowerCase())))index=candidate;
+      }
+      validators[index](db);whatsappSchemaVersion=index+4;
       const row = db.prepare(`SELECT inbox_rows,receipt_rows,content_bytes,
         (SELECT COUNT(*) FROM sarin_wa_state) AS stateRows,
         (SELECT COUNT(*) FROM sarin_wa_inbox) AS inbox,
@@ -147,7 +158,7 @@ export async function verifySarinBackup(bytes) {
     return { verified: true, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length,
       integrity, foreignKeyErrors, counts: before, additiveMigrationPreservesCounts: true,
       leads: db.prepare('SELECT COUNT(*) AS n FROM sarin_leads').get().n,
-      whatsapp,
+      whatsapp,whatsappSchemaVersion,
       ...(exists('sarin_wa_pilot')?{whatsappWork:{jobs:db.prepare('SELECT COUNT(*) n FROM sarin_wa_jobs').get().n,
         outbox:db.prepare('SELECT COUNT(*) n FROM sarin_wa_outbox').get().n,consents:db.prepare('SELECT COUNT(*) n FROM sarin_wa_consent_proofs').get().n}}:{}) };
   } catch (error) {

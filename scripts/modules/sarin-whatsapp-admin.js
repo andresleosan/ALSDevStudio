@@ -15,6 +15,13 @@ const date=value=>Number.isSafeInteger(value) && Number(value)>0 && Number(value
 const labels={queued:'En espera',claimed:'Preparando respuesta',inference_started:'Generando respuesta',ready:'Respuesta lista; aún no enviada',sending:'Envío iniciado',accepted:'Aceptado por el proveedor; entrega pendiente',sent:'Enviado; entrega sin confirmar',delivered:'Entregado',read:'Leído',cancelled:'Cancelado',expired:'Vencido',rejected:'Rechazado',failed:'Fallido',inference_uncertain:'No pudimos confirmar la generación. Requiere atención humana; no se repetirá automáticamente.',send_uncertain:'No pudimos confirmar el envío. Puede haberse enviado; revisa antes de continuar.'};
 /** @type {Record<string,string>} */
 const lookupLabels={idle:'Sin consulta solicitada',pending:'Consulta pendiente',claimed:'Consulta en curso',complete:'Consulta finalizada',exhausted:'Consultas agotadas. Requiere atención humana.',conflict:'Identidad en conflicto. Requiere atención humana.'};
+/** @type {Record<string,string>} */
+const handoffLabels={pending:'Aviso pendiente de envío.',waiting_template:'Aviso pendiente: se necesita una plantilla aprobada para escribir a Andrés fuera de la conversación reciente.',accepted:'Aceptado por el proveedor; entrega pendiente.',delivered:'Aviso entregado a Andrés.',read:'Aviso leído por Andrés.',failed:'El aviso no pudo enviarse. Revisa la conversación en el panel.',send_uncertain:'No pudimos confirmar el envío del aviso. Puede haberse enviado; revisa tu WhatsApp.',cancelled:'Aviso cancelado. Revisa el estado actual de la conversación.',expired:'El aviso venció sin confirmar la entrega. Revisa la conversación en el panel.'};
+/** El fragmento sólo identifica una conversación; su lectura sigue exigiendo acceso administrativo.
+ * @param {unknown} hash */
+export function whatsAppPeerFromHash(hash){return typeof hash==='string' && /^#whatsapp=[a-f0-9]{64}$/.test(hash)?hash.slice(10):'';}
+/** @param {unknown} state */
+export function whatsAppHandoffLabel(state){return typeof state==='string' && Object.hasOwn(handoffLabels,state)?handoffLabels[state]:'Estado del aviso no disponible.';}
 /** @template {keyof HTMLElementTagNameMap} T @param {T} tag @param {string} [content] @param {string} [className] */
 function element(tag,content='',className=''){const node=document.createElement(tag);node.textContent=content;if(className)node.className=className;return node;}
 /** @param {unknown} value */
@@ -102,11 +109,13 @@ export function createWhatsAppAdmin({request,fail}){
     const action=button(value.paused?'Reactivar Sarin':'Pausar Sarin',()=>{if(snapshot)void mutate(`peers/${encodeURIComponent(selected)}/action`,{action:snapshot.paused?'resume':'pause',revision:snapshot.revision},snapshot.paused?'Sarin reactivado. El participante debe escribir un mensaje nuevo. No se procesarán mensajes anteriores.':'Sarin pausado. Atención humana requerida.');});action.dataset.waFocus='peer';action.className=value.paused?'admin-primary':'wa-pause';toolbar.append(action);
     const thread=element('div','','wa-thread');thread.id='wa-thread';thread.setAttribute('role','region');thread.setAttribute('aria-label','Mensajes y eventos');detail.append(thread);
     const info=element('details','','wa-contact-info'),infoSummary=element('summary','Detalles del contacto y reactivación');infoSummary.dataset.waFocus='contact-info';info.append(infoSummary,meta,element('p','Al reactivar se inicia un contexto nuevo. El participante debe escribir un mensaje nuevo; no se procesarán mensajes anteriores. Si la aceptación venció o fue revocada, se requiere un nuevo aviso.','admin-note'));thread.append(info);
+    if(value.handoff){const handoff=record(value.handoff),notice=element('section','','admin-event wa-handoff');notice.setAttribute('aria-label','Aviso a Andrés');notice.append(element('h3','Solicitud de atención humana'),element('p',whatsAppHandoffLabel(handoff.state)),element('p',`${date(handoff.updatedAt)} (Colombia)`,'admin-note'));thread.append(notice);}
     thread.append(element('h3','Mensajes y eventos','admin-timeline-title'));const timeline=element('ol','','admin-timeline');
     for(const entry of value.events){
       if(!Number.isSafeInteger(entry.expiresAt) || entry.expiresAt<=Date.now())continue;
       const node=element('li','',entry.kind==='echo'?'admin-event wa-human-event':`admin-message${entry.role==='assistant'?' admin-message--assistant':''}`);node.dataset.expiresAt=entry.expiresAt;
-      node.append(element('p',`${entry.kind==='echo'?'Respuesta desde el celular':entry.role==='assistant'?'Sarin':'Participante'} · ${date(entry.at)}`,'admin-message-header'));
+      const audio=entry.role==='user' && (entry.mediaType==='audio' || entry.media_type==='audio');
+      node.append(element('p',`${entry.kind==='echo'?'Respuesta desde el celular':entry.role==='assistant'?'Sarin':audio?'Participante · Audio transcrito':'Participante'} · ${date(entry.at)}`,'admin-message-header'));
       if(entry.kind!=='echo' && entry.kind==='message')node.append(element('p',text(entry.content).slice(0,4000),'admin-message-content'));
       timeline.append(node);
     }
@@ -178,8 +187,8 @@ export function createWhatsAppAdmin({request,fail}){
   return {
     /** @param {boolean} value */
     setReady(value){ready=value;if(!value)clear();},
-    /** @param {boolean} value */
-    setActive(value){active=value;if(!value)clear();else{inViewport=true;resume();}},
+    /** @param {boolean} value @param {string} [peerKey] */
+    setActive(value,peerKey=''){active=value;if(!value)clear();else{if(whatsAppPeerFromHash('#whatsapp='+peerKey) && peerKey!==selected){selected=peerKey;detailKey='';snapshot=null;detail.replaceChildren(element('p','Cargando contacto…','admin-note'));}inViewport=true;resume();}},
     clear(){ready=false;active=false;clear();}
   };
 }

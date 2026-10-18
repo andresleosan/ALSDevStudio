@@ -246,3 +246,28 @@ for(const [name,from,to] of [
   await assert.rejects(verifySarinBackup(Buffer.from(changeDefinition(sql,name,s=>{assert.ok(s.includes(from));return s.replace(from,to);}))),e=>e.stage==='integrity');
  });
 }
+
+async function extendedBackupSql(version=7){
+ let sql=await whatsappBackupSql();
+ const names=['0005_whatsapp_replies.sql','0006_whatsapp_handoff.sql','0007_whatsapp_audio.sql'];
+ for(const name of names.slice(0,version-4))sql+='\n'+await readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8');
+ return sql;
+}
+for(const version of [6,7])test('respaldo completo de extensión '+version+' se valida con su esquema y contadores',async()=>{
+ const report=await verifySarinBackup(Buffer.from(await extendedBackupSql(version)));
+ assert.equal(report.whatsappSchemaVersion,version);assert.equal(report.counts.sarin_wa_handoff,0);
+ if(version===7){assert.equal(report.counts.sarin_wa_audio,0);assert.equal(report.counts.sarin_wa_audio_quota,0);}
+});
+for(const [version,name] of [[6,'sarin_wa_handoff_request'],[6,'sarin_wa_handoff_immutable'],[6,'sarin_wa_handoff_expiry'],
+ [7,'sarin_wa_audio_delete'],[7,'sarin_wa_audio_immutable'],[7,'sarin_wa_audio_capacity'],[7,'sarin_wa_audio_capture'],[7,'sarin_wa_audio_quota'],[7,'sarin_wa_audio_month']]){
+ test('respaldo de extensión rechaza objeto ausente '+name,async()=>{
+  let sql=await extendedBackupSql(version);
+  if(name==='sarin_wa_audio_quota')sql=changeDefinition(sql,'sarin_wa_audio_month',()=> '');
+  await assert.rejects(verifySarinBackup(Buffer.from(changeDefinition(sql,name,()=>''))),error=>error.stage==='integrity');
+ });
+}
+test('no confunde cuota de audio huérfana o tabla handoff parcial con versión anterior válida',async()=>{
+ for(const orphan of ['CREATE TABLE sarin_wa_audio_quota(day_key TEXT);','CREATE TABLE sarin_wa_handoff(alert_id TEXT);']){
+  await assert.rejects(verifySarinBackup(Buffer.from(await extendedBackupSql(5)+'\n'+orphan)),error=>error.stage==='integrity');
+ }
+});

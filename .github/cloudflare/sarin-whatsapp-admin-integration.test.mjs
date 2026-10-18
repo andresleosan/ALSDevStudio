@@ -5,6 +5,7 @@ import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
 import { createWhatsAppIngressStore } from '../../server/sarin/whatsapp/ingress-store.js';
 import { createWhatsAppWorkStore } from '../../server/sarin/whatsapp/work-store.js';
 import { handleWhatsAppAdmin } from '../../server/sarin/whatsapp/admin.js';
+import { createWhatsAppHandoffStore } from '../../server/sarin/whatsapp/handoff-store.js';
 
 // Integración real de SQL, triggers, store y proyección HTTP. Ninguna llamada de red.
 // La autenticación/CSRF se verifica por separado en sarin-whatsapp-admin.test.mjs.
@@ -121,7 +122,7 @@ test('prueba de consentimiento en conflicto deja de mostrarse aceptada',async t=
   f.sqlite.exec('UPDATE sarin_wa_consent_proofs SET conflict=1');await consentIs(f,'pending');
 });
 
-for(const [name,text,mediaType] of [['STOP','STOP','text'],['HUMANO','HUMANO','text'],['audio',undefined,'audio']]){
+for(const [name,text,mediaType] of [['STOP','STOP','text'],['HUMANO','HUMANO','text'],['imagen',undefined,'image']]){
   test(`control efectivo ${name} muestra revocación de aceptación en Staff`,async t=>{
     const f=await setup(t);await accepted(f);await f.capture(text,'inbound',mediaType);
     await consentIs(f,'revoked');assert.equal((await f.detail()).paused,true);
@@ -139,4 +140,23 @@ test('enmascarado no revela completo un teléfono corto admitido por el transpor
   const f=await setup(t,{phone:'+12'}),peer=await f.listed();
   assert.match(peer.maskedPhone,/[*•…]/u);assert.equal((peer.maskedPhone.match(/\d/g)||[]).length,0);
   assert.doesNotMatch(JSON.stringify(await f.store.getPeer({peerKey:f.peerKey})),/\+12/);
+});
+
+test('Staff presenta el estado durable del aviso HUMANO sin exponer el destinatario administrativo',async t=>{
+  const f=await setup(t);await f.capture('HUMANO');
+  assert.deepEqual((await f.detail()).handoff,{state:'pending',updatedAt:f.now()});
+  const store=createWhatsAppHandoffStore({db:f.db,now:f.now}),identity={wabaId:'12345',businessPhone:'+573000000002',ownerPhone:'+573000000003'};
+  const next=await store.next(identity),permit=await store.beginSend({...identity,alertId:next.alertId,mode:'template'});
+  await store.finishSend({alertId:next.alertId,result:{status:'accepted',providerId:'admin_notice'}});
+  assert.equal((await f.detail()).handoff.state,'accepted');
+  await store.applyStatus({eventId:'admin_delivered',providerId:'admin_notice',externalId:permit.externalId,
+    from:identity.businessPhone,to:identity.ownerPhone,wabaId:identity.wabaId,status:'delivered',at:f.now()});
+  assert.equal((await f.detail()).handoff.state,'delivered');
+  assert.doesNotMatch(JSON.stringify(await f.detail()),/\+573000000003|admin_notice|external_id/);
+});
+
+test('Staff marca cancelado un aviso pendiente cuando el administrador reactiva el contacto',async t=>{
+  const f=await setup(t);await f.capture('HUMANO');const peer=await f.detail();
+  await f.store.resumePeer({peerKey:f.peerKey,expectedRevision:peer.revision,actor:'test'});
+  assert.equal((await f.detail()).handoff.state,'cancelled');
 });

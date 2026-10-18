@@ -1,5 +1,6 @@
 // @ts-check
 import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
+import {WHATSAPP_NOTICE_VERSION} from './consent.js';
 import { closed, integer, WhatsAppIngressError, normalizeWhatsAppMessage as normalize, digestWhatsApp as digest } from './ingress-identity.js';
 export { WhatsAppIngressError } from './ingress-identity.js';
 const DAY = 86400000;
@@ -87,7 +88,7 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
       const business = normalized.kind === 'inbound' ? normalized.to : normalized.from;
       const peer = normalized.kind === 'inbound' ? normalized.from : normalized.to;
       const facts = [normalized.kind,normalized.messageId,normalized.wamid,normalized.wabaId,
-        normalized.from,normalized.to,normalized.sentAt,normalized.mediaType,normalized.text];
+        normalized.from,normalized.to,normalized.sentAt,normalized.mediaType,normalized.text,...(normalized.audio?[normalized.audio]:[])];
       const [peerKey, messageKey, messageHash, eventHash] = await Promise.all([
         digest('sarin-wa-peer-v1', [normalized.wabaId,business,peer]),
         digest('sarin-wa-message-v1', [normalized.kind,normalized.wabaId,business,normalized.wamid]),
@@ -112,6 +113,12 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
         config.maxPeers,config.perMinute,config.perDay,config.globalPerMinute,config.globalPerDay,
         Math.floor(at / 60000) * 60000,Math.floor(at / DAY) * DAY),
         stmt('SELECT event_id,canonical_event_id,admission_token FROM sarin_wa_receipts WHERE event_id = ?', normalized.eventId),
+        ...(replies&&normalized.kind==='inbound'&&normalized.mediaType==='audio'?[stmt(`INSERT INTO sarin_wa_audio(event_id,descriptor,created_at,expires_at)
+          SELECT i.event_id,CASE WHEN c.accepted_at<i.sent_at AND c.accepted_at<i.received_at AND c.consent_expires_at>?
+            AND c.consent_version=? AND EXISTS(SELECT 1 FROM sarin_wa_consent_proofs p WHERE p.acceptance_event_id=c.acceptance_event_id
+              AND p.conflict=0 AND p.version=c.consent_version AND p.expires_at>? AND p.consent_expires_at>?) THEN ? ELSE NULL END,i.received_at,i.expires_at
+          FROM sarin_wa_inbox i JOIN sarin_wa_contexts c ON c.peer_key=i.peer_key WHERE i.event_id=? ON CONFLICT DO NOTHING`,
+          at,WHATSAPP_NOTICE_VERSION,at,at,normalized.audio?JSON.stringify(normalized.audio):null,normalized.eventId)]:[]),
       ]);
       const row = result[1].results[0];
       if (!row || row.event_id !== normalized.eventId || typeof row.admission_token !== 'string') throw new WhatsAppIngressError(503, 'ingress_unavailable');

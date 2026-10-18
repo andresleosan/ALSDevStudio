@@ -135,12 +135,12 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
   async function work(j,at) {
     const r=(await read(`SELECT i.*,c.*,p.revision AS pilot_revision,(${CONSENT}) AS consent,(${CONFIRM}) AS confirm ${FROM} WHERE j.job_id=?`,at,j.job_id))[0];
     const n=(await read(`SELECT * FROM sarin_wa_outbox WHERE context_id=? AND purpose='notice'`,j.context_id))[0];
-    const pairs=await read(`SELECT i.text AS input,o.text AS reply FROM sarin_wa_outbox o
+    const pairs=await read(`SELECT COALESCE(i.text,(SELECT a.transcript FROM sarin_wa_audio a WHERE a.event_id=i.event_id),'[Audio no transcrito]') AS input,o.text AS reply FROM sarin_wa_outbox o
       JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
       WHERE o.context_id=? AND o.purpose='reply' AND o.delivered_at IS NOT NULL AND o.conflict=0
         AND o.expires_at>? AND i.expires_at>? ORDER BY o.created_at DESC,o.outbox_id DESC LIMIT 4`,j.context_id,at,at);
     return {jobId:j.job_id,eventId:j.event_id,epoch:j.epoch,contextId:j.context_id,peerKey:j.peer_key,peerRevision:j.peer_revision,
-      pilotRevision:r.pilot_revision,input:r.consent && classifyWhatsAppInput({mediaType:r.media_type,text:r.text})==='text'?r.text:'',
+      pilotRevision:r.pilot_revision,source:r.media_type==='audio'?'audio':'text',input:r.consent && classifyWhatsAppInput({mediaType:r.media_type,text:r.text})==='text'?r.text:'',
       decision:r.confirm?'confirm':r.consent?'generate':!n&&!(r.consent_expires_at>at)?'notice':r.pending_acceptance_event_id===j.event_id?'accept_pending':'ignore',
       history:(r.consent?pairs:[]).reverse().flatMap(p=>[{role:'user',content:p.input},{role:'assistant',content:p.reply}]),
       recipient:{wabaId:r.waba_id,from:r.business_phone,to:r.peer_phone},expiresAt:j.expires_at,leaseUntil:j.lease_until};
@@ -164,7 +164,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     requireThat(typeof autoStart==='boolean');
     const at=clock(),e=normalizeWhatsAppMessage(event,at);
     const business=e.kind==='inbound'?e.to:e.from,peer=e.kind==='inbound'?e.from:e.to;
-    const facts=[e.kind,e.messageId,e.wamid,e.wabaId,e.from,e.to,e.sentAt,e.mediaType,e.text];
+    const facts=[e.kind,e.messageId,e.wamid,e.wabaId,e.from,e.to,e.sentAt,e.mediaType,e.text,...(e.audio?[e.audio]:[])];
     const [peerKey,messageKey,eventHash,messageHash]=await Promise.all([
       digestWhatsApp('sarin-wa-peer-v1',[e.wabaId,business,peer]),
       digestWhatsApp('sarin-wa-message-v1',[e.kind,e.wabaId,business,e.wamid]),
@@ -187,8 +187,10 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
           AND ?>activation_at AND ?>activation_at AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)
           AND (? IN('stop','human','media') OR (?='echo' AND (SELECT COUNT(*) FROM sarin_wa_outbox o
             JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
-            WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1))`,
-        kind,kind,kind,peerKey,kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),kind,kind,e.wamid,e.wabaId,business,peer)]);
+            WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1
+            AND NOT EXISTS(SELECT 1 FROM sarin_wa_handoff h WHERE h.started_at IS NOT NULL AND h.conflict=0
+              AND h.wamid=? AND h.waba_id=? AND h.business_phone=? AND h.owner_phone=? AND h.receipt_expires_at>?)))`,
+        kind,kind,kind,peerKey,kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),kind,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at)]);
       throw new WhatsAppWorkError(429,'work_capacity');
     };
     if(full)await pauseAtCapacity();
@@ -197,13 +199,13 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       guard(`EXISTS(SELECT 1 FROM sarin_wa_contexts WHERE peer_key=?) OR (SELECT COUNT(*) FROM sarin_wa_contexts)<1000`,[peerKey],'capacity'),
       guard(`EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE event_id=? OR message_key=?) OR (SELECT COUNT(*) FROM sarin_wa_control_events)<20000`,[e.eventId,messageKey],'capacity'),
       s(`INSERT INTO sarin_wa_contexts(peer_key,context_id,paused,activation_at)
-        SELECT ?,?,CASE WHEN ?=1 AND ? IN('text','accept') AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ?>activation_at AND ?>activation_at)
+        SELECT ?,?,CASE WHEN ?=1 AND ? IN('text','accept','audio') AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ?>activation_at AND ?>activation_at)
           AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1) THEN 0 ELSE 1 END,?
         ON CONFLICT(peer_key) DO NOTHING`,peerKey,crypto.randomUUID(),Number(autoStart),kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),autoStart?Math.min(e.sentAt,e.createdAt)-1:0),
       // Renovar solo ante un mensaje nuevo, sin retirar una pausa humana.
       s(`UPDATE sarin_wa_contexts SET context_id=?,revision=revision+1,activation_at=?,consent_version=NULL,consent_hash=NULL,
         consent_notice_id=NULL,acceptance_event_id=NULL,accepted_at=NULL,consent_expires_at=NULL,pending_acceptance_event_id=NULL,pending_accepted_at=NULL
-        WHERE peer_key=? AND paused=0 AND ? IN('text','accept') AND ?>activation_at AND ?>activation_at
+        WHERE peer_key=? AND paused=0 AND ? IN('text','accept','audio') AND ?>activation_at AND ?>activation_at
           AND NOT EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE event_id=? OR message_key=?)
           AND ((consent_version IS NOT NULL AND consent_version<>?) OR (acceptance_event_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs p WHERE p.acceptance_event_id=sarin_wa_contexts.acceptance_event_id AND p.conflict=0)) OR consent_expires_at<=? OR (accepted_at IS NULL AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=sarin_wa_contexts.context_id AND n.purpose='notice' AND n.expires_at<=?)))`,
         crypto.randomUUID(),Math.min(e.sentAt,e.createdAt)-1,peerKey,kind,e.sentAt,e.createdAt,e.eventId,messageKey,WHATSAPP_NOTICE_VERSION,at,at),
@@ -223,8 +225,10 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         acceptance_event_id=CASE WHEN ?='echo' THEN acceptance_event_id ELSE NULL END,pending_acceptance_event_id=NULL,pending_accepted_at=NULL
         WHERE peer_key=? AND ${fresh} AND (? IN('stop','human','media') OR (?='echo' AND
           (SELECT COUNT(*) FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
-            WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1))`,
-        kind,kind,kind,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),kind,kind,e.wamid,e.wabaId,business,peer),
+            WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1
+            AND NOT EXISTS(SELECT 1 FROM sarin_wa_handoff h WHERE h.started_at IS NOT NULL AND h.conflict=0
+              AND h.wamid=? AND h.waba_id=? AND h.business_phone=? AND h.owner_phone=? AND h.receipt_expires_at>?)))`,
+        kind,kind,kind,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),kind,kind,e.wamid,e.wabaId,business,peer,e.wamid,e.wabaId,business,peer,at),
       s(`UPDATE sarin_wa_contexts SET pending_acceptance_event_id=?,pending_accepted_at=?
         WHERE peer_key=? AND ${fresh} AND ?='accept' AND paused=0 AND accepted_at IS NULL AND pending_acceptance_event_id IS NULL
           AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ? > activation_at AND ?>activation_at)
@@ -473,6 +477,32 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         ...reserve(x,at,4800),s("UPDATE sarin_wa_jobs SET state='inference_started',inference_started_at=? WHERE job_id=?",at,x.jobId)]);
       return {status:'started'};
     }),
+    getAudioDescriptor:guarded(async(x)=>{
+      own(x);const at=clock();
+      const result=await batch([permission(x,at,"'inference_started'",true),s(`SELECT a.descriptor FROM sarin_wa_audio a JOIN sarin_wa_jobs j ON j.event_id=a.event_id
+        WHERE j.job_id=? AND a.state='pending' AND a.expires_at>?`,x.jobId,at)]);
+      const row=result[1].results[0];
+      return row?.descriptor?JSON.parse(row.descriptor):null;
+    }),
+    beginAudioInference:guarded(async(x)=>{
+      own(x);const at=clock(),{day,month}=periods(at);
+      await batch([permission(x,at,"'inference_started'",true),closureGuard(at),
+        guard(`EXISTS(SELECT 1 FROM sarin_wa_audio a JOIN sarin_wa_jobs j ON j.event_id=a.event_id WHERE j.job_id=? AND a.state='pending' AND a.descriptor IS NOT NULL AND a.expires_at>?)`,[x.jobId,at]),
+        guard(`COALESCE((SELECT consumed FROM sarin_wa_audio_quota WHERE day_key=?),0)<20 AND COALESCE((SELECT SUM(consumed) FROM sarin_wa_audio_quota WHERE month_key=?),0)<100`,[day,month],'quota'),
+        s(`INSERT INTO sarin_wa_audio_quota(day_key,month_key,consumed) VALUES(?,?,1) ON CONFLICT(day_key) DO UPDATE SET consumed=consumed+1`,day,month),
+        s(`UPDATE sarin_wa_audio SET state='started',started_at=? WHERE event_id=(SELECT event_id FROM sarin_wa_jobs WHERE job_id=?)`,at,x.jobId)]);
+      return true;
+    }),
+    finishAudio:guarded(async(x)=>{
+      own(x);const at=clock(),ok=x.result?.ok===true;
+      if(ok)requireThat(typeof x.result.text==='string'&&x.result.text.trim().length>0&&x.result.text.length<=1200
+        && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(x.result.text)
+        && Number.isFinite(x.result.durationSeconds)&&x.result.durationSeconds>0&&x.result.durationSeconds<=120);
+      await batch([permission(x,at,"'inference_started'",true),
+        guard(`EXISTS(SELECT 1 FROM sarin_wa_audio a JOIN sarin_wa_jobs j ON j.event_id=a.event_id WHERE j.job_id=? AND a.state IN(${ok?"'started'":"'pending','started'"}))`,[x.jobId]),
+        s(`UPDATE sarin_wa_audio SET descriptor=NULL,state=?,transcript=?,duration_seconds=?,finished_at=? WHERE event_id=(SELECT event_id FROM sarin_wa_jobs WHERE job_id=?)`,ok?'transcribed':'failed',ok?x.result.text:null,ok?x.result.durationSeconds:null,at,x.jobId)]);
+      return {status:ok?'transcribed':'failed'};
+    }),
     attachReservation:guarded(async(x)=>{
       own(x);requireThat(randomId(x.reservationId));await batch([permission(x,clock(),"'inference_started'",true),
         guard('NOT EXISTS(SELECT 1 FROM sarin_wa_inference_reservations WHERE reservation_id=?)',[x.reservationId]),
@@ -615,12 +645,22 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       const peer=(await read(`SELECT ${PEER_SUMMARY} FROM sarin_wa_contexts c CROSS JOIN (SELECT ? AS at) t
         WHERE c.peer_key=?`,at,peerKey))[0];
       if(!peer)return null;
-      const events=await read(`SELECT event_id,kind,media_type,text,sent_at,expires_at FROM sarin_wa_inbox WHERE peer_key=? AND expires_at>? ORDER BY received_at DESC LIMIT 20`,peerKey,at);
+      const events=await read(`SELECT i.event_id,i.kind,i.media_type,COALESCE(i.text,a.transcript) AS text,i.sent_at,i.expires_at
+        FROM sarin_wa_inbox i LEFT JOIN sarin_wa_audio a ON a.event_id=i.event_id WHERE i.peer_key=? AND i.expires_at>? ORDER BY i.received_at DESC LIMIT 20`,peerKey,at);
       const outputs=await read(`SELECT outbox_id,purpose,state,text,created_at,started_at,delivered_at,expires_at,conflict,reconcile_state,reconcile_attempts,reconcile_next_at,reconcile_last_result,reconcile_updated_at,
         (started_at IS NOT NULL AND provider_id IS NOT NULL AND conflict=0 AND reconcile_attempts<3
           AND state IN('sending','accepted','sent','send_uncertain') AND reconcile_state IN('idle','pending','claimed')
           AND created_at>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)) AS reconcile_available FROM sarin_wa_outbox WHERE peer_key=? AND expires_at>? ORDER BY created_at DESC LIMIT 20`,peerKey,at);
-      return {...peer,events,outputs};
+      const alert=(await read(`SELECT state,conflict,created_at,started_at,delivered_at,expires_at,context_id,peer_revision
+        FROM sarin_wa_handoff WHERE peer_key=? AND receipt_expires_at>? ORDER BY created_at DESC LIMIT 1`,peerKey,at))[0];
+      let handoff;
+      if(alert){
+        const stale=!alert.started_at&&(alert.context_id!==peer.context_id||alert.peer_revision!==peer.revision||!peer.paused);
+        const state=stale?'cancelled':!alert.started_at&&alert.expires_at<=at?'expired':alert.conflict?'send_uncertain':
+          ({queued:'pending',sending:'pending',sent:'accepted',rejected:'failed',uncertain:'send_uncertain'}[alert.state]??alert.state);
+        handoff={state,updatedAt:alert.delivered_at??alert.started_at??alert.created_at};
+      }
+      return {...peer,events,outputs,...(handoff?{handoff}:{})};
     }),
   };
   /** @param {any} x @param {boolean} paused */

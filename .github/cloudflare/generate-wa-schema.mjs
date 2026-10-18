@@ -5,9 +5,9 @@ import {createHash} from 'node:crypto';
 import {schemaTokens} from '../../server/sarin/whatsapp/schema-tokens.js';
 const db=new DatabaseSync(':memory:'),versions={};
 try {
- for(const name of ['0001_usage.sql','0002_history.sql','0003_leads.sql','0004_whatsapp_ingress.sql','0005_whatsapp_replies.sql']){
+ for(const name of ['0001_usage.sql','0002_history.sql','0003_leads.sql','0004_whatsapp_ingress.sql','0005_whatsapp_replies.sql','0006_whatsapp_handoff.sql','0007_whatsapp_audio.sql']){
   db.exec(await readFile(new URL('../../migrations/sarin/'+name,import.meta.url),'utf8'));
-  if(!/^000[45]/.test(name))continue;
+  if(!/^000[4567]/.test(name))continue;
   const rows=db.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name GLOB 'sarin_wa_*' AND sql IS NOT NULL ORDER BY name").all();
   const names=new Set(rows.map(r=>r.name)),identifiers=new Set([...names,'new','old']);
   for(const row of rows.filter(r=>['table','view'].includes(r.type)))for(const c of db.prepare('SELECT name FROM pragma_table_info(?)').all(row.name))identifiers.add(c.name.toLowerCase());

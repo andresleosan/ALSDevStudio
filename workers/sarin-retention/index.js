@@ -4,6 +4,8 @@ import { createWhatsAppIngressStore } from '../../server/sarin/whatsapp/ingress-
 
 import { detectWhatsAppSchema } from '../../server/sarin/whatsapp/work-schema.js';
 import { purgeWhatsAppWork } from '../../server/sarin/whatsapp/work-maintenance.js';
+import { purgeWhatsAppHandoff } from '../../server/sarin/whatsapp/handoff-store.js';
+import { purgeWhatsAppAudioQuota } from '../../server/sarin/whatsapp/audio-maintenance.js';
 
 const BATCH_SIZE = 100;
 const MAX_BATCHES = 20;
@@ -20,7 +22,8 @@ const WHATSAPP_COUNTERS = [['inbox', 'whatsappInbox'], ['receipts', 'whatsappRec
  */
 export async function runRetention(env, { store, now = () => Date.now(), maxBatches = MAX_BATCHES } = {}) {
   const totals = { sessions: 0, conversations: 0, rejections: 0, audits: 0, counters: 0, reservations: 0,
-    whatsappInbox: 0, whatsappReceipts: 0, whatsappPeers: 0, whatsappJobs:0, whatsappOutbox:0, whatsappConsents:0, whatsappAudits:0, whatsappObservations:0 };
+    whatsappInbox: 0, whatsappReceipts: 0, whatsappPeers: 0, whatsappJobs:0, whatsappOutbox:0, whatsappConsents:0, whatsappAudits:0, whatsappObservations:0,
+    whatsappHandoff:0,whatsappAudioQuota:0 };
   if (env.SARIN_RETENTION_ENABLED !== 'true') return { status: 'disabled', batches: 0, ...totals, remaining: false };
   let batches = 0;
   try {
@@ -53,10 +56,18 @@ export async function runRetention(env, { store, now = () => Date.now(), maxBatc
       }
       if (typeof result.remaining !== 'boolean') throw new Error();
       remaining = result.remaining;
-      if(version===5&&env.SARIN_DB){
+      if(version>=5&&env.SARIN_DB){
         const work=await purgeWhatsAppWork({db:env.SARIN_DB,now:clock,limit:BATCH_SIZE});
         totals.whatsappJobs+=work.jobs;totals.whatsappOutbox+=work.outbox;totals.whatsappConsents+=work.consents;
         totals.whatsappAudits+=work.audits;totals.whatsappObservations+=work.observations;remaining ||= work.remaining;
+      }
+      if(version>=6&&env.SARIN_DB){
+        const handoff=await purgeWhatsAppHandoff({db:env.SARIN_DB,now:clock,limit:BATCH_SIZE});
+        totals.whatsappHandoff+=handoff.deleted;remaining ||= handoff.remaining;
+      }
+      if(version>=7&&env.SARIN_DB){
+        const audio=await purgeWhatsAppAudioQuota({db:env.SARIN_DB,now:clock,limit:BATCH_SIZE});
+        totals.whatsappAudioQuota+=audio.deleted;remaining ||= audio.remaining;
       }
       if (whatsapp) {
         const captured = await whatsapp.purge({ limit: BATCH_SIZE });

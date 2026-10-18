@@ -53,7 +53,7 @@ async function pageFor(options={},authOptions={}){
 const peerKey='peer-synthetic-1';
 const peer={peerKey,maskedPhone:'+57 ••• ••• 0142',revision:7,paused:true,updatedAt:now,consent:{status:'pending',expiresAt:null}};
 const waDetail={...peer,requiresFreshMessage:true,events:[{id:'input-1',kind:'message',role:'user',content:'<img src=x onerror="window.pwned=true"> Proyecto ficticio',at:now,expiresAt:now+24000},{id:'echo-1',kind:'echo',content:'CUERPO PRIVADO DEL ECO',at:now,expiresAt:now+24000}],outputs:[{id:'output-1',status:'send_uncertain',updatedAt:now,canReconcile:true,reconciliation:{status:'idle',attempts:0,nextAt:null}},{id:'output-2',status:'send_uncertain',updatedAt:now,canReconcile:false,reconciliation:{status:'exhausted',attempts:3,nextAt:null}}]};
-async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitReady=true,initialEnabled=true,repliesEnabled=true,recoveryBlockedUntil=null}={}){
+async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitReady=true,initialEnabled=true,repliesEnabled=true,recoveryBlockedUntil=null,hash='',linkedPeer=null}={}){
   const requests=[];let revision=7,paused=true,enabled=initialEnabled,pilotRevision=3;let release;
   await page.addInitScript(()=>{let visibility='visible';Object.defineProperty(document,'visibilityState',{get:()=>visibility});window.setTestVisibility=value=>{visibility=value;document.dispatchEvent(new Event('visibilitychange'));};});
   await page.route('**/api/control-sarin/**',async route=>{
@@ -70,6 +70,7 @@ async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitRe
       if(delayDetail)await new Promise(resolve=>{release=resolve;});
       return route.fulfill({json:{peer:{...waDetail,revision,paused}}}).catch(()=>{});
     }
+    if(linkedPeer && path===`whatsapp/peers/${linkedPeer.peerKey}` && req.method()==='GET')return route.fulfill({json:{peer:{...waDetail,...linkedPeer}}});
     if(path===`whatsapp/peers/${peerKey}/action` && req.method()==='POST'){
       if(conflict){revision=8;paused=false;return route.fulfill({status:409,json:{error:{code:'stale_revision'}}});}
       revision++;paused=req.postDataJSON().action==='pause';return route.fulfill({json:{ok:true}});
@@ -78,7 +79,7 @@ async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitRe
     if(path==='whatsapp/outbox/output-1/reconcile' && req.method()==='POST')return route.fulfill({status:202,json:{status:'pending',attempts:0,nextAt:now+60000}});
     throw Error(`Ruta inesperada: ${req.method()} ${path}`);
   });
-  await page.goto(`${origin}/control-sarin/`);if(waitReady)await page.locator('#admin-workspace').waitFor();
+  await page.goto(`${origin}/control-sarin/${hash}`);if(waitReady)await page.locator('#admin-workspace').waitFor();
   return {requests,release:()=>release?.()};
 }
 const waRequests=requests=>requests.filter(r=>r.url.pathname.includes('/whatsapp/'));
@@ -290,4 +291,35 @@ test('Cargar más conserva contactos únicos, orden, selección y detalle durant
  assert.ok(reads>=before+2);assert.equal(await page.locator(`[data-wa-peer="${extra[1].peerKey}"]`).getAttribute('aria-pressed'),'true');
  assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).evaluate(node=>node===document.activeElement),true);
  assert.deepEqual(await page.locator('#wa-list [data-wa-peer]').evaluateAll(nodes=>nodes.map(node=>node.dataset.waPeer)),order);assert.equal(await more.isVisible(),false);
+});
+
+test('enlace del aviso abre el contacto autenticado aunque no esté en la primera página',async t=>{
+ const {page,context}=await pageFor();t.after(()=>context.close());
+ const linkedPeer={peerKey:'c'.repeat(64),maskedPhone:'*** 0199'};
+ const {requests}=await mock(page,{hash:'#whatsapp='+linkedPeer.peerKey,linkedPeer});
+ await page.getByRole('heading',{name:'*** 0199',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'WhatsApp',exact:true}).getAttribute('aria-pressed'),'true');
+ assert.equal(await page.locator(`[data-wa-peer="${linkedPeer.peerKey}"]`).getAttribute('aria-pressed'),'true');
+ assert.equal(waRequests(requests).filter(request=>request.method==='POST').length,0);
+ assert.ok(waRequests(requests).some(request=>request.url.pathname.endsWith('/peers/'+linkedPeer.peerKey)));
+ assert.equal(waRequests(requests).some(request=>request.url.searchParams.has('cursor')),false);
+});
+
+test('un enlace de aviso sin autenticación no consulta la conversación',async t=>{
+ const {page,context}=await pageFor({},{signedOut:true});t.after(()=>context.close());
+ const {requests}=await mock(page,{waitReady:false,hash:'#whatsapp='+'c'.repeat(64)});
+ await page.locator('#admin-google-login').waitFor();assert.equal(waRequests(requests).length,0);
+ assert.equal(await page.locator('#wa-panel').isVisible(),false);
+});
+
+test('transcripción se muestra como texto y aviso aceptado mantiene entrega pendiente',async t=>{
+ const {page,context}=await pageFor();t.after(()=>context.close());await mock(page);
+ await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,
+  handoff:{state:'accepted',updatedAt:now},events:[{id:'voice-1',kind:'message',role:'user',mediaType:'audio',
+   content:'<img src=x onerror="window.pwned=true"> Una tienda de camisetas.',at:now,expiresAt:now+3600000}]}}}));
+ await open(page);assert.match(await page.locator('#wa-detail').innerText(),/Audio transcrito/);
+ assert.match(await page.locator('.wa-handoff').innerText(),/entrega pendiente/);
+ assert.doesNotMatch(await page.locator('.wa-handoff').innerText(),/Aviso entregado/);
+ assert.equal(await page.locator('#wa-detail img').count(),0);assert.equal(await page.locator('#wa-detail audio').count(),0);
+ assert.match(await page.locator('#wa-detail').innerText(),/<img src=x/);
 });

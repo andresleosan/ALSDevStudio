@@ -6,6 +6,7 @@ const opaque=/^[A-Za-z0-9_-]{1,128}$/;
 const outputId=/^(?:[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
 const consentStates=['pending','pending_delivery','accepted','expired','revoked'];
 const reconciliationStates=['idle','pending','claimed','complete','exhausted','conflict'];
+const handoffStates=['pending','waiting_template','accepted','delivered','read','failed','send_uncertain','cancelled','expired'];
 /** @param {unknown} value @returns {Record<string,any>} */
 const record=value=>value && typeof value==='object' && !Array.isArray(value)?value:{};
 /** @param {unknown} value */
@@ -51,6 +52,7 @@ function detail(value,now){
     requireThat(typeof entry.event_id==='string' && opaque.test(entry.event_id) && timestamp(entry.sent_at));
     if(entry.kind==='echo')events.push({id:entry.event_id,kind:'echo',at:entry.sent_at,expiresAt:entry.expires_at});
     else if(entry.kind==='inbound' && entry.media_type==='text' && typeof entry.text==='string')events.push({id:entry.event_id,kind:'message',role:'user',content:entry.text.slice(0,4000),at:entry.sent_at,expiresAt:entry.expires_at});
+    else if(entry.kind==='inbound' && entry.media_type==='audio' && typeof entry.text==='string' && entry.text.length)events.push({id:entry.event_id,kind:'message',role:'user',mediaType:'audio',content:entry.text.slice(0,1200),at:entry.sent_at,expiresAt:entry.expires_at});
   }
   const outputs=[];
   for(const raw of value.outputs){
@@ -66,7 +68,9 @@ function detail(value,now){
   }
   events.sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
   requireThat(events.length<=100);
-  return {...summary(value,now),events,outputs};
+  const handoff=record(value.handoff);
+  if(value.handoff!=null)requireThat(handoffStates.includes(handoff.state) && timestamp(handoff.updatedAt));
+  return {...summary(value,now),events,outputs,...(value.handoff!=null?{handoff:{state:handoff.state,updatedAt:handoff.updatedAt}}:{})};
 }
 
 /** Sólo se invoca desde admin.js tras autenticar y verificar Origin/CSRF para POST.

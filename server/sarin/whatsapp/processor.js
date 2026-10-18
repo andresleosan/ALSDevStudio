@@ -5,8 +5,9 @@ import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
 import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
 import { processingConfiguration, recipientAllowed, validWorkHint } from './processing-config.js';
 import { WHATSAPP_NOTICE, WHATSAPP_NOTICE_VERSION, WHATSAPP_ACCEPTED } from './consent.js';
+import {transcribeWhatsAppAudio} from './audio-client.js';
 /** @typedef {import('./processing-config.js').ProcessingEnv} ProcessingEnv */
-/** @typedef {{store?:ReturnType<typeof createWhatsAppWorkStore>,fetch?:typeof fetch,now?:()=>number}} Options */
+/** @typedef {{store?:ReturnType<typeof createWhatsAppWorkStore>,fetch?:typeof fetch,now?:()=>number,transcribeAudio?:typeof transcribeWhatsAppAudio}} Options */
 /** Identidad de cuota separada de web, sin teléfono ni sesión inventada.
  * @param {string} peerKey @param {string} secret @param {number} at */
 async function identity(peerKey,secret,at) {
@@ -63,6 +64,17 @@ export async function processWhatsAppWork(hint,env,options={}) {
    if(work.decision==='generate') {
     const quotaIdentity=await identity(work.peerKey,config.identitySecret,now());check();
     await store.markInferenceStarted(own);externalStarted=true;check();
+    if(work.source==='audio'){
+      const descriptor=await store.getAudioDescriptor(own);check();
+      const result=descriptor?await (options.transcribeAudio??transcribeWhatsAppAudio)({descriptor,apiKey:config.apiKey,ai:env.AI,fetchImpl:options.fetch,
+        signal:controller.signal,beforeInference:async()=>{check();try{return await store.beginAudioInference(own);}catch{return false;}}}):/** @type {import('./audio-client.js').AudioResult} */({ok:false,reason:'invalid_descriptor'});
+      check();await store.finishAudio({...own,result});check();
+      if(!result.ok){
+        out=await store.completeGeneration({...own,reply:'No pude transcribir ese audio. Envíame tu consulta por texto o una nota de voz de WhatsApp de hasta 2 minutos. También puedes escribir HUMANO para solicitar atención de Andrés.',outcome:'fallback'});
+        return await send(out.outboxId,recipient);
+      }
+      work.input=result.text;
+    }
     const result=await runCommercialTurn({message:work.input,history:work.history,signal:controller.signal},{config,apiKey:config.aiKey,fetch:options.fetch,
      createQuota:()=>createQuota({db:config.db,identity:quotaIdentity,now,limits:{perMinute:10,perDay:50,dailyMicros:config.dailyMicros,monthlyMicros:config.monthlyMicros}}),
      attachReservation:async reservationId=>{check();await store.attachReservation({...own,reservationId});check();}});

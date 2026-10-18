@@ -329,7 +329,7 @@ test('normaliza eco sin invertir el remitente y destinatario', async () => {
   assert.deepEqual(await read(signed(value)), { ...expected, kind: 'echo', from: '+573000000002', to: '+573000000001' });
 });
 
-for (const type of ['image', 'audio', 'document', 'video', 'sticker', 'interactive', 'location']) {
+for (const type of ['image', 'document', 'video', 'sticker', 'interactive', 'location']) {
   test(`medio ${type} conserva metadata y descarta contenido y URL`, async () => {
     const value = incoming(); value.whatsappInboundMessage.type = type;
     value.whatsappInboundMessage[type] = { link: 'https://private.invalid/file', caption: 'PRIVATE_CAPTION' };
@@ -340,6 +340,30 @@ for (const type of ['image', 'audio', 'document', 'video', 'sticker', 'interacti
     });
   });
 }
+
+const audioDescriptor={id:'123456',link:'https://api.ycloud.com/v2/whatsapp/media/download/123456?sig=synthetic&payload=synthetic',
+  sha256:'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',mime_type:'audio/ogg; codecs=opus'};
+test('audio entrante conserva sólo descriptor validado de YCloud y descarta texto, caption y perfil',async()=>{
+ const value=incoming();value.whatsappInboundMessage.type='audio';value.whatsappInboundMessage.audio={...audioDescriptor,caption:'PRIVATE_CAPTION'};
+ const result=await read(signed(value));
+ assert.deepEqual(result,{...Object.fromEntries(Object.entries(expected).filter(([key])=>key!=='text')),mediaType:'audio',
+  audio:{id:audioDescriptor.id,link:audioDescriptor.link,sha256:audioDescriptor.sha256,mimeType:audioDescriptor.mime_type}});
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE_CAPTION|PERSONAL_DATA|tienda para mi café/);
+});
+test('audio con URL no autorizada falla cerrado sin exponer descriptor en el error',async()=>{
+ const value=incoming();value.whatsappInboundMessage.type='audio';value.whatsappInboundMessage.audio={...audioDescriptor,link:'https://private.invalid/file'};
+ await rejected(signed(value),400,'invalid_event');
+});
+test('audio sin descriptor conserva evento para respuesta alternativa, sin inventar ubicación de descarga',async()=>{
+ const value=incoming();value.whatsappInboundMessage.type='audio';
+ const result=await read(signed(value));assert.equal(result.mediaType,'audio');assert.equal(result.audio,undefined);assert.equal(result.text,undefined);
+});
+test('eco de audio conserva control humano y descarta descriptor sin preparar otra transcripción',async()=>{
+ const value=incoming();value.type='whatsapp.smb.message.echoes';value.whatsappMessage={...value.whatsappInboundMessage,
+  type:'audio',from:expected.to,to:expected.from,audio:audioDescriptor};delete value.whatsappInboundMessage;
+ const result=await read(signed(value));assert.equal(result.kind,'echo');assert.equal(result.mediaType,'audio');
+ assert.equal(result.audio,undefined);assert.equal(result.text,undefined);assert.doesNotMatch(JSON.stringify(result),/api.ycloud/);
+});
 
 for (const status of ['read', 'accepted', 'failed', 'sent', 'delivered', 'read']) {
   test(`estado ${status} sin from/to/text ni dependencia del orden`, async () => {

@@ -1,6 +1,7 @@
 // @ts-check
 import { detectWhatsAppSchema } from './whatsapp/work-schema.js';
 import { getWhatsAppWorkRecoveryStatements } from './whatsapp/work-maintenance.js';
+import { getWhatsAppHandoffRecoveryStatements } from './whatsapp/handoff-store.js';
 import { getWhatsAppRecoveryStatements } from './whatsapp/ingress-store.js';
 
 /**
@@ -33,11 +34,13 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
         ${whatsapp ? `,(SELECT COUNT(*) FROM sarin_wa_inbox) AS whatsappInbox,
           (SELECT COUNT(*) FROM sarin_wa_receipts) AS whatsappReceipts,
           (SELECT COUNT(*) FROM sarin_wa_peers) AS whatsappPeers` : ''}
-        ${version===5?`,(SELECT COUNT(*) FROM sarin_wa_jobs) AS whatsappJobs,
+        ${version>=5?`,(SELECT COUNT(*) FROM sarin_wa_jobs) AS whatsappJobs,
           (SELECT COUNT(*) FROM sarin_wa_outbox) AS whatsappOutbox,
           (SELECT COUNT(*) FROM sarin_wa_consent_proofs) AS whatsappConsents,
           (SELECT COUNT(*) FROM sarin_wa_audit) AS whatsappAudits,
-          ((SELECT COUNT(*) FROM sarin_wa_control_events)+(SELECT COUNT(*) FROM sarin_wa_delivery_observations)) AS whatsappObservations`:''}`),
+          ((SELECT COUNT(*) FROM sarin_wa_control_events)+(SELECT COUNT(*) FROM sarin_wa_delivery_observations)) AS whatsappObservations`:''}
+        ${version>=6?`,(SELECT COUNT(*) FROM sarin_wa_handoff) AS whatsappHandoff`:''}
+        ${version>=7?`,(SELECT COUNT(*) FROM sarin_wa_audio) AS whatsappAudio`:''}`),
       // Corrige una capacidad restaurada discordante antes de que los triggers la resten.
       db.prepare('UPDATE sarin_history_state SET text_bytes = COALESCE((SELECT SUM(capacity_bytes) FROM sarin_conversations),0) WHERE singleton = 1'),
       db.prepare('DELETE FROM sarin_conversations'),
@@ -52,7 +55,8 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
       db.prepare('DELETE FROM sarin_admin_audit'),
       db.prepare(`UPDATE sarin_history_state SET text_bytes = 0,rejection_overflow = 0,last_run_at = NULL,
         last_success_at = NULL,last_error_at = NULL,purge_status = 'never',purge_remaining = 0 WHERE singleton = 1`),
-      ...(version===5 ? getWhatsAppWorkRecoveryStatements({db,at}) : []),
+      ...(version>=5 ? getWhatsAppWorkRecoveryStatements({db,at}) : []),
+      ...(version>=6 ? getWhatsAppHandoffRecoveryStatements({db,at}) : []),
       ...(whatsapp ? getWhatsAppRecoveryStatements({ db, at }) : []),
     ];
     const results = await db.batch(statements);
@@ -62,7 +66,9 @@ export async function clearRestoredHistory({ db, maintenanceConfirmed, requestsD
     return { conversations: counts.conversations, turns: counts.turns, messages: counts.messages, consents: counts.consents, leads: counts.leads,
       turnReservations: counts.turnReservations, events: counts.events, rejections: counts.rejections, audits: counts.audits,
       capacityBytesReleased: counts.capacityBytesReleased, budgetReconciliationRequired: true,
-      ...(version===5?{whatsappJobs:counts.whatsappJobs,whatsappOutbox:counts.whatsappOutbox,whatsappConsents:counts.whatsappConsents,whatsappAudits:counts.whatsappAudits,whatsappObservations:counts.whatsappObservations}:{}),
+      ...(version>=5?{whatsappJobs:counts.whatsappJobs,whatsappOutbox:counts.whatsappOutbox,whatsappConsents:counts.whatsappConsents,whatsappAudits:counts.whatsappAudits,whatsappObservations:counts.whatsappObservations}:{}),
+      ...(version>=6?{whatsappHandoff:counts.whatsappHandoff}:{}),
+      ...(version>=7?{whatsappAudio:counts.whatsappAudio}:{}),
       ...(whatsapp ? { whatsappInbox: counts.whatsappInbox, whatsappReceipts: counts.whatsappReceipts, whatsappPeers: counts.whatsappPeers } : {}) };
   } catch {
     // No adjuntar la excepción SQL, datos de filas ni causas con contenido restaurado.

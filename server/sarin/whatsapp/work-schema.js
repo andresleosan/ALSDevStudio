@@ -3,18 +3,22 @@ import { schemas } from './schema-manifest.js';
 import { schemaTokens } from './schema-tokens.js';
 /** Valida definiciones completas, no solo nombres de tablas.
  * @param {{db:import('./ingress-store.js').Database,repliesEnabled?:boolean}} options
- * @returns {Promise<0|4|5>} */
+ * @returns {Promise<0|4|5|6|7>} */
 export async function detectWhatsAppSchema({db,repliesEnabled=false}) {
  const results=await db.batch([db.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE lower(name) GLOB 'sarin_wa_*' AND sql IS NOT NULL")]);
  if(results.length!==1||results[0]?.success!==true||!Array.isArray(results[0].results))throw new Error('wa_schema_invalid');
  const rows=results[0].results;
  if(!rows.length){if(repliesEnabled)throw new Error('wa_schema_invalid');return 0;}
- const baseNames=new Set(schemas['0004'].objects.map(o=>o.name));
- const workNames=new Set(schemas['0005'].objects.filter(o=>!baseNames.has(o.name)).map(o=>o.name));
- const version=rows.some(r=>workNames.has(r.name.toLowerCase()))?5:4;
+ /** @type {4|5|6|7} */let version=4;
+ for(const candidate of /** @type {const} */([5,6,7])){
+   const before=new Set(schemas[/** @type {'0004'|'0005'|'0006'} */('000'+(candidate-1))].objects.map(o=>o.name));
+   const added=new Set(schemas[/** @type {'0005'|'0006'|'0007'} */('000'+candidate)].objects.filter(o=>!before.has(o.name)).map(o=>o.name));
+   if(rows.some(r=>added.has(r.name.toLowerCase())))version=candidate;
+ }
  if(version===4&&repliesEnabled)throw new Error('wa_schema_invalid');
- const expected=schemas[version===5?'0005':'0004'];
+ const expected=schemas[/** @type {'0004'|'0005'|'0006'|'0007'} */('000'+version)];
  const names=new Set(expected.objects.map(o=>o.name)),ids=new Set(expected.identifiers);
+ if(rows.some(row=>!names.has(row.name.toLowerCase())))throw new Error('wa_schema_invalid');
  for(const object of expected.objects){
   const row=rows.find(r=>r.name.toLowerCase()===object.name);
   if(!row||row.type!==object.type||row.tbl_name.toLowerCase()!==object.table||typeof row.sql!=='string')throw new Error('wa_schema_invalid');

@@ -1,7 +1,7 @@
 // @ts-check
 /** @typedef {import('./ingress-store.js').Database} Database */
 /** @typedef {{jobId:string,epoch:string}} WorkHint */
-/** @typedef {Record<string,unknown> & {SARIN_DB?:Database,SARIN_WHATSAPP_QUEUE?:{send:(hint:WorkHint)=>Promise<unknown>}}} ProcessingEnv */
+/** @typedef {Record<string,unknown> & {SARIN_DB?:Database,AI?:{run:(model:string,input:Record<string,unknown>)=>Promise<unknown>},SARIN_WHATSAPP_QUEUE?:{send:(hint:WorkHint)=>Promise<unknown>}}} ProcessingEnv */
 /** @param {unknown} v @returns {v is string} */
 const phone=v=>typeof v==='string'&&/^\+[1-9]\d{1,14}$/.test(v);
 /** @param {unknown} v @returns {v is string} */

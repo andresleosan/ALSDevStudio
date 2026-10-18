@@ -1,6 +1,6 @@
 # Sarin en WhatsApp · atención pública · 18 de octubre de 2026
 
-**Estado: publicado y verificado el 18 de octubre de 2026, 2:23 a. m. de Colombia.** El titular autorizó admitir nuevos contactos con el flujo «Hola → aviso → ACEPTO → consulta», conservando la pausa cuando conteste desde el celular. Canal exclusivo: **ALS Dev Studio, +57 305 277 8047**. La nueva entrega real del aviso está pendiente de la comprobación del titular; las pruebas locales no se presentan como mensajes remotos.
+**Estado: publicado y verificado el 18 de octubre de 2026, 2:23 a. m. de Colombia.** El titular autorizó admitir nuevos contactos con el flujo «Hola → aviso → ACEPTO → consulta», conservando la pausa cuando conteste desde el celular. Canal exclusivo: **ALS Dev Studio, +57 305 277 8047**. Posteriormente el titular confirmó «Recibí el aviso nuevo» al probar «Hola» desde su contacto de prueba: queda acreditada por su confirmación la recepción del aviso público v2. Esta respuesta no acredita ACEPTO ni una consulta de IA en esta nueva etapa; las pruebas locales no se presentan como mensajes remotos.
 
 Este documento sustituye el alcance limitado a un contacto del [registro del piloto](SARIN-WHATSAPP-RESPUESTAS.md). La prueba real anterior acredita el piloto, no la apertura pública de esta versión.
 
@@ -46,7 +46,7 @@ Antes de marcar esta etapa publicada, registrar resultados de pruebas de admisi�
 | Pages y versión del consumidor | Pages `92275127-3c90-44fe-8976-c73d9299deed`; consumidor `0142e118-a07e-4580-8085-454fe086d504` al 100 %. |
 | `PUBLIC_SINCE` remoto, UTC y equivalente Colombia | Piso de admisión `2026-10-18T07:19:24.000Z` = 2:19:24 a. m.; apertura publicada y confirmada a las 2:23 a. m. |
 | Verificación remota de configuración y recursos | Pages y consumidor en `public`, respuestas/envío habilitados, misma fecha; once secretos Pages y seis del consumidor conservados. Preview sin secretos, D1 ni Queue. Recursos públicos coinciden con el artefacto; API administrativa anónima 403 y webhook sin firma 401. |
-| Prueba de un contacto nuevo, si se realiza | Sin nueva evidencia registrada. |
+| Recepción real del aviso público v2 | Confirmada por el titular: «Recibí el aviso nuevo», desde el contacto de prueba existente. No se ha confirmado aún ACEPTO v2 ni una prueba real desde otro contacto nuevo. |
 
 No registrar claves, teléfonos de clientes, cuerpos de conversaciones ni códigos de acceso en evidencias o Git. La prueba del piloto y el [arreglo previo del panel](SARIN-WHATSAPP-PANEL-UX.md) se conservan como antecedentes, sin presentarlos como validación de esta apertura.
 

@@ -1,7 +1,8 @@
 // @ts-check
+import {validateWhatsAppAudioDescriptor} from './audio-client.js';
 const MAX_TIME=8640000000000000-2*86400000;
 const encoder=new TextEncoder();
-const FIELDS = ['kind','eventId','createdAt','messageId','wamid','wabaId','from','to','sentAt','mediaType','text'];
+const FIELDS = ['kind','eventId','createdAt','messageId','wamid','wabaId','from','to','sentAt','mediaType','text','audio'];
 /** @param {unknown} value @returns {value is Record<string,any>} */
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 /** @param {unknown} value @param {string[]} keys @returns {value is Record<string,any>} */
@@ -27,12 +28,14 @@ export function normalizeWhatsAppMessage(event, at) {
       || typeof event.mediaType !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(event.mediaType)
       || (event.mediaType === 'text' && (typeof event.text !== 'string' || !event.text.trim()
         || event.text.length > 1200 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(event.text)))
-      || (event.mediaType !== 'text' && event.text !== undefined)) {
+      || (event.mediaType !== 'text' && event.text !== undefined)
+      || (event.audio !== undefined && (event.kind!=='inbound' || event.mediaType!=='audio' || !validateWhatsAppAudioDescriptor(event.audio)))) {
     throw new WhatsAppIngressError(400, 'invalid_event');
   }
   return { kind: event.kind, eventId: event.eventId, createdAt: event.createdAt, messageId: event.messageId,
     wamid: event.wamid, wabaId: event.wabaId, from: event.from, to: event.to, sentAt: event.sentAt,
-    mediaType: event.mediaType, text: event.mediaType === 'text' ? event.text : null };
+    mediaType: event.mediaType, text: event.mediaType === 'text' ? event.text : null,
+    ...(event.audio===undefined?{}:{audio:validateWhatsAppAudioDescriptor(event.audio)}) };
 }
 /** @param {string} domain @param {unknown[]} values */
 export async function digestWhatsApp(domain, values) {

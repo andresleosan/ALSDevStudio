@@ -1,4 +1,5 @@
 // @ts-check
+import {validateWhatsAppAudioDescriptor} from './audio-client.js';
 
 const MAX_BODY_BYTES = 65536;
 const MAX_READ_TIMEOUT_MS = 3000;
@@ -158,7 +159,7 @@ function instant(value) {
 /**
  * @typedef {{kind:'ignored'}} IgnoredEvent
  * @typedef {{kind:'status',eventId:string,createdAt:number,messageId:string,status:string,wamid?:string,externalId?:string,from?:string,to?:string,wabaId?:string}} StatusEvent
- * @typedef {{kind:'inbound'|'echo',eventId:string,createdAt:number,messageId:string,wamid:string,wabaId:string,from:string,to:string,sentAt:number,mediaType:string,text?:string}} MessageEvent
+ * @typedef {{kind:'inbound'|'echo',eventId:string,createdAt:number,messageId:string,wamid:string,wabaId:string,from:string,to:string,sentAt:number,mediaType:string,text?:string,audio?:import('./audio-client.js').AudioDescriptor}} MessageEvent
  * @typedef {IgnoredEvent|StatusEvent|MessageEvent} YCloudEvent
  */
 
@@ -194,6 +195,12 @@ function normalize(event) {
   /** @type {MessageEvent} */
   const result = { kind, ...base, messageId: message.id, wamid: message.wamid, wabaId: message.wabaId,
     from: message.from, to: message.to, sentAt, mediaType: message.type };
+  if(kind==='inbound' && message.type==='audio' && message.audio!==undefined){
+    if(!record(message.audio))return fail('invalid_event');
+    const audio=validateWhatsAppAudioDescriptor({id:message.audio.id,link:message.audio.link,sha256:message.audio.sha256,mimeType:message.audio.mime_type});
+    if(!audio)return fail('invalid_event');
+    return {...result,audio};
+  }
   if (message.type !== 'text') return result;
   if (!record(message.text) || typeof message.text.body !== 'string' || message.text.body.trim().length === 0
     || message.text.body.length > 1200 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(message.text.body)) return fail('invalid_event');

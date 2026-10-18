@@ -3,6 +3,7 @@ import { readYCloudWebhook, YCloudWebhookError } from './ycloud-webhook.js';
 import { WhatsAppWorkError } from './work-store.js';
 import { createWhatsAppIngressStore, getWhatsAppReplyStore, WhatsAppIngressError } from './ingress-store.js';
 import { accessConfiguration } from './processing-config.js';
+import {createWhatsAppHandoffStore} from './handoff-store.js';
 
 const MAX_AGE = 8 * 60 * 60 * 1000;
 const MAX_FUTURE = 5 * 60 * 1000;
@@ -85,9 +86,11 @@ export async function handleWhatsAppIngress(request, env, options = {}) {
       await committed(async()=>{
         const replies=await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled});
         if(!replies)return;
-        await replies.applyStatus({eventId:event.eventId,providerId:event.messageId,status:/** @type {import('./work-contracts.js').DeliveryObservation['status']} */(event.status),at:event.createdAt,
+        const observation={eventId:event.eventId,providerId:event.messageId,status:/** @type {import('./work-contracts.js').DeliveryObservation['status']} */(event.status),at:event.createdAt,
           ...(event.externalId===undefined?{}:{externalId:event.externalId}),...(event.wamid===undefined?{}:{wamid:event.wamid}),
-          ...(event.from===undefined?{}:{from:event.from}),...(event.to===undefined?{}:{to:event.to}),...(event.wabaId===undefined?{}:{wabaId:event.wabaId})});
+          ...(event.from===undefined?{}:{from:event.from}),...(event.to===undefined?{}:{to:event.to}),...(event.wabaId===undefined?{}:{wabaId:event.wabaId})};
+        await replies.applyStatus(observation);
+        await createWhatsAppHandoffStore({db:env.SARIN_DB,now}).applyStatus(observation);
         await notify(replies);
       },timeout,request.signal);
       return response({ok:true});

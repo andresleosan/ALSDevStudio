@@ -35,7 +35,7 @@ const delivery=(f,status='delivered',eventId='delivery')=>f.store.applyStatus({e
 test('classifies_exact_normalized_controls',()=>{
  assert.equal(typeof consent?.classifyWhatsAppInput,'function');
  for(const [text,want] of [['  acepto\n','accept'],['NO\t ACEPTO','stop'],['STOP','stop'],['parar','stop'],[' humano ','human'],['acepto por favor','text']])assert.equal(consent.classifyWhatsAppInput({mediaType:'text',text}),want);
- assert.equal(consent.classifyWhatsAppInput({mediaType:'audio',text:'ACEPTO'}),'media');
+ assert.equal(consent.classifyWhatsAppInput({mediaType:'image',text:'ACEPTO'}),'media');
 });
 test('notice_never_calls_ai',async t=>{const f=await setup(t),c=await f.claim(await f.capture('Texto previo privado'));assert.equal(c.work.decision,'notice');assert.equal(c.work.input,'');assert.deepEqual(c.work.history,[]);await assert.rejects(f.store.markInferenceStarted(c),e=>e.code==='work_denied');});
 test('accept_before_notice_rejected',async t=>{const f=await setup(t);const n=await notice(f,{send:false});await f.capture('ACEPTO');await f.store.beginSend(n);await f.store.finishSend({...n,result:{status:'accepted',providerId:'provider_notice'}});await delivery(f);assert.equal(ctx(f).accepted_at,null);assert.equal(ctx(f).pending_acceptance_event_id,null);});

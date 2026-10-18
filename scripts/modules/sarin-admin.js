@@ -1,7 +1,7 @@
 // @ts-check
 import {createSarinAdminAuth} from './sarin-admin-auth.js';
 import {validateSarinLead} from './sarin-lead.js';
-import {createWhatsAppAdmin} from './sarin-whatsapp-admin.js';
+import {createWhatsAppAdmin,whatsAppPeerFromHash} from './sarin-whatsapp-admin.js';
 /** Panel privado. Los mensajes permanecen en el DOM y nunca se interpretan como HTML. */
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const dateFormat=new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'});
@@ -40,12 +40,13 @@ function initSarinAdmin(){
   const webPanel=find('#admin-web-panel'),waPanel=find('#wa-panel');
   const webSection=/** @type {HTMLButtonElement} */(find('#admin-section-web')),waSection=/** @type {HTMLButtonElement} */(find('#admin-section-wa'));
   const whatsapp=createWhatsAppAdmin({request:(path,options)=>request(`whatsapp/${path}`,{...options,whatsapp:true}),fail:error=>fail(error)});
-  /** @param {boolean} wa */
-  const selectSection=wa=>{
-    webPanel.hidden=wa;waPanel.hidden=!wa;webSection.setAttribute('aria-pressed',String(!wa));waSection.setAttribute('aria-pressed',String(wa));whatsapp.setActive(wa);
+  /** @param {boolean} wa @param {string} [peerKey] */
+  const selectSection=(wa,peerKey='')=>{
+    webPanel.hidden=wa;waPanel.hidden=!wa;webSection.setAttribute('aria-pressed',String(!wa));waSection.setAttribute('aria-pressed',String(wa));whatsapp.setActive(wa,peerKey);
   };
   webSection.addEventListener('click',()=>selectSection(false));waSection.addEventListener('click',()=>selectSection(true));
   let csrf='',selected='',cursor='',listGeneration=0,detailGeneration=0,bootstrapGeneration=0;
+  window.addEventListener('hashchange',()=>{const peerKey=whatsAppPeerFromHash(location.hash);if(csrf && peerKey)selectSection(true,peerKey);});
   let listPending=false,detailPending=false,mutationPending=false;
   let operationGeneration=0;
   /** @type {HTMLButtonElement|null} */let deleteTrigger=null;
@@ -277,7 +278,8 @@ function initSarinAdmin(){
     try{
       const value=await request('bootstrap',{signal:bootstrapController.signal});if(current!==bootstrapGeneration)return;
       if(typeof value.csrfToken!=='string' || value.csrfToken.length<16 || value.csrfToken.length>4096 || typeof value.adminEmail!=='string' || value.adminEmail.length>320)throw new Error('No pudimos verificar el acceso. Vuelve a intentarlo.');
-      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';whatsapp.setReady(true);clearDetail();await loadList();
+      csrf=value.csrfToken;find('#admin-identity').textContent=value.adminEmail;renderPurge(record(value.purge));find('#admin-test-sarin').hidden=value.privateTestEnabled!==true;workspace.hidden=false;document.body.dataset.adminState='ready';whatsapp.setReady(true);clearDetail();
+      const peerKey=whatsAppPeerFromHash(location.hash);if(peerKey)selectSection(true,peerKey);await loadList();
     }catch(error){if(current===bootstrapGeneration && record(error).name!=='AbortError'){fail(error);login.hidden=false;retry.hidden=([401,403].includes(Number(record(error).status)));}}
   }
   loginButton.addEventListener('click',()=>{clearWorkspace();retry.hidden=true;void authentication.login().then(()=>bootstrap()).catch(()=>{});});

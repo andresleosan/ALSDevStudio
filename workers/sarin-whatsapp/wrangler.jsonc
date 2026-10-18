@@ -22,6 +22,7 @@
       "vars": {
         "SARIN_WHATSAPP_REPLIES_ENABLED": "true",
         "SARIN_WHATSAPP_SEND_ENABLED": "true",
+        "SARIN_WHATSAPP_HANDOFF_ENABLED": "true",
         "SARIN_WHATSAPP_ACCESS_MODE": "public",
         "SARIN_WHATSAPP_PUBLIC_SINCE": "2026-10-18T07:19:24.000Z",
         "SARIN_INPUT_PRICE_MICROS": "300000",
@@ -30,6 +31,7 @@
         "SARIN_MONTHLY_BUDGET_MICROS": "10000000"
       },
       "triggers": { "crons": ["* * * * *"] },
+      "ai": { "binding": "AI" },
       "d1_databases": [{ "binding": "SARIN_DB", "database_name": "alsdevstudio-sarin", "database_id": "ba6d723c-57fb-472d-b9c0-1308c24912e3", "migrations_dir": "../../migrations/sarin" }],
       "queues": {
         "producers": [{ "binding": "SARIN_WHATSAPP_QUEUE", "queue": "als-sarin-whatsapp" }],
