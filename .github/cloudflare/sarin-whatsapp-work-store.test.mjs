@@ -1,3 +1,4 @@
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
@@ -37,7 +38,7 @@ async function claim(f, job) {
 }
 async function notice(f, job) {
   const own = await claim(f, job);
-  const { outboxId } = await f.store.createFixedReply({ ...own, purpose: 'notice', text: 'Aviso ficticio', version: 'v1', hash: 'a'.repeat(64) });
+  const { outboxId } = await f.store.createFixedReply({ ...own, purpose: 'notice', text: 'Aviso ficticio', version:WHATSAPP_NOTICE_VERSION, hash: 'a'.repeat(64) });
   return { ...own, outboxId };
 }
 // Consentimiento sintético ya acreditado: Task 2 reemplazará esta preparación
@@ -110,7 +111,7 @@ test('quota_twentieth_and_hundredth_are_atomic', async t => {
     await f.store.pausePeer({peerKey:f.peerKey,expectedRevision:1,actor:'admin_test'});
     await f.store.resumePeer({peerKey:f.peerKey,expectedRevision:2,actor:'admin_test'});
     const next=await f.capture(),own=await claim(f,next);
-    await denied(f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:'v1',hash:'b'.repeat(64)}));
+    await denied(f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'b'.repeat(64)}));
     assert.equal(f.sqlite.prepare('SELECT SUM(consumed) n FROM sarin_wa_send_quota').get().n,monthUsed+1);
   }
 });
@@ -123,9 +124,9 @@ test('outbox_capacity_is_reserved_before_ai', async t => {
 test('permission_and_validation_fail_closed', async t => {
   const f=await setup(t),j=await f.capture(),own=await claim(f,j);
   await denied(f.store.markInferenceStarted(own));
-  await denied(f.store.createFixedReply({...own,purpose:'notice',text:'x'.repeat(1201),version:'v1',hash:'a'.repeat(64)}));
+  await denied(f.store.createFixedReply({...own,purpose:'notice',text:'x'.repeat(1201),version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)}));
   await f.store.pausePeer({peerKey:f.peerKey,expectedRevision:1,actor:'admin_test'});
-  await denied(f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)}));
+  await denied(f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)}));
   await denied(f.store.resumePeer({peerKey:f.peerKey,expectedRevision:1,actor:'admin_test'}));
 });
 test('deferred_work_waits_for_durable_condition',async t=>{
@@ -154,7 +155,7 @@ test('quota_reservation_contenders_have_one_winner',async t=>{
   const a=await f.capture(),b=await f.capture('Proyecto','+573000000003');
   const owners=[await claim(f,a),await claim(f,b)];
   f.sqlite.prepare('INSERT INTO sarin_wa_send_quota(day_key,month_key,consumed,reserved) VALUES(?,?,19,0)').run('2026-10-18','2026-10');
-  const results=await Promise.allSettled(owners.map(own=>f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)})));
+  const results=await Promise.allSettled(owners.map(own=>f.store.createFixedReply({...own,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)})));
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
   assert.equal(f.sqlite.prepare('SELECT reserved FROM sarin_wa_send_quota').get().reserved,1);
 });

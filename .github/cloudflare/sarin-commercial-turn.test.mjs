@@ -59,7 +59,7 @@ test('ejecuta un turno sin Request ni sesión HTTP y liquida ambas llamadas con 
 test('fuera de alcance conserva la respuesta comercial y sólo consume clasificación', async t => {
   const f = await setup(t, [{ inScope: false }]);
   const result = await f.execute();
-  assert.equal(result.outcome, 'out_of_scope'); assert.match(result.output.reply, /ALS DevStudio/);
+  assert.equal(result.outcome, 'out_of_scope'); assert.match(result.output.reply, /ALS Dev Studio/);
   assert.deepEqual(result.output.examples, []); assert.deepEqual(result.output.brief, {});
   assert.equal(f.calls.length, 1); assert.deepEqual(rows(f).map(row => row.actual_micros), [54]);
 });

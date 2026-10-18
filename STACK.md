@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Sarin en WhatsApp público · 2026-10-18 · preparado para validación y publicación
+
+El titular autorizó atención a nuevos contactos en **ALS Dev Studio, +57 305 277 8047**: primer mensaje de texto → aviso → ACEPTO antes de IA. El candidato añade `SARIN_WHATSAPP_ACCESS_MODE=public` y `SARIN_WHATSAPP_PUBLIC_SINCE` coordinados entre Pages y consumidor; filtra entradas anteriores a la apertura y conserva el cierre de preview. Aviso `whatsapp-service-2026-10-18-v2`; la aceptación del piloto v1 ya no habilita IA. Pausa humana/STOP persistentes, sin reactivar contactos existentes. Conserva topes de 20 envíos/día y 100/mes, incluidos avisos/confirmaciones, y presupuesto IA compartido de USD 1/día y USD 10/mes; capacidad de 1.000 contextos y 20.000 eventos de control. Contenido durante 24 horas y recibos durante 48 horas, con marcador de pausa durable separado. No se afirma aún una apertura remota ni una prueba pública nueva. [Operación, límites, validaciones pendientes y reversión](docs/SARIN-WHATSAPP-PUBLICO.md). Las entradas inferiores registran las fases anteriores.
+
 ### Respuestas WhatsApp · 2026-10-18 · servicio y piloto real verificados
 
 Paso 1 corregido y verificado (825 pruebas y QA de navegador); paso 2 publicado con autorización del titular. Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`, retención `527ed214-1cf0-45aa-b94f-77aaa80e2c5f`, migración 0005 y Queue `als-sarin-whatsapp`. Seis secretos del consumidor, YCloud y DeepSeek comprobados por GET oficial. Paso 3 real completado: aviso entregado, aceptación acreditada, respuesta de DeepSeek leída y pausa automática tras contestación desde la app empresarial. Tres salidas, sin trabajos pendientes; único contacto pausado al cierre. Preview aislado y chat web conservado; no se habilitó atención pública. [Registro, límites y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).

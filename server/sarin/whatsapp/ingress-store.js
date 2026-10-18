@@ -1,5 +1,5 @@
 // @ts-check
-import { createWhatsAppWorkStore } from './work-store.js';
+import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
 import { closed, integer, WhatsAppIngressError, normalizeWhatsAppMessage as normalize, digestWhatsApp as digest } from './ingress-identity.js';
 export { WhatsAppIngressError } from './ingress-identity.js';
 const DAY = 86400000;
@@ -11,6 +11,8 @@ const DEFAULTS = Object.freeze({ maxInboxRows: 10000, maxReceipts: 20000, maxByt
 /** @param {unknown} error */
 function safeError(error) {
   if (error instanceof WhatsAppIngressError) return error;
+  if (error instanceof WhatsAppWorkError && error.code === 'work_capacity') return new WhatsAppIngressError(429, 'ingress_capacity');
+  if (error instanceof WhatsAppWorkError && error.code === 'work_conflict') return new WhatsAppIngressError(409, 'event_conflict');
   const message = error instanceof Error ? error.message : '';
   const signals = { WA_CONFLICT: [409,'event_conflict'], WA_CAPACITY: [429,'ingress_capacity'],
     WA_RATE: [429,'ingress_rate_limit'], WA_STALE: [409,'stale_event'] };
@@ -54,12 +56,13 @@ export async function getWhatsAppReplyStore({db,now=Date.now,repliesEnabled}) {
   if(repliesEnabled===false)await store.suspendReplies();
   return store;
 }
-/** @param {{db:Database,now?:()=>number,limits?:Partial<Limits>,repliesEnabled?:boolean}} options */
-export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits = {}, repliesEnabled }) {
-  const config = { ...DEFAULTS, ...limits };
+/** @param {{db:Database,now?:()=>number,limits?:Partial<Limits>,repliesEnabled?:boolean,publicMode?:boolean}} options */
+export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits = {}, repliesEnabled, publicMode = false }) {
+  const maximum = { ...DEFAULTS, maxPeers: publicMode === true ? 1000 : DEFAULTS.maxPeers };
+  const config = { ...maximum, ...limits };
   const keys = /** @type {(keyof Limits)[]} */ (Object.keys(DEFAULTS));
   if (!db || typeof db.prepare !== 'function' || typeof db.batch !== 'function' || typeof now !== 'function'
-      || !closed(limits, keys) || keys.some(key => !integer(config[key], DEFAULTS[key], 1))) {
+      || typeof publicMode !== 'boolean' || !closed(limits, keys) || keys.some(key => !integer(config[key], maximum[key], 1))) {
     throw new WhatsAppIngressError(503, 'ingress_config_invalid');
   }
   /** @param {string} sql @param {...unknown} values */
@@ -80,7 +83,7 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
       const at = clock(); const normalized = normalize(event, at);
       const replies=await getWhatsAppReplyStore({db,now,repliesEnabled});
       // Commit separado: una captura rechazada no revierte la pausa.
-      if(replies)await replies.observeControl({event});
+      if(replies)await replies.observeControl({event,autoStart:publicMode&&repliesEnabled===true});
       const business = normalized.kind === 'inbound' ? normalized.to : normalized.from;
       const peer = normalized.kind === 'inbound' ? normalized.from : normalized.to;
       const facts = [normalized.kind,normalized.messageId,normalized.wamid,normalized.wabaId,

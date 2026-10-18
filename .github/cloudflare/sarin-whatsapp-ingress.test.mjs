@@ -1,3 +1,4 @@
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHmac } from 'node:crypto';
@@ -249,7 +250,7 @@ test('linked_status_updates_delivery_without_human_pause',async t=>{
  await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
  const next=event();next.id='event_status';next.whatsappInboundMessage.id='msg_status';next.whatsappInboundMessage.wamid='wamid.status';await handle(request(next),config);
  const j=f.sqlite.prepare('SELECT * FROM sarin_wa_jobs').get(),token=crypto.randomUUID();await store.claimGeneration({jobId:j.job_id,epoch:j.epoch,token});
- const out=await store.createFixedReply({jobId:j.job_id,token,purpose:'notice',text:'Aviso ficticio',version:'v1',hash:'a'.repeat(64)});await store.beginSend({...out,token});await store.finishSend({...out,token,result:{status:'accepted',providerId:'provider_id'}});
+ const out=await store.createFixedReply({jobId:j.job_id,token,purpose:'notice',text:'Aviso ficticio',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});await store.beginSend({...out,token});await store.finishSend({...out,token,result:{status:'accepted',providerId:'provider_id'}});
  const status={id:'delivery',type:'whatsapp.message.updated',apiVersion:'v2',createTime:new Date(at).toISOString(),whatsappMessage:{id:'provider_id',status:'read',from:business,to:peer,wabaId:'123456789'}};
  assert.equal((await handle(request(status),config)).status,200);assert.equal(f.sqlite.prepare('SELECT state FROM sarin_wa_outbox').get().state,'read');assert.equal(f.sqlite.prepare('SELECT paused FROM sarin_wa_contexts').get().paused,0);
 });

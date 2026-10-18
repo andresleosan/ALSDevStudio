@@ -3,11 +3,11 @@ import { runCommercialTurn } from '../run-commercial-turn.js';
 import { createQuota } from '../quota.js';
 import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
 import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
-import { processingConfiguration, validWorkHint } from './processing-config.js';
+import { processingConfiguration, recipientAllowed, validWorkHint } from './processing-config.js';
 import { WHATSAPP_NOTICE, WHATSAPP_NOTICE_VERSION, WHATSAPP_ACCEPTED } from './consent.js';
 /** @typedef {import('./processing-config.js').ProcessingEnv} ProcessingEnv */
 /** @typedef {{store?:ReturnType<typeof createWhatsAppWorkStore>,fetch?:typeof fetch,now?:()=>number}} Options */
-/** Identidad de cuota separada de web, sin tel閒ono ni sesi髇 inventada.
+/** Identidad de cuota separada de web, sin tel茅fono ni sesi贸n inventada.
  * @param {string} peerKey @param {string} secret @param {number} at */
 async function identity(peerKey,secret,at) {
  const encoder=new TextEncoder(),key=await crypto.subtle.importKey('raw',encoder.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
@@ -21,7 +21,7 @@ export async function processWhatsAppWork(hint,env,options={}) {
  if(!env.SARIN_DB)return {status:'disabled'};
  const now=options.now??Date.now,store=options.store??createWhatsAppWorkStore({db:env.SARIN_DB,now});
  if(env.SARIN_WHATSAPP_REPLIES_ENABLED!=='true'){await store.suspendReplies();return {status:'disabled'};}
- const configured=processingConfiguration(env);if(!configured)return {status:'disabled'};
+ const configured=processingConfiguration(env,now());if(!configured)return {status:'disabled'};
  const config=configured;
  const controller=new AbortController(),startedAt=now(),token=crypto.randomUUID(),own={...hint,token};
  let externalStarted=false;
@@ -30,10 +30,10 @@ export async function processWhatsAppWork(hint,env,options={}) {
  /** @type {Promise<{status:string}>} */
  const deadline=new Promise(resolve=>{timer=setTimeout(()=>{controller.abort();resolve({status:externalStarted?'uncertain':'retry'});},60000);});
  const client=createYCloudClient({apiKey:config.apiKey,businessPhone:config.business,sendEnabled:true,fetcher:options.fetch});
- /** @param {string} outboxId */
- async function send(outboxId) {
-  check();const permit=await store.beginSend({outboxId,token,recipient:{wabaId:config.wabaId,from:config.business,to:config.peer}});externalStarted=true;check();
-  if(permit.wabaId!==config.wabaId||permit.from!==config.business||permit.to!==config.peer){
+ /** @param {string} outboxId @param {import('./work-contracts.js').Recipient} recipient */
+ async function send(outboxId,recipient) {
+  check();const permit=await store.beginSend({outboxId,token,recipient});externalStarted=true;check();
+  if(!recipientAllowed(config,permit)||permit.wabaId!==recipient.wabaId||permit.from!==recipient.from||permit.to!==recipient.to){
    await store.finishSend({outboxId,token,result:{status:'uncertain'}});return {status:'denied'};
   }
   try {
@@ -49,12 +49,14 @@ export async function processWhatsAppWork(hint,env,options={}) {
  }
  async function execute() {
   try {
-   check();const ready=await store.claimSend(own);check();
-   if(ready.status==='claimed')return await send(ready.outboxId);
+   check();const recipient=await store.getWorkRecipient(own);check();
+   if(!recipient||!recipientAllowed(config,recipient))return {status:'denied'};
+   const ready=await store.claimSend(own);check();
+   if(ready.status==='claimed')return await send(ready.outboxId,recipient);
    const claim=await store.claimGeneration(own);check();
    if(claim.status!=='claimed'||!claim.work)return {status:claim.status};
    const work=claim.work;
-   if(work.recipient.wabaId!==config.wabaId||work.recipient.from!==config.business||work.recipient.to!==config.peer){await store.finishWithoutReply({...own,reason:'cancelled'});return {status:'denied'};}
+   if(!recipientAllowed(config,work.recipient)||work.recipient.wabaId!==recipient.wabaId||work.recipient.from!==recipient.from||work.recipient.to!==recipient.to){await store.finishWithoutReply({...own,reason:'cancelled'});return {status:'denied'};}
    if(work.decision==='ignore'){await store.finishWithoutReply({...own,reason:'ignored'});return {status:'ignored'};}
    if(work.decision==='accept_pending'){await store.deferWork({...own,reason:'waiting_notice'});return {status:'deferred'};}
    let out;
@@ -69,7 +71,7 @@ export async function processWhatsAppWork(hint,env,options={}) {
     const noticeHash=await hash(WHATSAPP_NOTICE);check();
     out=await store.createFixedReply({...own,purpose:work.decision==='notice'?'notice':'accepted',text:work.decision==='notice'?WHATSAPP_NOTICE:WHATSAPP_ACCEPTED,version:WHATSAPP_NOTICE_VERSION,hash:noticeHash});
    }
-   return await send(out.outboxId);
+   return await send(out.outboxId,recipient);
   }catch(error){
    if(externalStarted){await store.failInference({...own,started:true,code:controller.signal.aborted?'deadline':'provider_unavailable'}).catch(()=>{});return {status:'uncertain'};}
    if(error instanceof WhatsAppWorkError&&error.status!==503)return {status:'denied'};
@@ -78,14 +80,14 @@ export async function processWhatsAppWork(hint,env,options={}) {
  }
  try{return await Promise.race([execute(),deadline]);}finally{clearTimeout(timer);}
 }
-/** Recuperaci髇 limitada a una cabeza; Queue s髄o es una notificaci髇.
+/** Recuperaci贸n limitada a una cabeza; Queue s贸lo es una notificaci贸n.
  * @param {ProcessingEnv} env @param {Options} [options] */
 export async function dispatchWhatsAppWork(env,options={}) {
  if(!env.SARIN_DB)return {published:0,expired:0};
  const store=options.store??createWhatsAppWorkStore({db:env.SARIN_DB,now:options.now});
  if(env.SARIN_WHATSAPP_REPLIES_ENABLED!=='true')await store.suspendReplies();
  const expired=await store.expireLeases({limit:1});
- if(!processingConfiguration(env)||!env.SARIN_WHATSAPP_QUEUE)return {published:0,expired:expired.processed};
+ if(!processingConfiguration(env,(options.now??Date.now)())||!env.SARIN_WHATSAPP_QUEUE)return {published:0,expired:expired.processed};
  const jobs=await store.listDispatchable({limit:1});let published=0;
  for(const hint of jobs){try{await env.SARIN_WHATSAPP_QUEUE.send(hint);published++;}catch{/* Cron vuelve a avisar; el trabajo sigue en D1. */}}
  return {published,expired:expired.processed};

@@ -2,6 +2,7 @@
 import { readYCloudWebhook, YCloudWebhookError } from './ycloud-webhook.js';
 import { WhatsAppWorkError } from './work-store.js';
 import { createWhatsAppIngressStore, getWhatsAppReplyStore, WhatsAppIngressError } from './ingress-store.js';
+import { accessConfiguration } from './processing-config.js';
 
 const MAX_AGE = 8 * 60 * 60 * 1000;
 const MAX_FUTURE = 5 * 60 * 1000;
@@ -9,7 +10,7 @@ const MAX_FUTURE = 5 * 60 * 1000;
 const phone = value => typeof value === 'string' && /^\+[1-9]\d{1,14}$/.test(value);
 const unavailable = () => new WhatsAppIngressError(503, 'ingress_unavailable');
 
-/** La lista de prueba sólo procede del servidor; nunca del cuerpo del webhook.
+/** El alcance y la fecha de apertura sólo proceden del servidor, nunca del webhook.
  * @param {Record<string,any>} env @param {number} at */
 function configuration(env, at) {
   if (env.SARIN_WHATSAPP_INGRESS_ENABLED !== 'true'
@@ -18,18 +19,15 @@ function configuration(env, at) {
     || env.SARIN_WHATSAPP_WEBHOOK_SECRET.length > 4096
     || !phone(env.SARIN_WHATSAPP_BUSINESS_PHONE)
     || typeof env.SARIN_WHATSAPP_WABA_ID !== 'string' || !/^[1-9]\d{0,31}$/.test(env.SARIN_WHATSAPP_WABA_ID)
-    || typeof env.SARIN_WHATSAPP_PILOT_PHONES !== 'string' || env.SARIN_WHATSAPP_PILOT_PHONES.length > 256
     || !Number.isSafeInteger(at) || at < 0) throw unavailable();
   const sinceText = env.SARIN_WHATSAPP_CAPTURE_SINCE;
   if (typeof sinceText !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(sinceText)) throw unavailable();
   const since = Date.parse(sinceText);
   if (!Number.isSafeInteger(since) || since < 0 || since > at || new Date(since).toISOString() !== sinceText) throw unavailable();
-  let peers;
-  try { peers = JSON.parse(env.SARIN_WHATSAPP_PILOT_PHONES); } catch { throw unavailable(); }
-  if (!Array.isArray(peers) || peers.length < 1 || peers.length > 10 || !peers.every(phone)
-    || new Set(peers).size !== peers.length || peers.includes(env.SARIN_WHATSAPP_BUSINESS_PHONE)) throw unavailable();
+  const access = accessConfiguration(env, at);
+  if (!access) throw unavailable();
   return { secret: env.SARIN_WHATSAPP_WEBHOOK_SECRET, business: env.SARIN_WHATSAPP_BUSINESS_PHONE,
-    wabaId: env.SARIN_WHATSAPP_WABA_ID, peers: new Set(peers), since };
+    wabaId: env.SARIN_WHATSAPP_WABA_ID, ...access, since };
 }
 
 /** @param {unknown} body @param {number} [status] */
@@ -59,7 +57,7 @@ async function committed(operation, timeoutMs, signal) {
   finally { clearTimeout(timer); signal.removeEventListener('abort', abort); }
 }
 
-/** Recepción del piloto: almacena capturas; no llama al motor ni envía mensajes.
+/** Recepción de WhatsApp: almacena capturas; no llama al motor ni envía mensajes.
  * Dependencias sustituibles sólo desde código interno de pruebas.
  * @param {Request} request
  * @param {Record<string,any>} env
@@ -96,11 +94,13 @@ export async function handleWhatsAppIngress(request, env, options = {}) {
     }
     const business = event.kind === 'inbound' ? event.to : event.from;
     const peer = event.kind === 'inbound' ? event.from : event.to;
-    if (business !== config.business || event.wabaId !== config.wabaId || !config.peers.has(peer)
-      || [event.createdAt, event.sentAt].some(value => value < config.since || at - value > MAX_AGE || value - at > MAX_FUTURE)) {
+    const captureSince = Math.max(config.since, config.publicSince ?? 0);
+    if (business !== config.business || event.wabaId !== config.wabaId || peer === config.business
+      || (config.mode === 'pilot' && !config.peers.has(peer))
+      || [event.createdAt, event.sentAt].some(value => value < captureSince || at - value > MAX_AGE || value - at > MAX_FUTURE)) {
       return response({ ok: true });
     }
-    const store = options.store || createWhatsAppIngressStore({ db: env.SARIN_DB, now, repliesEnabled });
+    const store = options.store || createWhatsAppIngressStore({ db: env.SARIN_DB, now, repliesEnabled, publicMode: config.mode === 'public' });
     const saved = await committed(() => store.capture(event), timeout, request.signal);
     if (!saved || !['captured', 'duplicate'].includes(saved.status)) throw unavailable();
     if(repliesEnabled&&options.notifyWork)await notify(await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled}));

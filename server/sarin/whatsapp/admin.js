@@ -18,6 +18,17 @@ const nullableTime=value=>value===null || value===undefined?null:timestamp(value
 function requireThat(condition,status=503,code='unavailable'){if(!condition)throw new AdminError(status,code);}
 /** @param {Record<string,any>} value @param {string[]} fields */
 const exact=(value,fields)=>Object.keys(value).length===fields.length && fields.every(field=>Object.hasOwn(value,field));
+/** Cursor versionado: sólo representa una clave hash, nunca un teléfono ni un offset libre.
+ * @param {string} key */
+const encodeCursor=key=>'wa1_'+btoa(key).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+/** @param {URL} url */
+function readCursor(url){
+  if(!url.search)return '';
+  const values=url.searchParams.getAll('cursor');
+  requireThat(values.length===1 && [...url.searchParams.keys()].length===1 && /^wa1_[A-Za-z0-9_-]{86}$/.test(values[0]),400,'invalid_request');
+  let key;try{key=atob(values[0].slice(4).replace(/-/g,'+').replace(/_/g,'/')+'==');}catch{throw new AdminError(400,'invalid_request');}
+  requireThat(/^[a-f0-9]{64}$/.test(key) && encodeCursor(key)===values[0],400,'invalid_request');return key;
+}
 
 /** Sólo renombra el estado de consentimiento acreditado por el store; expires_at por sí solo no lo acredita.
  * @param {Record<string,any>} value @param {number} now */
@@ -66,7 +77,9 @@ export async function handleWhatsAppAdmin(request,env,{admin,actor,now,store}){
   try{
     requireThat(admin && /^[a-f0-9]{64}$/.test(actor),403,'forbidden');
     const url=new URL(request.url),route=/^\/api\/control-sarin\/whatsapp\/(peers(?:\/([A-Za-z0-9_-]{1,128})(?:\/(action))?)?|pilot|outbox\/([A-Za-z0-9_-]{1,128})\/reconcile)\/?$/.exec(url.pathname);
-    requireThat(route,404,'not_found');requireThat(!url.search,400,'invalid_request');
+    requireThat(route,404,'not_found');
+    const cursor=route[1]==='peers'?readCursor(url):'';
+    if(route[1]!=='peers')requireThat(!url.search,400,'invalid_request');
     const method=route[1]==='peers' || (route[2] && !route[3])?'GET':'POST';
     if(request.method!==method)return adminResponse({error:{code:'method_not_allowed',message:'Método no permitido.'}},405,{Allow:method});
     const peerKey=route[2],outbox=route[4];
@@ -89,12 +102,16 @@ export async function handleWhatsAppAdmin(request,env,{admin,actor,now,store}){
     }
     if(method==='GET'){
       if(peerKey){const value=await store.getPeer({peerKey});requireThat(value,404,'not_found');return adminResponse({peer:detail(value,now)});}
-      const pilot=record(await store.getPilot()),closure=record(await store.getSendClosure()),listed=record(await store.listPeers({limit:100}));
+      const pilot=record(await store.getPilot()),closure=record(await store.getSendClosure()),listed=record(await store.listPeers({limit:100,cursor}));
       requireThat([0,1,false,true].includes(pilot.enabled) && integer(pilot.revision) && timestamp(pilot.activation_at)
         && Array.isArray(listed.peers) && listed.peers.length<=100 && typeof closure.closed==='boolean' && Array.isArray(closure.closures));
       const ends=closure.closures.map((/** @type {unknown} */item)=>record(item).period_end_at);requireThat(ends.every((/** @type {number} */value)=>timestamp(value) && value>now) && (!closure.closed || ends.length>0));
+      requireThat(listed.cursor===null || (listed.peers.length===100 && typeof listed.cursor==='string' && /^[a-f0-9]{64}$/.test(listed.cursor)
+        && listed.cursor===record(listed.peers.at(-1)).peer_key && listed.cursor>cursor));
+      const items=listed.peers.map((/** @type {unknown} */value)=>summary(record(value),now));
+      requireThat(new Set(items.map((/** @type {Record<string,any>} */item)=>item.peerKey)).size===items.length);
       return adminResponse({pilot:{enabled:Boolean(pilot.enabled),revision:pilot.revision,updatedAt:pilot.activation_at,
-        recoveryBlockedUntil:closure.closed?Math.max(...ends):null,repliesEnabled:env.SARIN_WHATSAPP_REPLIES_ENABLED==='true'},items:listed.peers.map((/** @type {unknown} */value)=>summary(record(value),now))});
+        recoveryBlockedUntil:closure.closed?Math.max(...ends):null,repliesEnabled:env.SARIN_WHATSAPP_REPLIES_ENABLED==='true'},items,nextCursor:listed.cursor===null?null:encodeCursor(listed.cursor)});
     }
     if(peerKey){await store[body.action==='pause'?'pausePeer':'resumePeer']({peerKey,expectedRevision:body.revision,actor});return adminResponse({ok:true});}
     if(route[1]==='pilot'){await store.setPilotMode({enabled:body.enabled,expectedRevision:body.revision,actor});return adminResponse({ok:true});}

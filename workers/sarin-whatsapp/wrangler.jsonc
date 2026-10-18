@@ -5,23 +5,25 @@
   "compatibility_date": "2026-10-18",
   "workers_dev": false,
   "preview_urls": false,
-  "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false" },
+  "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false", "SARIN_WHATSAPP_ACCESS_MODE": "pilot" },
   "triggers": { "crons": [] },
   "queues": { "producers": [], "consumers": [] },
   "env": {
     "preview": {
-      "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false" },
+      "vars": { "SARIN_WHATSAPP_REPLIES_ENABLED": "false", "SARIN_WHATSAPP_SEND_ENABLED": "false", "SARIN_WHATSAPP_ACCESS_MODE": "pilot" },
       "triggers": { "crons": [] },
       "queues": { "producers": [], "consumers": [] },
       "d1_databases": []
     },
     "production": {
       "name": "als-sarin-whatsapp",
-      // Servicio habilitado para un solo contacto; el piloto y cada pausa se controlan desde Staff.
+      // Nuevos contactos con aviso y ACEPTO; la atención y cada pausa se controlan desde Staff.
       // Aprovisionar Queue con message_retention_period=86400; Wrangler consumers no define ese ajuste.
       "vars": {
         "SARIN_WHATSAPP_REPLIES_ENABLED": "true",
         "SARIN_WHATSAPP_SEND_ENABLED": "true",
+        "SARIN_WHATSAPP_ACCESS_MODE": "public",
+        "SARIN_WHATSAPP_PUBLIC_SINCE": "2026-10-18T07:19:24.000Z",
         "SARIN_INPUT_PRICE_MICROS": "300000",
         "SARIN_OUTPUT_PRICE_MICROS": "1200000",
         "SARIN_DAILY_BUDGET_MICROS": "1000000",

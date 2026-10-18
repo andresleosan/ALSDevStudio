@@ -34,8 +34,9 @@ function validPeer(value){return opaque(value.peerKey) && revision(value.revisio
 export function createWhatsAppAdmin({request,fail}){
   /** @param {string} selector @returns {HTMLElement} */
   const find=selector=>{const node=document.querySelector(selector);if(!(node instanceof HTMLElement))throw Error('Falta un control de WhatsApp.');return node;};
-  const panel=find('#wa-panel'),list=find('#wa-list'),detail=find('#wa-detail'),status=find('#wa-status'),pilotNode=find('#wa-pilot');
-  let ready=false,active=false,inViewport=true,generation=0,selected='',detailKey='',pending=false,fresh=false;
+  const panel=find('#wa-panel'),list=find('#wa-list'),detail=find('#wa-detail'),status=find('#wa-status'),pilotNode=find('#wa-pilot'),more=find('#wa-load-more');
+  let ready=false,active=false,inViewport=true,generation=0,selected='',detailKey='',pending=false,fresh=false,loading=false,pageCount=1,itemCount=0;
+  /** @type {string|null} */let nextCursor=null;
   /** @type {Record<string,any>|null} */let pilot=null;
   /** @type {Record<string,any>|null} */let snapshot=null;
   let timer=0,expiryTimer=0;
@@ -43,7 +44,7 @@ export function createWhatsAppAdmin({request,fail}){
   const visible=()=>ready && active && inViewport && document.visibilityState==='visible';
   /** @param {string} message */
   const announce=message=>{status.textContent=message;};
-  const disable=()=>{panel.querySelectorAll('button[data-wa-action]').forEach(button=>{if(button instanceof HTMLButtonElement)button.disabled=pending || !fresh || button.hasAttribute('data-wa-unavailable');});};
+  const disable=()=>{panel.querySelectorAll('button[data-wa-action]').forEach(button=>{if(button instanceof HTMLButtonElement)button.disabled=pending || !fresh || button.hasAttribute('data-wa-unavailable');});if(more instanceof HTMLButtonElement)more.disabled=pending || loading || !fresh;more.hidden=!nextCursor || itemCount>=1000 || pageCount>=10;};
   const scrollRegion=()=>{const thread=detail.querySelector('#wa-thread');if(thread instanceof HTMLElement){if(thread.scrollHeight>thread.clientHeight+1)thread.tabIndex=0;else thread.removeAttribute('tabindex');}};
   window.addEventListener('resize',scrollRegion);
   if(typeof ResizeObserver==='function')new ResizeObserver(scrollRegion).observe(detail);
@@ -53,20 +54,20 @@ export function createWhatsAppAdmin({request,fail}){
     panel.querySelectorAll('[data-wa-consent-expiry]').forEach(node=>{const at=Number(node.getAttribute('data-wa-consent-expiry'));if(at<=Date.now()){node.textContent='Aceptación vencida. Se requiere un nuevo aviso.';node.removeAttribute('data-wa-consent-expiry');}else next=Math.min(next,at);});
     if(Number.isFinite(next))expiryTimer=setTimeout(expire,Math.max(1,next-Date.now()));scrollRegion();
   };
-  const stop=()=>{generation++;clearTimeout(timer);controller?.abort();controller=null;pending=false;fresh=false;disable();};
-  const clear=()=>{stop();clearTimeout(expiryTimer);selected='';pilot=null;snapshot=null;detailKey='';list.replaceChildren();detail.replaceChildren();pilotNode.replaceChildren();status.textContent='';};
+  const stop=()=>{generation++;clearTimeout(timer);controller?.abort();controller=null;pending=false;fresh=false;loading=false;disable();};
+  const clear=()=>{stop();clearTimeout(expiryTimer);selected='';pilot=null;snapshot=null;detailKey='';pageCount=1;itemCount=0;nextCursor=null;more.hidden=true;list.replaceChildren();detail.replaceChildren();pilotNode.replaceChildren();status.textContent='';};
   /** @param {string} label @param {()=>unknown} action */
   function button(label,action){const node=element('button',label);node.type='button';node.dataset.waAction='';node.addEventListener('click',action);return node;}
   /** @param {Record<string,any>} value */
   function renderPilot(value){
-    if(!revision(value.revision) || typeof value.enabled!=='boolean')throw Error('El estado del piloto no es válido.');
+    if(!revision(value.revision) || typeof value.enabled!=='boolean')throw Error('El estado del servicio no es válido.');
     const key=JSON.stringify(value);if(pilot && JSON.stringify(pilot)===key)return;pilot=value;
-    const state=element('div','','wa-pilot-summary');state.append(element('p',value.enabled?'Piloto privado activo':'Piloto apagado','wa-pilot-state'));
+    const state=element('div','','wa-pilot-summary');state.append(element('p',value.enabled?'Respuestas automáticas activas':'Respuestas apagadas','wa-pilot-state'));
     if(!value.enabled)state.append(element('p','Sarin no responderá automáticamente.','admin-note'));
     pilotNode.replaceChildren(state);pilotNode.dataset.enabled=String(value.enabled);
-    if(value.recoveryBlockedUntil>Date.now())pilotNode.append(element('p',`Envíos bloqueados tras restaurar datos, hasta ${date(value.recoveryBlockedUntil)} (Colombia). Activar el piloto no abre este bloqueo.`,'admin-note'));
-    if(!value.enabled && value.repliesEnabled!==true)pilotNode.append(element('p','Respuestas deshabilitadas en este entorno. No se puede activar el piloto.','admin-note'));
-    const control=button(value.enabled?'Apagar piloto':'Activar piloto',()=>mutate('pilot',{enabled:!value.enabled,revision:value.revision},value.enabled?'Piloto apagado. Sarin no responderá automáticamente.':'Piloto activado. La aceptación y un mensaje nuevo siguen siendo necesarios; no se procesarán mensajes anteriores.'));
+    if(value.recoveryBlockedUntil>Date.now())pilotNode.append(element('p',`Envíos bloqueados tras restaurar datos, hasta ${date(value.recoveryBlockedUntil)} (Colombia). Activar las respuestas no abre este bloqueo.`,'admin-note'));
+    if(!value.enabled && value.repliesEnabled!==true)pilotNode.append(element('p','Respuestas deshabilitadas en este entorno. No se puede activar el servicio.','admin-note'));
+    const control=button(value.enabled?'Apagar respuestas':'Activar respuestas',()=>mutate('pilot',{enabled:!value.enabled,revision:value.revision},value.enabled?'Respuestas apagadas. Sarin no responderá automáticamente.':'Respuestas activadas. La aceptación y un mensaje nuevo siguen siendo necesarios; no se procesarán mensajes anteriores.'));
     control.className=value.enabled?'admin-danger':'admin-primary';control.toggleAttribute('data-wa-unavailable',!value.enabled && value.repliesEnabled!==true);pilotNode.append(control);
   }
   /** @param {Record<string,any>[]} items */
@@ -83,7 +84,7 @@ export function createWhatsAppAdmin({request,fail}){
       }node.setAttribute('aria-pressed',String(item.peerKey===selected));
     }
     for(const node of [...list.children])if(!keys.has(node.getAttribute('data-wa-peer')))node.remove();
-    if(!items.length)list.append(element('p','No hay contactos del piloto.','admin-note'));
+    if(!items.length)list.append(element('p','Aún no hay contactos de WhatsApp.','admin-note'));
   }
   /** @param {Record<string,any>} value @param {boolean} focus */
   function renderDetail(value,focus){
@@ -109,7 +110,7 @@ export function createWhatsAppAdmin({request,fail}){
       if(entry.kind!=='echo' && entry.kind==='message')node.append(element('p',text(entry.content).slice(0,4000),'admin-message-content'));
       timeline.append(node);
     }
-    if(!timeline.children.length)timeline.append(element('li','No hay mensajes vigentes. El contenido del piloto se conserva hasta 24 horas.','admin-note'));
+    if(!timeline.children.length)timeline.append(element('li','No hay mensajes vigentes. El contenido se conserva hasta 24 horas.','admin-note'));
     thread.append(timeline);const delivery=element('details','','wa-delivery'),outputs=element('ol','','admin-timeline');
     const needsAttention=value.outputs.some((/** @type {Record<string,any>} */output)=>!['delivered','read','cancelled','expired'].includes(output.status));
     const deliverySummary=element('summary',`Estado de entrega · ${value.outputs.length}${needsAttention?' · Por revisar':''}`);deliverySummary.dataset.waFocus='delivery-info';delivery.append(deliverySummary);delivery.dataset.attention=String(needsAttention);
@@ -126,18 +127,33 @@ export function createWhatsAppAdmin({request,fail}){
     else if(threadFocused){thread.focus({preventScroll:true});}
     else if(focused){const target=[...detail.querySelectorAll('[data-wa-focus]')].find(node=>node.getAttribute('data-wa-focus')===focused);if(target instanceof HTMLElement)target.focus({preventScroll:true});}
   }
-  async function refresh(focus=false){
-    if(!visible() || pending)return;clearTimeout(timer);controller?.abort();controller=new AbortController();const signal=controller.signal,current=++generation;disable();panel.setAttribute('aria-busy','true');
+  async function refresh(focus=false,loadMore=false){
+    if(!visible() || pending || loading)return;clearTimeout(timer);controller?.abort();controller=new AbortController();const signal=controller.signal,current=++generation;loading=true;disable();panel.setAttribute('aria-busy','true');
     try{
-      const value=await request('peers',{signal});if(current!==generation || !visible())return;
-      if(!Array.isArray(value.items) || value.items.length>100 || value.items.some((/** @type {unknown} */item)=>!validPeer(record(item))))throw Error('El listado de WhatsApp no es válido.');
-      renderPilot(record(value.pilot));renderList(value.items);
-      if(selected && !value.items.some((/** @type {Record<string,any>} */item)=>item.peerKey===selected)){selected='';snapshot=null;detailKey='';detail.replaceChildren(element('p','El contacto ya no está disponible.','admin-note'));}
-      if(selected){const value=await request(`peers/${encodeURIComponent(selected)}`,{signal});if(current!==generation || !visible())return;renderDetail(record(value.peer),focus);}
+      const depth=Math.min(10,pageCount+(loadMore?1:0)),items=new Map(),seen=new Set(),before=new Set([...list.querySelectorAll('[data-wa-peer]')].map(node=>node.getAttribute('data-wa-peer')));
+      /** @type {string|null} */let cursor=null;
+      /** @type {Record<string,any>|null} */let service=null;
+      let pages=0;
+      do{
+        const value=await request('peers'+(cursor?'?cursor='+encodeURIComponent(cursor):''),{signal});if(current!==generation || !visible())return;
+        if(!Array.isArray(value.items) || value.items.length>100 || value.items.some((/** @type {unknown} */item)=>!validPeer(record(item)))
+          || new Set(value.items.map((/** @type {Record<string,any>} */item)=>item.peerKey)).size!==value.items.length
+          || (value.nextCursor!=null && (typeof value.nextCursor!=='string' || !/^wa1_[A-Za-z0-9_-]{86}$/.test(value.nextCursor) || seen.has(value.nextCursor))))throw Error('El listado de WhatsApp no es válido.');
+        if(!service)service=record(value.pilot);for(const item of value.items)items.set(item.peerKey,item);
+        cursor=value.nextCursor??null;if(cursor)seen.add(cursor);pages++;
+      }while(cursor && pages<depth);
+      if(items.size>1000)throw Error('El listado de WhatsApp excede el límite disponible.');
+      if(selected){
+        try{
+          const value=await request(`peers/${encodeURIComponent(selected)}`,{signal});if(current!==generation || !visible())return;
+          renderDetail(record(value.peer),focus);if(!items.has(selected))items.set(selected,record(value.peer));
+        }catch(error){if(current!==generation || !visible())return;if(record(error).status!==404)throw error;selected='';snapshot=null;detailKey='';detail.replaceChildren(element('p','El contacto ya no está disponible.','admin-note'));}
+      }
       else if(!detail.children.length){const empty=element('div','','wa-empty');empty.append(element('span','S','wa-empty-icon'),element('h3','Tu bandeja de WhatsApp'),element('p','Elige un contacto para leer la conversación y controlar cuándo responde Sarin.'));detail.append(empty);}
-      fresh=true;
+      renderPilot(service??{});renderList([...items.values()]);pageCount=pages;itemCount=items.size;nextCursor=cursor;fresh=true;
+      if(loadMore){announce(`Mostrando ${itemCount} contactos.${nextCursor && itemCount<1000 && pageCount<10?' Puedes cargar más.':''}`);if((!nextCursor || itemCount>=1000 || pageCount>=10) && document.activeElement===more){const added=[...list.querySelectorAll('[data-wa-peer]')].find(node=>!before.has(node.getAttribute('data-wa-peer')));if(added instanceof HTMLElement)added.focus();}}
     }catch(error){if(current===generation && record(error).name!=='AbortError'){fresh=false;announce(record(error).message || 'No pudimos actualizar WhatsApp.');if([401,403].includes(record(error).status))fail(error);}}
-    finally{if(current===generation){panel.setAttribute('aria-busy','false');disable();expire();if(visible())timer=setTimeout(()=>void refresh(),5000);}}
+    finally{if(current===generation){loading=false;panel.setAttribute('aria-busy','false');disable();expire();if(visible())timer=setTimeout(()=>void refresh(),5000);}}
   }
   /** @param {string} path @param {Record<string,unknown>} body @param {string} message */
   async function mutate(path,body,message){
@@ -155,6 +171,7 @@ export function createWhatsAppAdmin({request,fail}){
     }finally{if(current===generation){pending=false;disable();}if(visible() && focused && (document.activeElement===document.body || document.activeElement?.getAttribute('data-wa-focus')===focused)){const target=[...detail.querySelectorAll('[data-wa-focus]')].find(node=>node.getAttribute('data-wa-focus')===focused);if(target instanceof HTMLElement)target.focus({preventScroll:true});}}
   }
   const resume=()=>{stop();if(visible())void refresh();};
+  more.addEventListener('click',()=>{if(fresh && nextCursor && itemCount<1000 && pageCount<10)void refresh(false,true);});
   document.addEventListener('visibilitychange',()=>{if(!visible() && pending)announce('No pudimos confirmar la acción. Consulta el estado antes de volver a actuar.');resume();expire();});
   window.addEventListener('pagehide',stop);window.addEventListener('pageshow',resume);
   if(typeof IntersectionObserver==='function')new IntersectionObserver(()=>{const bounds=panel.getBoundingClientRect(),next=!panel.hidden && bounds.width>0 && bounds.top<innerHeight && bounds.bottom>0;if(inViewport!==next){inViewport=next;resume();}},{threshold:0}).observe(panel);

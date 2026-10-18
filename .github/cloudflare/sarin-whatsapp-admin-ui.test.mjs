@@ -113,7 +113,7 @@ test('acciones envían únicamente revisión/acción o piloto; resume_requires_f
   await page.locator('.wa-contact-info > summary').click();
   assert.match(await page.locator('#wa-detail').innerText(),/mensaje nuevo/);
   await page.getByRole('button',{name:'Pausar Sarin',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-status').textContent.includes('Sarin pausado'));
-  await page.getByRole('button',{name:'Apagar piloto',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-pilot').textContent.includes('Piloto apagado'));
+  await page.getByRole('button',{name:'Apagar respuestas',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-pilot').textContent.includes('Respuestas apagadas'));
   assert.deepEqual(waRequests(requests).filter(r=>r.method==='POST').map(r=>r.body),[{action:'resume',revision:7},{action:'pause',revision:8},{enabled:false,revision:3}]);
 });
 
@@ -257,15 +257,37 @@ test('409 con recarga fallida no afirma actualización ni habilita otra mutació
   assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).isDisabled(),true);assert.equal(waRequests(requests).filter(r=>r.method==='POST').length,1);
 });
 
-test('Activar piloto usa revisión y no afirma disponibilidad; cierres de restauración permanecen visibles',async t=>{
+test('Activar respuestas usa revisión y no afirma disponibilidad; cierres de restauración permanecen visibles',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page,{initialEnabled:false,recoveryBlockedUntil:now+86400000});
-  await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.getByRole('button',{name:'Activar piloto',exact:true}).click();await page.getByRole('button',{name:'Apagar piloto',exact:true}).waitFor();
+  await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.getByRole('button',{name:'Activar respuestas',exact:true}).click();await page.getByRole('button',{name:'Apagar respuestas',exact:true}).waitFor();
   await page.locator('.wa-pilot-info > summary').click();
   assert.deepEqual(waRequests(requests).filter(r=>r.method==='POST').map(r=>r.body),[{enabled:true,revision:3}]);assert.match(await page.locator('#wa-pilot').innerText(),/Envíos bloqueados tras restaurar datos/);assert.match(await page.locator('.wa-pilot-info').innerText(),/no garantiza/);
   assert.equal(await page.getByRole('button',{name:/restablecer|devolver cupos|abrir cierre/i}).count(),0);
 });
 
-test('Activar piloto permanece deshabilitado sin permiso del entorno; no emite POST',async t=>{
+test('Activar respuestas permanece deshabilitado sin permiso del entorno; no emite POST',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page,{initialEnabled:false,repliesEnabled:false});await page.getByRole('button',{name:'WhatsApp',exact:true}).click();
-  await page.getByRole('button',{name:'Activar piloto',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Activar piloto',exact:true}).isDisabled(),true);assert.match(await page.locator('#wa-pilot').innerText(),/Respuestas deshabilitadas/);assert.equal(waRequests(requests).filter(r=>r.method==='POST').length,0);
+  await page.getByRole('button',{name:'Activar respuestas',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Activar respuestas',exact:true}).isDisabled(),true);assert.match(await page.locator('#wa-pilot').innerText(),/Respuestas deshabilitadas/);assert.equal(waRequests(requests).filter(r=>r.method==='POST').length,0);
+});
+
+test('Cargar más conserva contactos únicos, orden, selección y detalle durante el sondeo',async t=>{
+ const {page,context}=await pageFor({viewport:{width:1450,height:765}});t.after(()=>context.close());await page.clock.install();await mock(page);
+ const first=Array.from({length:100},(_,index)=>({...peer,peerKey:index.toString(16).padStart(64,'0'),maskedPhone:'*** '+String(index).padStart(4,'0')}));
+ const extra=[{...peer,peerKey:'d'.repeat(64),maskedPhone:'*** 0100'},{...peer,peerKey:'e'.repeat(64),maskedPhone:'*** 0101'}];
+ const token='wa1_'+Buffer.from(first.at(-1).peerKey).toString('base64url');let reads=0;
+ await page.route('**/api/control-sarin/whatsapp/peers*',route=>{
+  const url=new URL(route.request().url());if(!url.pathname.endsWith('/peers'))return route.fallback();reads++;
+  return route.fulfill({json:{pilot:{enabled:true,revision:3,updatedAt:now,repliesEnabled:true},items:url.searchParams.has('cursor')?[first.at(-1),...extra]:first,nextCursor:url.searchParams.has('cursor')?null:token}});
+ });
+ await page.route('**/api/control-sarin/whatsapp/peers/'+extra[1].peerKey,route=>route.fulfill({json:{peer:{...waDetail,...extra[1]}}}));
+ await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.locator('#wa-list [data-wa-peer]').nth(99).waitFor();
+ const more=page.getByRole('button',{name:'Cargar más contactos',exact:true});await more.focus();await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>document.querySelectorAll('#wa-list [data-wa-peer]').length===102);
+ const order=await page.locator('#wa-list [data-wa-peer]').evaluateAll(nodes=>nodes.map(node=>node.dataset.waPeer));assert.equal(new Set(order).size,102);assert.deepEqual(order,[...first,...extra].map(item=>item.peerKey));
+ await page.locator(`[data-wa-peer="${extra[1].peerKey}"]`).click();await page.getByRole('heading',{name:'*** 0101',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).focus();const before=reads;
+ await page.clock.runFor(5000);await page.waitForFunction(()=>document.querySelector('#wa-panel').getAttribute('aria-busy')==='false');
+ assert.ok(reads>=before+2);assert.equal(await page.locator(`[data-wa-peer="${extra[1].peerKey}"]`).getAttribute('aria-pressed'),'true');
+ assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).evaluate(node=>node===document.activeElement),true);
+ assert.deepEqual(await page.locator('#wa-list [data-wa-peer]').evaluateAll(nodes=>nodes.map(node=>node.dataset.waPeer)),order);assert.equal(await more.isVisible(),false);
 });

@@ -1,3 +1,4 @@
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
@@ -10,7 +11,7 @@ async function setup(t){
  await capture();const peerKey=f.sqlite.prepare('SELECT peer_key FROM sarin_wa_inbox').get().peer_key;
  await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
  const e=await capture(),j=f.sqlite.prepare('SELECT * FROM sarin_wa_jobs WHERE event_id=?').get(e.eventId),token=crypto.randomUUID();await store.claimGeneration({jobId:j.job_id,epoch:j.epoch,token});
- const out=await store.createFixedReply({jobId:j.job_id,token,purpose:'notice',text:'Aviso sintetico',version:'v1',hash:'a'.repeat(64)});
+ const out=await store.createFixedReply({jobId:j.job_id,token,purpose:'notice',text:'Aviso sintetico',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});
  const permit=await store.beginSend({...out,token});
  const status=(status,eventId='status_'+status,extra={})=>store.applyStatus({eventId,status,at:now(),providerId:'provider_notice',...extra});
  return {...f,store,ingress,capture,peerKey,token,...out,permit,status,now,ctx:()=>f.sqlite.prepare('SELECT * FROM sarin_wa_contexts').get(),out:()=>f.sqlite.prepare('SELECT * FROM sarin_wa_outbox').get()};

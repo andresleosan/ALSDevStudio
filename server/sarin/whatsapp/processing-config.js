@@ -6,20 +6,46 @@
 const phone=v=>typeof v==='string'&&/^\+[1-9]\d{1,14}$/.test(v);
 /** @param {unknown} v @returns {v is string} */
 const secret=v=>typeof v==='string'&&/^[\x21-\x7e]{1,4096}$/.test(v);
-/** Configuraci�n interna cerrada: ausencia nunca concede un permiso.
- * @param {ProcessingEnv} env */
-export function lookupConfiguration(env) {
+/** El alcance público sólo existe con una activación explícita y una fecha alcanzada.
+ * @param {Record<string,unknown>} env @param {number} [at]
+ * @returns {{mode:'pilot'|'public',publicSince:number|null,peers:Set<string>}|null} */
+export function accessConfiguration(env,at=Date.now()) {
+ if(!Number.isSafeInteger(at)||at<0||!phone(env.SARIN_WHATSAPP_BUSINESS_PHONE))return null;
+ const mode=env.SARIN_WHATSAPP_ACCESS_MODE===undefined?'pilot':env.SARIN_WHATSAPP_ACCESS_MODE;
+ if(mode==='public') {
+  const value=env.SARIN_WHATSAPP_PUBLIC_SINCE;
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value))return null;
+  const since=Date.parse(value);
+  if(!Number.isSafeInteger(since)||since<0||since>at||new Date(since).toISOString()!==value)return null;
+  return {mode,publicSince:since,peers:new Set()};
+ }
+ if(mode!=='pilot'||typeof env.SARIN_WHATSAPP_PILOT_PHONES!=='string'||env.SARIN_WHATSAPP_PILOT_PHONES.length>256)return null;
+ let peers;try{peers=JSON.parse(env.SARIN_WHATSAPP_PILOT_PHONES);}catch{return null;}
+ if(!Array.isArray(peers)||peers.length<1||peers.length>10||!peers.every(phone)
+  ||new Set(peers).size!==peers.length||peers.includes(env.SARIN_WHATSAPP_BUSINESS_PHONE))return null;
+ return {mode,publicSince:null,peers:new Set(peers)};
+}
+/** La identidad del destinatario siempre procede del trabajo durable.
+ * @param {{business:string,wabaId:string,peer:string|null}} config
+ * @param {import('./work-contracts.js').Recipient|null} recipient */
+export function recipientAllowed(config,recipient) {
+ return !!recipient&&recipient.wabaId===config.wabaId&&recipient.from===config.business
+  &&phone(recipient.to)&&recipient.to!==config.business&&(config.peer===null||recipient.to===config.peer);
+}
+/** Configuración interna cerrada: ausencia nunca concede un permiso.
+ * @param {ProcessingEnv} env @param {number} [at] */
+export function lookupConfiguration(env,at=Date.now()) {
  if(!env.SARIN_DB||typeof env.SARIN_DB.batch!=='function'||typeof env.SARIN_DB.prepare!=='function'
    ||!secret(env.SARIN_WHATSAPP_API_KEY)||!phone(env.SARIN_WHATSAPP_BUSINESS_PHONE)
-   ||typeof env.SARIN_WHATSAPP_WABA_ID!=='string'||!/^[1-9]\d{0,31}$/.test(env.SARIN_WHATSAPP_WABA_ID)
-   ||typeof env.SARIN_WHATSAPP_PILOT_PHONES!=='string'||env.SARIN_WHATSAPP_PILOT_PHONES.length>256)return null;
- let peers;try{peers=JSON.parse(env.SARIN_WHATSAPP_PILOT_PHONES);}catch{return null;}
- if(!Array.isArray(peers)||peers.length!==1||!peers.every(phone)||peers.includes(env.SARIN_WHATSAPP_BUSINESS_PHONE))return null;
- return {db:env.SARIN_DB,apiKey:env.SARIN_WHATSAPP_API_KEY,business:env.SARIN_WHATSAPP_BUSINESS_PHONE,wabaId:env.SARIN_WHATSAPP_WABA_ID,peer:/** @type {string} */(peers[0])};
+   ||typeof env.SARIN_WHATSAPP_WABA_ID!=='string'||!/^[1-9]\d{0,31}$/.test(env.SARIN_WHATSAPP_WABA_ID))return null;
+ const access=accessConfiguration(env,at);
+ if(!access||(access.mode==='pilot'&&access.peers.size!==1))return null;
+ return {db:env.SARIN_DB,apiKey:env.SARIN_WHATSAPP_API_KEY,business:env.SARIN_WHATSAPP_BUSINESS_PHONE,wabaId:env.SARIN_WHATSAPP_WABA_ID,
+  mode:access.mode,publicSince:access.publicSince,peer:access.mode==='pilot'?/** @type {string} */([...access.peers][0]):null};
 }
-/** @param {ProcessingEnv} env */
-export function processingConfiguration(env) {
- const lookup=lookupConfiguration(env);
+/** @param {ProcessingEnv} env @param {number} [at] */
+export function processingConfiguration(env,at=Date.now()) {
+ const lookup=lookupConfiguration(env,at);
  if(!lookup||env.SARIN_WHATSAPP_REPLIES_ENABLED!=='true'||env.SARIN_WHATSAPP_SEND_ENABLED!=='true'
    ||!env.SARIN_WHATSAPP_QUEUE||typeof env.SARIN_WHATSAPP_QUEUE.send!=='function'
    ||!secret(env.DEEPSEEK_API_KEY)||!secret(env.SARIN_IP_SECRET)||env.SARIN_IP_SECRET.length<32)return null;

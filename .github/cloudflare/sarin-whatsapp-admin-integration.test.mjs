@@ -1,3 +1,4 @@
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
@@ -8,6 +9,21 @@ import { handleWhatsAppAdmin } from '../../server/sarin/whatsapp/admin.js';
 // Integración real de SQL, triggers, store y proyección HTTP. Ninguna llamada de red.
 // La autenticación/CSRF se verifica por separado en sarin-whatsapp-admin.test.mjs.
 const BASE=Date.UTC(2026,9,18,12),DAY=86400000;
+
+test('paginación SQLite recorre más de cien contactos sin duplicados ni teléfonos',async t=>{
+ const f=await sqliteFixture({whatsapp:true,replies:true});t.after(f.close);
+ const insert=f.sqlite.prepare('INSERT INTO sarin_wa_contexts(peer_key,context_id) VALUES(?,?)');
+ for(let index=0;index<205;index++)insert.run(index.toString(16).padStart(64,'0'),crypto.randomUUID());
+ const store=createWhatsAppWorkStore({db:f.db,now:()=>BASE}),keys=[],sizes=[];let cursor=null;
+ do{
+  const response=await handleWhatsAppAdmin(new Request('https://als.example.test/api/control-sarin/whatsapp/peers'+(cursor?'?cursor='+encodeURIComponent(cursor):'')),{},
+   {admin:{id:'synthetic-owner'},actor:'a'.repeat(64),now:BASE,store});
+  assert.equal(response.status,200);const body=await response.json();sizes.push(body.items.length);
+  keys.push(...body.items.map(item=>item.peerKey));assert.ok(body.items.every(item=>item.maskedPhone==='***'));
+  cursor=body.nextCursor;assert.ok(sizes.length<=3);
+ }while(cursor);
+ assert.deepEqual(sizes,[100,100,5]);assert.equal(keys.length,205);assert.equal(new Set(keys).size,205);
+});
 async function setup(t,{phone='+573000000001'}={}){
   const f=await sqliteFixture({whatsapp:true,replies:true});t.after(f.close);
   let at=BASE,sequence=0;
@@ -38,7 +54,7 @@ async function notice(f){
   const job=f.sqlite.prepare('SELECT * FROM sarin_wa_jobs WHERE event_id=?').get(input.eventId),token=crypto.randomUUID();
   const claimed=await f.store.claimGeneration({jobId:job.job_id,epoch:job.epoch,token});
   assert.equal(claimed.work.decision,'notice');
-  const output=await f.store.createFixedReply({jobId:job.job_id,token,purpose:'notice',text:'Aviso ficticio de la prueba',version:'test-v1',hash:'b'.repeat(64)});
+  const output=await f.store.createFixedReply({jobId:job.job_id,token,purpose:'notice',text:'Aviso ficticio de la prueba',version:WHATSAPP_NOTICE_VERSION,hash:'b'.repeat(64)});
   await f.store.beginSend({...output,token});
   await f.store.finishSend({...output,token,result:{status:'accepted',providerId:'synthetic_notice'}});
   return output;

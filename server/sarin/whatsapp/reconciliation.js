@@ -1,20 +1,22 @@
 // @ts-check
 import { createWhatsAppWorkStore } from './work-store.js';
 import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
-import { lookupConfiguration } from './processing-config.js';
-/** Un GET m·ximo por ejecuciÛn. Nunca interpreta HTTP 404 como fallo del POST.
+import { lookupConfiguration, recipientAllowed } from './processing-config.js';
+/** Un GET m√°ximo por ejecuci√≥n. Nunca interpreta HTTP 404 como fallo del POST.
  * @param {import('./processing-config.js').ProcessingEnv} env
  * @param {import('./processor.js').Options & {signal?:AbortSignal}} [options] */
 export async function reconcileWhatsAppWork(env,options={}) {
- const config=lookupConfiguration(env);if(!config||options.signal?.aborted)return {status:'disabled'};
- const now=options.now??Date.now,store=options.store??createWhatsAppWorkStore({db:config.db,now});
- const recipient={wabaId:config.wabaId,from:config.business,to:config.peer};
+ const now=options.now??Date.now,config=lookupConfiguration(env,now());if(!config||options.signal?.aborted)return {status:'disabled'};
+ const store=options.store??createWhatsAppWorkStore({db:config.db,now});
  await store.expireReconciliationLeases();
  if(options.signal?.aborted)return {status:'stopped'};
+ const recipient=await store.getReconciliationRecipient({wabaId:config.wabaId,from:config.business,...(config.peer===null?{}:{to:config.peer})});
+ if(!recipient||!recipientAllowed(config,recipient))return {status:'none'};
  await store.discoverReconciliation({recipient});
  if(options.signal?.aborted)return {status:'stopped'};
  const token=crypto.randomUUID(),claim=await store.claimReconciliation({token,recipient});
  if(!claim.permit)return {status:'none'};
+ if(!recipientAllowed(config,claim.permit)||claim.permit.wabaId!==recipient.wabaId||claim.permit.from!==recipient.from||claim.permit.to!==recipient.to)return {status:'denied'};
  const p=claim.permit,client=createYCloudClient({apiKey:config.apiKey,businessPhone:config.business,fetcher:options.fetch,timeoutMs:10000});
  /** @type {import('./work-contracts.js').ReconciliationResult} */let result;
  try{

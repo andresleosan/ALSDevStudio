@@ -1,5 +1,6 @@
 ﻿import { createWhatsAppIngressStore } from '../../server/sarin/whatsapp/ingress-store.js';
 import { createWhatsAppWorkStore } from '../../server/sarin/whatsapp/work-store.js';
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
 export const DAY=86400000, BASE=Date.UTC(2026,9,18,12);
 export async function maintenanceFixture(t) {
@@ -12,7 +13,7 @@ export async function maintenanceFixture(t) {
  await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});
  await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
  const claim=async e=>{const j=f.sqlite.prepare('SELECT * FROM sarin_wa_jobs WHERE event_id=?').get(e.eventId),token=crypto.randomUUID();return {...await store.claimGeneration({jobId:j.job_id,epoch:j.epoch,token}),jobId:j.job_id,epoch:j.epoch,token};};
- const notice=async(send=true)=>{const c=await claim(await capture());const o=await store.createFixedReply({...c,purpose:'notice',text:'Aviso ficticio',version:'v1',hash:'a'.repeat(64)});if(send){await store.beginSend({...o,token:c.token});await store.finishSend({...o,token:c.token,result:{status:'accepted',providerId:'notice-id'}});await store.applyStatus({eventId:'delivered',providerId:'notice-id',status:'delivered',at});}return {...o,...c};};
+ const notice=async(send=true)=>{const c=await claim(await capture());const o=await store.createFixedReply({...c,purpose:'notice',text:'Aviso ficticio',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});if(send){await store.beginSend({...o,token:c.token});await store.finishSend({...o,token:c.token,result:{status:'accepted',providerId:'notice-id'}});await store.applyStatus({eventId:'delivered',providerId:'notice-id',status:'delivered',at});}return {...o,...c};};
  const accept=async()=>{const e=await capture('ACEPTO');const c=await claim(e);await store.finishWithoutReply({...c,reason:'ignored'});return e;};
  return {...f,now,store,ingress,row,capture,claim,notice,accept,peerKey,setTime:v=>{at=v;}};
 }

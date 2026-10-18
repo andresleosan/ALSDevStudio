@@ -1,7 +1,7 @@
 ﻿// @ts-check
-export const WHATSAPP_NOTICE_VERSION = 'whatsapp-pilot-v1';
-export const WHATSAPP_NOTICE = 'Soy Sarin, el asistente de IA de ALS DevStudio. Esta es una prueba privada: usa sólo datos ficticios. WhatsApp/Meta y YCloud transportan los mensajes; si aceptas, DeepSeek procesará tus consultas para responder sobre servicios de ALS. ALS conserva el contenido de esta prueba hasta 24 horas; cada proveedor aplica sus propias condiciones. Más información: https://www.alsdevstudio.com/privacidad.html#whatsapp-piloto. Escribe ACEPTO para probar o HUMANO para que te atienda Andrés';
-export const WHATSAPP_ACCEPTED = 'Gracias por aceptar. Cuéntame qué proyecto tienes en mente para ALS DevStudio. Puedes escribir HUMANO para que te atienda Andrés.';
+export const WHATSAPP_NOTICE_VERSION = 'whatsapp-service-2026-10-18-v2';
+export const WHATSAPP_NOTICE = 'Hola, soy Sarin, el asistente de IA de ALS Dev Studio. Puedo orientarte sobre páginas web, tiendas virtuales, aplicaciones y chatbots. WhatsApp/Meta y YCloud transportan los mensajes y Cloudflare aloja el servicio. Si aceptas, autorizas el tratamiento internacional de tus mensajes y contexto reciente por estos proveedores y DeepSeek para responderte. ALS Dev Studio conserva el contenido hasta 24 horas y recibos técnicos mínimos hasta 48 horas; estos plazos no cubren el almacenamiento de los proveedores. No compartas contraseñas ni datos sensibles. Más información: https://www.alsdevstudio.com/privacidad.html#whatsapp. Escribe ACEPTO para autorizar y continuar, HUMANO para solicitar atención de Andrés o STOP para detener a Sarin.';
+export const WHATSAPP_ACCEPTED = 'Gracias por aceptar. Cuéntame qué necesita tu negocio y te orientaré sobre los servicios de ALS Dev Studio. Puedes escribir HUMANO para solicitar atención de Andrés o STOP para detener a Sarin.';
 /** @param {{mediaType:string,text?:string|null}} input @returns {'accept'|'stop'|'human'|'text'|'media'} */
 export function classifyWhatsAppInput({mediaType,text}) {
   if(mediaType!=='text')return 'media';

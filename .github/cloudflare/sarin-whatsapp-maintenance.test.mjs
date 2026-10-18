@@ -1,3 +1,4 @@
+import { WHATSAPP_NOTICE_VERSION } from '../../server/sarin/whatsapp/consent.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteFixture } from './sarin-sqlite-fixture.mjs';
@@ -285,12 +286,12 @@ test('restoration_closures_guard_reserve_beginSend_and_rollover',async t=>{
  await f.store.pausePeer({peerKey:f.peerKey,expectedRevision:f.row('sarin_wa_contexts').revision,actor:'test'});
  await f.store.resumePeer({peerKey:f.peerKey,expectedRevision:f.row('sarin_wa_contexts').revision,actor:'test'});
  let c=await f.claim(await f.capture());
- await assert.rejects(f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)}),e=>e.code==='work_quota');
+ await assert.rejects(f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)}),e=>e.code==='work_quota');
  await f.store.finishWithoutReply({...c,reason:'ignored'});
  f.setTime(Date.UTC(2026,9,19));assert.equal((await f.store.getSendClosure()).closures.length,1);
- c=await f.claim(await f.capture());await assert.rejects(f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)}),e=>e.code==='work_quota');
+ c=await f.claim(await f.capture());await assert.rejects(f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)}),e=>e.code==='work_quota');
  f.setTime(Date.UTC(2026,10,1));await purgeWork(f);assert.equal((await f.store.getSendClosure()).closed,false);
- c=await f.claim(await f.capture());const o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)});
+ c=await f.claim(await f.capture());const o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});
  await f.store.beginSend({...o,token:c.token});assert.equal(f.row('sarin_wa_send_quota').consumed,1);
 });
 test('empty_restore_closes_periods_and_second_restore_preserves_consumption',async t=>{
@@ -339,7 +340,7 @@ test('restore_cancels_reconciliation_token_and_preserves_monetary_rows',async t=
  const f=await maintenanceFixture(t);const n=await f.notice();
  // Delivered notice cannot claim lookup; create a fresh notice in a fresh context.
  await f.store.resumePeer({peerKey:f.peerKey,expectedRevision:f.row('sarin_wa_contexts').revision,actor:'test'});
- const c=await f.claim(await f.capture()),o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)});
+ const c=await f.claim(await f.capture()),o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});
  await f.store.beginSend({...o,token:c.token});await f.store.finishSend({...o,token:c.token,result:{status:'accepted',providerId:'lookup-id'}});
  await f.store.requestReconciliation({...o,actor:'test'});const token=crypto.randomUUID();
  const claim=await f.store.claimReconciliation({token,recipient:{wabaId:'12345',from:'+573000000002',to:'+573000000001'}});assert.equal(claim.status,'claimed');
@@ -353,7 +354,7 @@ test('restore_cancels_reconciliation_token_and_preserves_monetary_rows',async t=
 test('retained_provider_binding_cannot_be_reassigned_to_new_notice',async t=>{
  const f=await maintenanceFixture(t);await f.notice();f.setTime(f.now()+12*3600000);await f.accept();f.setTime(f.now()+12*3600000);await purgeWork(f);
  await f.capture('STOP');await f.store.resumePeer({peerKey:f.peerKey,expectedRevision:f.row('sarin_wa_contexts').revision,actor:'test'});
- const c=await f.claim(await f.capture()),o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:'v1',hash:'a'.repeat(64)});
+ const c=await f.claim(await f.capture()),o=await f.store.createFixedReply({...c,purpose:'notice',text:'Aviso',version:WHATSAPP_NOTICE_VERSION,hash:'a'.repeat(64)});
  await f.store.beginSend({...o,token:c.token});
  await assert.rejects(f.store.finishSend({...o,token:c.token,result:{status:'accepted',providerId:'notice-id'}}),e=>e.code==='work_conflict');
  assert.equal(f.row('sarin_wa_outbox').conflict,1);

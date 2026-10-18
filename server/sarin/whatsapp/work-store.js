@@ -1,5 +1,5 @@
 // @ts-check
-import { classifyWhatsAppInput } from './consent.js';
+import { classifyWhatsAppInput, WHATSAPP_NOTICE_VERSION } from './consent.js';
 import { normalizeWhatsAppMessage, digestWhatsApp } from './ingress-identity.js';
 /** @typedef {import('./work-contracts.js').Work} Work */
 /** @typedef {import('./work-contracts.js').SendPermit} SendPermit */
@@ -31,7 +31,7 @@ function requireThat(test, code='invalid_request', status=400) { if (!test) thro
 const LIVE = `p.enabled=1 AND p.epoch=j.epoch AND c.context_id=j.context_id AND c.revision=j.peer_revision
   AND c.paused=0 AND j.expires_at>t.at AND i.expires_at>t.at AND c.last_inbound_at>t.at-86400000
   AND i.sent_at>MAX(c.activation_at,p.activation_at) AND i.created_at>MAX(c.activation_at,p.activation_at)`;
-const CONSENT_EVIDENCE = `c.accepted_at IS NOT NULL
+const CONSENT_EVIDENCE = `c.accepted_at IS NOT NULL AND c.consent_version='${WHATSAPP_NOTICE_VERSION}'
   AND c.acceptance_event_id IS NOT NULL AND EXISTS(SELECT 1 FROM sarin_wa_consent_proofs n
     WHERE n.acceptance_event_id=c.acceptance_event_id AND n.notice_id=c.consent_notice_id AND n.peer_key=c.peer_key
       AND n.accepted_at=c.accepted_at AND n.consent_expires_at=c.consent_expires_at AND n.expires_at>t.at
@@ -61,7 +61,7 @@ const PEER_SUMMARY = `c.peer_key,c.paused,c.revision,c.context_id,c.last_inbound
     WHEN c.paused=1 AND c.accepted_at IS NULL AND EXISTS(SELECT 1 FROM sarin_wa_control_events v
       WHERE v.peer_key=c.peer_key AND v.context_id=c.context_id AND v.applied=1 AND v.expires_at>t.at
         AND v.sent_at>c.activation_at AND v.classification IN('stop','human','media')) THEN 'revoked'
-    WHEN c.paused=0 AND c.accepted_at IS NULL AND c.pending_acceptance_event_id IS NOT NULL
+    WHEN c.paused=0 AND c.accepted_at IS NULL AND c.pending_acceptance_event_id IS NOT NULL AND c.consent_version='${WHATSAPP_NOTICE_VERSION}'
       AND c.pending_accepted_at+86400000>t.at
       AND EXISTS(SELECT 1 FROM sarin_wa_control_events v WHERE v.event_id=c.pending_acceptance_event_id
         AND v.peer_key=c.peer_key AND v.context_id=c.context_id AND v.applied=1 AND v.classification='accept' AND v.expires_at>t.at)
@@ -159,8 +159,9 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     return {outboxId};
   }
   /** Las tablas de control sobreviven a rechazos por capacidad del inbox.
-   * @param {{event:unknown}} input */
-  async function observeControl({event}) {
+   * @param {{event:unknown,autoStart?:boolean}} input */
+  async function observeControl({event,autoStart=false}) {
+    requireThat(typeof autoStart==='boolean');
     const at=clock(),e=normalizeWhatsAppMessage(event,at);
     const business=e.kind==='inbound'?e.to:e.from,peer=e.kind==='inbound'?e.from:e.to;
     const facts=[e.kind,e.messageId,e.wamid,e.wabaId,e.from,e.to,e.sentAt,e.mediaType,e.text];
@@ -172,16 +173,49 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     if(at-e.sentAt>28800000||at-e.createdAt>28800000)return {status:'ignored',peerKey};
     const fresh=`EXISTS(SELECT 1 FROM sarin_wa_control_events v WHERE v.event_id=? AND v.applied=0 AND v.context_id=sarin_wa_contexts.context_id)
       AND ?>activation_at AND ?>activation_at AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)`;
-    await batch([
-      guard(`NOT EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE (event_id=? AND event_hash<>?) OR (message_key=? AND message_hash<>?))`,[e.eventId,eventHash,messageKey,messageHash],'conflict'),
-      s(`INSERT INTO sarin_wa_contexts(peer_key,context_id) VALUES(?,?) ON CONFLICT(peer_key) DO NOTHING`,peerKey,crypto.randomUUID()),
+    const eventGuard=()=>guard(`NOT EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE (event_id=? AND event_hash<>?) OR (message_key=? AND message_hash<>?))`,[e.eventId,eventHash,messageKey,messageHash],'conflict');
+    // La apertura pública no permite crear recibos ilimitados antes del cupo de captura.
+    const full=(await read(`SELECT (SELECT COUNT(*) FROM sarin_wa_control_events)>=20000 AND NOT EXISTS(
+      SELECT 1 FROM sarin_wa_control_events WHERE event_id=? OR message_key=?) AS full`,e.eventId,messageKey))[0]?.full;
+    const pauseAtCapacity=async()=>{
+      await batch([eventGuard(),s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1,
+        accepted_at=CASE WHEN ?='echo' THEN accepted_at ELSE NULL END,
+        consent_expires_at=CASE WHEN ?='echo' THEN consent_expires_at ELSE NULL END,
+        acceptance_event_id=CASE WHEN ?='echo' THEN acceptance_event_id ELSE NULL END,
+        pending_acceptance_event_id=NULL,pending_accepted_at=NULL
+        WHERE peer_key=? AND (paused=0 OR (?<>'echo' AND accepted_at IS NOT NULL))
+          AND ?>activation_at AND ?>activation_at AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)
+          AND (? IN('stop','human','media') OR (?='echo' AND (SELECT COUNT(*) FROM sarin_wa_outbox o
+            JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+            WHERE o.started_at IS NOT NULL AND o.wamid=? AND o.conflict=0 AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)<>1))`,
+        kind,kind,kind,peerKey,kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),kind,kind,e.wamid,e.wabaId,business,peer)]);
+      throw new WhatsAppWorkError(429,'work_capacity');
+    };
+    if(full)await pauseAtCapacity();
+    try { await batch([
+      eventGuard(),
+      guard(`EXISTS(SELECT 1 FROM sarin_wa_contexts WHERE peer_key=?) OR (SELECT COUNT(*) FROM sarin_wa_contexts)<1000`,[peerKey],'capacity'),
+      guard(`EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE event_id=? OR message_key=?) OR (SELECT COUNT(*) FROM sarin_wa_control_events)<20000`,[e.eventId,messageKey],'capacity'),
+      s(`INSERT INTO sarin_wa_contexts(peer_key,context_id,paused,activation_at)
+        SELECT ?,?,CASE WHEN ?=1 AND ? IN('text','accept') AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ?>activation_at AND ?>activation_at)
+          AND ?>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1) THEN 0 ELSE 1 END,?
+        ON CONFLICT(peer_key) DO NOTHING`,peerKey,crypto.randomUUID(),Number(autoStart),kind,e.sentAt,e.createdAt,Math.min(e.sentAt,e.createdAt),autoStart?Math.min(e.sentAt,e.createdAt)-1:0),
       // Renovar solo ante un mensaje nuevo, sin retirar una pausa humana.
       s(`UPDATE sarin_wa_contexts SET context_id=?,revision=revision+1,activation_at=?,consent_version=NULL,consent_hash=NULL,
         consent_notice_id=NULL,acceptance_event_id=NULL,accepted_at=NULL,consent_expires_at=NULL,pending_acceptance_event_id=NULL,pending_accepted_at=NULL
         WHERE peer_key=? AND paused=0 AND ? IN('text','accept') AND ?>activation_at AND ?>activation_at
           AND NOT EXISTS(SELECT 1 FROM sarin_wa_control_events WHERE event_id=? OR message_key=?)
-          AND ((acceptance_event_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs p WHERE p.acceptance_event_id=sarin_wa_contexts.acceptance_event_id AND p.conflict=0)) OR consent_expires_at<=? OR (accepted_at IS NULL AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=sarin_wa_contexts.context_id AND n.purpose='notice' AND n.expires_at<=?)))`,
-        crypto.randomUUID(),Math.min(e.sentAt,e.createdAt)-1,peerKey,kind,e.sentAt,e.createdAt,e.eventId,messageKey,at,at),
+          AND ((consent_version IS NOT NULL AND consent_version<>?) OR (acceptance_event_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM sarin_wa_consent_proofs p WHERE p.acceptance_event_id=sarin_wa_contexts.acceptance_event_id AND p.conflict=0)) OR consent_expires_at<=? OR (accepted_at IS NULL AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=sarin_wa_contexts.context_id AND n.purpose='notice' AND n.expires_at<=?)))`,
+        crypto.randomUUID(),Math.min(e.sentAt,e.createdAt)-1,peerKey,kind,e.sentAt,e.createdAt,e.eventId,messageKey,WHATSAPP_NOTICE_VERSION,at,at),
+      s(`UPDATE sarin_wa_send_quota SET reserved=reserved-(SELECT COUNT(*) FROM sarin_wa_jobs j
+        WHERE j.peer_key=? AND j.context_id<>(SELECT context_id FROM sarin_wa_contexts WHERE peer_key=?)
+          AND j.quota_state='reserved' AND j.quota_day=day_key AND NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=j.job_id AND o.started_at IS NOT NULL))`,peerKey,peerKey),
+      s(`UPDATE sarin_wa_outbox SET state='cancelled' WHERE peer_key=? AND context_id<>(SELECT context_id FROM sarin_wa_contexts WHERE peer_key=?) AND state='ready'`,peerKey,peerKey),
+      s(`UPDATE sarin_wa_jobs SET state=CASE WHEN state='inference_started' THEN 'inference_uncertain' ELSE 'cancelled' END,
+        token=NULL,lease_until=NULL,quota_state=CASE WHEN quota_state='reserved' THEN 'released' ELSE quota_state END,
+        reserved_bytes=CASE WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id) THEN reserved_bytes ELSE 0 END
+        WHERE peer_key=? AND context_id<>(SELECT context_id FROM sarin_wa_contexts WHERE peer_key=?)
+          AND state IN('queued','claimed','inference_started','ready') AND NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id AND o.started_at IS NOT NULL)`,peerKey,peerKey),
       s(`INSERT INTO sarin_wa_control_events(event_id,message_key,event_hash,message_hash,peer_key,context_id,classification,sent_at,observed_at,expires_at)
         SELECT ?,?,?,?,?,context_id,?,?,?,? FROM sarin_wa_contexts WHERE peer_key=? ON CONFLICT DO NOTHING`,e.eventId,messageKey,eventHash,messageHash,peerKey,kind,e.sentAt,at,at+2*DAY,peerKey),
       s(`UPDATE sarin_wa_contexts SET paused=1,revision=revision+1,
@@ -195,10 +229,16 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         WHERE peer_key=? AND ${fresh} AND ?='accept' AND paused=0 AND accepted_at IS NULL AND pending_acceptance_event_id IS NULL
           AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1 AND ? > activation_at AND ?>activation_at)
           AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=sarin_wa_contexts.context_id AND n.outbox_id=consent_notice_id
-            AND n.purpose='notice' AND n.started_at IS NOT NULL AND n.started_at<=? AND n.started_at<=?
+            AND n.purpose='notice' AND n.version='${WHATSAPP_NOTICE_VERSION}' AND n.started_at IS NOT NULL AND n.started_at<=? AND n.started_at<=?
             AND n.expires_at>? AND n.conflict=0 AND n.state IN('sending','accepted','sent','delivered','read'))`,
         e.eventId,e.sentAt,peerKey,e.eventId,e.sentAt,e.createdAt,Math.min(e.createdAt,e.sentAt),kind,e.sentAt,e.createdAt,e.sentAt,e.createdAt,at),
-      s('UPDATE sarin_wa_control_events SET applied=1 WHERE event_id=?',e.eventId)]);
+      s('UPDATE sarin_wa_control_events SET applied=1 WHERE event_id=?',e.eventId)]); }
+    catch(error){
+      // Otro webhook puede ocupar el último cupo entre la lectura y el commit.
+      // La pausa de seguridad debe sobrevivir también a ese rechazo atómico.
+      if(error instanceof Error && error.message.includes('WA_WORK_CAPACITY'))await pauseAtCapacity();
+      throw error;
+    }
     return {status:'observed',peerKey};
   }
   /** @param {{peerKey:string}} input */
@@ -212,7 +252,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     const result=await batch([s(`UPDATE sarin_wa_contexts SET acceptance_event_id=pending_acceptance_event_id,
       accepted_at=MAX(pending_accepted_at,?),consent_expires_at=pending_accepted_at+86400000,
       pending_acceptance_event_id=NULL,pending_accepted_at=NULL
-      WHERE peer_key=? AND paused=0 AND accepted_at IS NULL AND pending_accepted_at+86400000>?
+      WHERE peer_key=? AND paused=0 AND accepted_at IS NULL AND pending_accepted_at+86400000>? AND consent_version='${WHATSAPP_NOTICE_VERSION}'
         AND EXISTS(SELECT 1 FROM sarin_wa_pilot WHERE enabled=1)
         AND EXISTS(SELECT 1 FROM sarin_wa_inbox i JOIN sarin_wa_jobs j ON j.event_id=i.event_id
           WHERE i.event_id=pending_acceptance_event_id AND i.expires_at>? AND j.context_id=sarin_wa_contexts.context_id)
@@ -304,6 +344,23 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     reconcile_next_at=CASE WHEN conflict=1 OR state IN('delivered','read','failed','rejected') OR reconcile_attempts>=3 THEN NULL ELSE ?+60000 END,
     reconcile_token=NULL,reconcile_lease_until=NULL,reconcile_last_result=?,reconcile_updated_at=? WHERE outbox_id=?`,at,result,at,outboxId);
   const api={
+    getWorkRecipient:guarded(/** @param {{jobId:string,epoch:string}} x */async({jobId,epoch})=>{
+      requireThat(randomId(jobId)&&randomId(epoch));
+      const rows=await read(`SELECT i.waba_id AS wabaId,i.business_phone AS 'from',i.peer_phone AS 'to'
+        FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+        WHERE j.job_id=? AND j.epoch=? AND j.expires_at>? AND i.expires_at>?`,jobId,epoch,clock(),clock());
+      return /** @type {import('./work-contracts.js').Recipient|null} */(rows[0]??null);
+    }),
+    getReconciliationRecipient:guarded(/** @param {{wabaId:string,from:string,to?:string}} x */async({wabaId,from,to})=>{
+      requireThat(/^[1-9]\d{0,31}$/.test(wabaId)&&phone(from)&&(to===undefined||phone(to)));const at=clock();
+      const rows=await read(`SELECT i.waba_id AS wabaId,i.business_phone AS 'from',i.peer_phone AS 'to'
+        FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id JOIN sarin_wa_inbox i ON i.event_id=j.event_id
+        WHERE ${LOOKUP_LIVE} AND o.conflict=0 AND o.state IN('sending','accepted','sent','send_uncertain')
+          AND ((o.reconcile_state='pending' AND o.reconcile_next_at<=?) OR o.reconcile_state='idle')
+          AND i.waba_id=? AND i.business_phone=? AND (? IS NULL OR i.peer_phone=?)
+        ORDER BY COALESCE(o.reconcile_next_at,o.created_at),o.outbox_id LIMIT 1`,at,at,wabaId,from,to??null,to??null);
+      return /** @type {import('./work-contracts.js').Recipient|null} */(rows[0]??null);
+    }),
     getPilot:guarded(async()=>{
       const pilot=(await read('SELECT enabled,revision,activation_at FROM sarin_wa_pilot WHERE id=1'))[0];
       requireThat(pilot,'work_unavailable',503);return pilot;
@@ -427,7 +484,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       requireThat(['completed','out_of_scope','answered','blocked','fallback'].includes(x.outcome));return output(x,'reply',x.reply,null,null);
     }),
     createFixedReply:guarded(async(x)=>{
-      requireThat(['notice','accepted'].includes(x.purpose)&&id(x.version)&&typeof x.hash==='string'&&/^[a-f0-9]{64}$/.test(x.hash));
+      requireThat(['notice','accepted'].includes(x.purpose)&&x.version===WHATSAPP_NOTICE_VERSION&&typeof x.hash==='string'&&/^[a-f0-9]{64}$/.test(x.hash));
       return output(x,x.purpose,x.text,x.version,x.hash);
     }),
     deferWork:guarded(async(x)=>{
@@ -453,7 +510,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       const rows=await read(`UPDATE sarin_wa_jobs SET token=?,lease_until=? WHERE job_id IN(
         SELECT j.job_id ${FROM} JOIN sarin_wa_outbox o ON o.job_id=j.job_id WHERE j.job_id=? AND j.epoch=?
         AND j.state='ready' AND o.state='ready' AND o.started_at IS NULL AND (j.lease_until IS NULL OR j.lease_until<=t.at)
-        AND ${LIVE}) RETURNING job_id`,x.token,at+LEASE,at,x.jobId,x.epoch);
+        AND ${LIVE} AND (o.purpose='reply' OR o.version='${WHATSAPP_NOTICE_VERSION}')) RETURNING job_id`,x.token,at+LEASE,at,x.jobId,x.epoch);
       if(!rows[0])return {status:'busy'};
       const o=(await read('SELECT outbox_id FROM sarin_wa_outbox WHERE job_id=?',x.jobId))[0];
       return {status:'claimed',outboxId:o.outbox_id};
@@ -463,6 +520,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       const o=(await read('SELECT * FROM sarin_wa_outbox WHERE outbox_id=?',x.outboxId))[0];requireThat(o,'work_denied',409);
       const ownX={jobId:o.job_id,token:x.token};
       const result=await batch([permission(ownX,at,"'ready'",o.purpose==='accepted'?'confirm':o.purpose!=='notice'),
+        guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND (purpose='reply' OR version=?))`,[x.outboxId,WHATSAPP_NOTICE_VERSION]),
         ...(x.recipient?[guard(`EXISTS(SELECT 1 FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
           WHERE j.job_id=? AND i.waba_id=? AND i.business_phone=? AND i.peer_phone=?)`,[o.job_id,x.recipient.wabaId,x.recipient.from,x.recipient.to])]:[]),
         guard(`EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE outbox_id=? AND state='ready' AND started_at IS NULL AND expires_at>?)`,[x.outboxId,at]),

@@ -129,3 +129,27 @@ test('ausente y fallo inesperado devuelven errores acotados sin SQL ni secretos'
   const f=await setup(waFixture({getPeer:async()=>null}));assert.equal((await f.get(`/peers/${peerKey}`)).status,404);
   f.store.getPeer=async()=>{throw Error('SQL PRIVATE_SECRET');};const response=await f.get(`/peers/${peerKey}`);assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/SQL|PRIVATE_SECRET/);
 }));
+
+test('paginación acepta cursor opaco y mantiene cien resultados con proyección privada',async()=>fixture(async()=>{
+ const rows=Array.from({length:100},(_,index)=>({...row,peer_key:index.toString(16).padStart(64,'0')}));
+ const nextKey=rows.at(-1).peer_key,token='wa1_'+Buffer.from(nextKey).toString('base64url'),calls=[];
+ const f=await setup(waFixture({listPeers:async value=>{calls.push(value);return value.cursor?{peers:[{...row,peer_key:'f'.repeat(64)}],cursor:null}:{peers:rows,cursor:nextKey};}}));
+ let response=await f.get('/peers');assert.equal(response.status,200);let data=await response.json();
+ assert.equal(data.items.length,100);assert.equal(data.nextCursor,token);assert.notEqual(data.nextCursor,nextKey);assert.doesNotMatch(JSON.stringify(data),/PRIVATE_|573000000001/);
+ response=await f.get('/peers?cursor='+encodeURIComponent(data.nextCursor));assert.equal(response.status,200);data=await response.json();
+ assert.equal(data.items.length,1);assert.equal(data.nextCursor,null);assert.deepEqual(calls,[{limit:100,cursor:''},{limit:100,cursor:nextKey}]);
+}));
+
+test('cursor inválido duplicado o con parámetros extra se rechaza antes del store',async()=>fixture(async()=>{
+ const f=await setup(),valid='wa1_'+Buffer.from('a'.repeat(64)).toString('base64url');
+ for(const query of ['cursor=','cursor='+peerKey,'cursor='+encodeURIComponent('+573000000001'),'cursor=wa1_bad','cursor='+valid+'&cursor='+valid,'cursor='+valid+'&limit=1000','limit=100','cursor=wa1_'+Buffer.from('z'.repeat(64)).toString('base64url')]){
+  assert.equal((await f.get('/peers?'+query)).status,400,query);
+ }
+ assert.equal((await f.get('/peers/'+peerKey+'?cursor='+valid)).status,400);assert.deepEqual(f.store.calls,[]);
+}));
+
+test('cursor de salida inconsistente falla cerrado sin divulgar datos internos',async()=>fixture(async()=>{
+ for(const cursor of ['PRIVATE_RAW_PHONE','+573000000001','f'.repeat(64)]){
+  const f=await setup(waFixture({listPeers:async()=>({peers:[row],cursor})}));const response=await f.get('/peers');assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/PRIVATE_|573000000001/);
+ }
+}));
