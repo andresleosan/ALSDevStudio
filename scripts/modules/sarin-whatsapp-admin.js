@@ -43,7 +43,7 @@ export function createWhatsAppAdmin({request,fail}){
   const visible=()=>ready && active && inViewport && document.visibilityState==='visible';
   /** @param {string} message */
   const announce=message=>{status.textContent=message;};
-  const disable=()=>{panel.querySelectorAll('button[data-wa-action]').forEach(button=>{if(button instanceof HTMLButtonElement)button.disabled=pending || !fresh;});};
+  const disable=()=>{panel.querySelectorAll('button[data-wa-action]').forEach(button=>{if(button instanceof HTMLButtonElement)button.disabled=pending || !fresh || button.hasAttribute('data-wa-unavailable');});};
   const scrollRegion=()=>{if(matchMedia('(min-width:1280px)').matches && detail.scrollHeight>detail.clientHeight+1)detail.tabIndex=0;else detail.removeAttribute('tabindex');};
   window.addEventListener('resize',scrollRegion);
   if(typeof ResizeObserver==='function')new ResizeObserver(scrollRegion).observe(detail);
@@ -62,8 +62,11 @@ export function createWhatsAppAdmin({request,fail}){
     if(!revision(value.revision) || typeof value.enabled!=='boolean')throw Error('El estado del piloto no es válido.');
     const key=JSON.stringify(value);if(pilot && JSON.stringify(pilot)===key)return;pilot=value;
     pilotNode.replaceChildren(element('p',value.enabled?'Piloto privado activo':'Piloto apagado. Sarin no responderá automáticamente.','wa-pilot-state'),element('p',`Actualizado: ${date(value.updatedAt)} (Colombia).`,'admin-note'));
-    // La activación requiere el recorrido del titular; Staff sólo permite apagar el piloto.
-    if(value.enabled){const control=button('Apagar piloto',()=>mutate('pilot',{enabled:false,revision:value.revision},'Piloto apagado. Sarin no responderá automáticamente.'));control.className='admin-danger';pilotNode.append(control);}
+    if(value.recoveryBlockedUntil>Date.now())pilotNode.append(element('p',`Envíos bloqueados tras restaurar datos, hasta ${date(value.recoveryBlockedUntil)} (Colombia). Activar el piloto no abre este bloqueo.`,'admin-note'));
+    pilotNode.append(element('p','La activación no garantiza una respuesta: depende de la disponibilidad del servicio, la aceptación y un mensaje nuevo.','admin-note'));
+    if(!value.enabled && value.repliesEnabled!==true)pilotNode.append(element('p','Respuestas deshabilitadas en este entorno. No se puede activar el piloto.','admin-note'));
+    const control=button(value.enabled?'Apagar piloto':'Activar piloto',()=>mutate('pilot',{enabled:!value.enabled,revision:value.revision},value.enabled?'Piloto apagado. Sarin no responderá automáticamente.':'Piloto activado. La aceptación y un mensaje nuevo siguen siendo necesarios; no se procesarán mensajes anteriores.'));
+    control.className=value.enabled?'admin-danger':'admin-primary';control.toggleAttribute('data-wa-unavailable',!value.enabled && value.repliesEnabled!==true);pilotNode.append(control);
   }
   /** @param {Record<string,any>[]} items */
   function renderList(items){

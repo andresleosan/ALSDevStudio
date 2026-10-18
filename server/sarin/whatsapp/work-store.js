@@ -31,11 +31,12 @@ function requireThat(test, code='invalid_request', status=400) { if (!test) thro
 const LIVE = `p.enabled=1 AND p.epoch=j.epoch AND c.context_id=j.context_id AND c.revision=j.peer_revision
   AND c.paused=0 AND j.expires_at>t.at AND i.expires_at>t.at AND c.last_inbound_at>t.at-86400000
   AND i.sent_at>MAX(c.activation_at,p.activation_at) AND i.created_at>MAX(c.activation_at,p.activation_at)`;
-const CONSENT_PROOF = `c.accepted_at IS NOT NULL AND c.consent_expires_at>t.at
+const CONSENT_EVIDENCE = `c.accepted_at IS NOT NULL
   AND c.acceptance_event_id IS NOT NULL AND EXISTS(SELECT 1 FROM sarin_wa_consent_proofs n
     WHERE n.acceptance_event_id=c.acceptance_event_id AND n.notice_id=c.consent_notice_id AND n.peer_key=c.peer_key
       AND n.accepted_at=c.accepted_at AND n.consent_expires_at=c.consent_expires_at AND n.expires_at>t.at
       AND n.version=c.consent_version AND n.hash=c.consent_hash AND n.conflict=0)`;
+const CONSENT_PROOF = `(${CONSENT_EVIDENCE}) AND c.consent_expires_at>t.at`;
 const CONSENT = `(${CONSENT_PROOF}) AND c.accepted_at<i.sent_at AND c.accepted_at<i.received_at AND c.acceptance_event_id<>j.event_id AND j.input_kind='text'`;
 const CONFIRM = `(${CONSENT_PROOF}) AND c.acceptance_event_id=j.event_id`;
 const FROM = `FROM sarin_wa_jobs j JOIN sarin_wa_inbox i ON i.event_id=j.event_id
@@ -45,6 +46,31 @@ const UNBLOCKED = `NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.peer_key=j
   AND (j.deferred_reason IS NULL OR (j.deferred_reason='waiting_consent' AND ((${CONSENT}) OR (${CONFIRM})))
     OR (j.deferred_reason='waiting_notice' AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.context_id=j.context_id AND n.purpose='notice' AND n.delivered_at IS NOT NULL))
     OR j.deferred_reason='waiting_delivery')`;
+
+// Proyección compartida de Staff: no devuelve teléfonos ni acredita consentimiento sólo por una fecha.
+// El fragmento requiere el contexto c y un único reloj t.at para lista y detalle.
+const PEER_SUMMARY = `c.peer_key,c.paused,c.revision,c.context_id,c.last_inbound_at,
+  COALESCE((SELECT CASE WHEN length(i.peer_phone)>=7 THEN '*** '||substr(i.peer_phone,-4) ELSE '***' END
+    FROM sarin_wa_inbox i WHERE i.peer_key=c.peer_key AND i.expires_at>t.at
+    ORDER BY i.received_at DESC,i.event_id DESC LIMIT 1),'***') AS masked_phone,
+  MAX(c.activation_at,c.last_inbound_at,
+    COALESCE((SELECT MAX(v.observed_at) FROM sarin_wa_control_events v WHERE v.peer_key=c.peer_key),0),
+    COALESCE((SELECT MAX(MAX(o.created_at,COALESCE(o.started_at,0),COALESCE(o.delivered_at,0),COALESCE(o.reconcile_updated_at,0)))
+      FROM sarin_wa_outbox o WHERE o.peer_key=c.peer_key),0)) AS updated_at,
+  CASE WHEN (${CONSENT_EVIDENCE}) THEN CASE WHEN c.consent_expires_at>t.at THEN 'accepted' ELSE 'expired' END
+    WHEN c.paused=1 AND c.accepted_at IS NULL AND EXISTS(SELECT 1 FROM sarin_wa_control_events v
+      WHERE v.peer_key=c.peer_key AND v.context_id=c.context_id AND v.applied=1 AND v.expires_at>t.at
+        AND v.sent_at>c.activation_at AND v.classification IN('stop','human','media')) THEN 'revoked'
+    WHEN c.paused=0 AND c.accepted_at IS NULL AND c.pending_acceptance_event_id IS NOT NULL
+      AND c.pending_accepted_at+86400000>t.at
+      AND EXISTS(SELECT 1 FROM sarin_wa_control_events v WHERE v.event_id=c.pending_acceptance_event_id
+        AND v.peer_key=c.peer_key AND v.context_id=c.context_id AND v.applied=1 AND v.classification='accept' AND v.expires_at>t.at)
+      AND EXISTS(SELECT 1 FROM sarin_wa_outbox n WHERE n.outbox_id=c.consent_notice_id AND n.context_id=c.context_id
+        AND n.purpose='notice' AND n.version=c.consent_version AND n.hash=c.consent_hash
+        AND n.started_at<=c.pending_accepted_at AND n.expires_at>t.at AND n.conflict=0
+        AND n.state IN('sending','accepted','sent','delivered','read')) THEN 'pending_delivery'
+    ELSE 'pending' END AS consent_status,
+  CASE WHEN (${CONSENT_EVIDENCE}) THEN c.consent_expires_at ELSE NULL END AS consent_expires_at`;
 
 /** @param {{db:Database,now?:()=>number,limits?:Partial<typeof DEFAULTS>}} options */
 export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
@@ -278,6 +304,10 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     reconcile_next_at=CASE WHEN conflict=1 OR state IN('delivered','read','failed','rejected') OR reconcile_attempts>=3 THEN NULL ELSE ?+60000 END,
     reconcile_token=NULL,reconcile_lease_until=NULL,reconcile_last_result=?,reconcile_updated_at=? WHERE outbox_id=?`,at,result,at,outboxId);
   const api={
+    getPilot:guarded(async()=>{
+      const pilot=(await read('SELECT enabled,revision,activation_at FROM sarin_wa_pilot WHERE id=1'))[0];
+      requireThat(pilot,'work_unavailable',503);return pilot;
+    }),
     getSendClosure:guarded(/** @returns {Promise<import('./work-contracts.js').SendClosure>} */async()=>{
       const at=clock();const closures=await read(`SELECT scope,period_key,period_end_at FROM sarin_wa_send_closures
         WHERE period_end_at>? AND ((scope='day' AND period_key=?) OR (scope='month' AND period_key=?))`,at,periods(at).day,periods(at).month);
@@ -518,18 +548,17 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
     resumePeer:guarded(async(x)=>control(x,false)),
     listPeers:guarded(async({limit=100,cursor=''}={})=>{
       requireThat(Number.isInteger(limit)&&limit>0&&limit<=500&&(cursor===''||id(cursor)));
-      const rows=await read(`SELECT c.peer_key,c.paused,c.revision,c.context_id,c.last_inbound_at,
-        CASE WHEN c.consent_expires_at>? THEN c.consent_expires_at ELSE NULL END AS consent_expires_at
-        FROM sarin_wa_contexts c WHERE c.peer_key>? ORDER BY c.peer_key LIMIT ?`,clock(),cursor,limit);
+      const rows=await read(`SELECT ${PEER_SUMMARY} FROM sarin_wa_contexts c CROSS JOIN (SELECT ? AS at) t
+        WHERE c.peer_key>? ORDER BY c.peer_key LIMIT ?`,clock(),cursor,limit);
       return {peers:rows,cursor:rows.length===limit?rows.at(-1).peer_key:null};
     }),
     getPeer:guarded(async({peerKey})=>{
       requireThat(id(peerKey));const at=clock();
-      const peer=(await read(`SELECT peer_key,paused,revision,context_id,last_inbound_at,
-        CASE WHEN consent_expires_at>? THEN consent_expires_at ELSE NULL END AS consent_expires_at FROM sarin_wa_contexts WHERE peer_key=?`,at,peerKey))[0];
+      const peer=(await read(`SELECT ${PEER_SUMMARY} FROM sarin_wa_contexts c CROSS JOIN (SELECT ? AS at) t
+        WHERE c.peer_key=?`,at,peerKey))[0];
       if(!peer)return null;
-      const events=await read(`SELECT event_id,kind,media_type,text,sent_at FROM sarin_wa_inbox WHERE peer_key=? AND expires_at>? ORDER BY received_at DESC LIMIT 20`,peerKey,at);
-      const outputs=await read(`SELECT outbox_id,purpose,state,text,delivered_at,conflict,reconcile_state,reconcile_attempts,reconcile_next_at,reconcile_last_result,
+      const events=await read(`SELECT event_id,kind,media_type,text,sent_at,expires_at FROM sarin_wa_inbox WHERE peer_key=? AND expires_at>? ORDER BY received_at DESC LIMIT 20`,peerKey,at);
+      const outputs=await read(`SELECT outbox_id,purpose,state,text,created_at,started_at,delivered_at,expires_at,conflict,reconcile_state,reconcile_attempts,reconcile_next_at,reconcile_last_result,reconcile_updated_at,
         (started_at IS NOT NULL AND provider_id IS NOT NULL AND conflict=0 AND reconcile_attempts<3
           AND state IN('sending','accepted','sent','send_uncertain') AND reconcile_state IN('idle','pending','claimed')
           AND created_at>=(SELECT replay_floor_at FROM sarin_wa_state WHERE id=1)) AS reconcile_available FROM sarin_wa_outbox WHERE peer_key=? AND expires_at>? ORDER BY created_at DESC LIMIT 20`,peerKey,at);

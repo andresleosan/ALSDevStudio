@@ -53,8 +53,8 @@ async function pageFor(options={},authOptions={}){
 const peerKey='peer-synthetic-1';
 const peer={peerKey,maskedPhone:'+57 ••• ••• 0142',revision:7,paused:true,updatedAt:now,consent:{status:'pending',expiresAt:null}};
 const waDetail={...peer,requiresFreshMessage:true,events:[{id:'input-1',kind:'message',role:'user',content:'<img src=x onerror="window.pwned=true"> Proyecto ficticio',at:now,expiresAt:now+24000},{id:'echo-1',kind:'echo',content:'CUERPO PRIVADO DEL ECO',at:now,expiresAt:now+24000}],outputs:[{id:'output-1',status:'send_uncertain',updatedAt:now,canReconcile:true,reconciliation:{status:'idle',attempts:0,nextAt:null}},{id:'output-2',status:'send_uncertain',updatedAt:now,canReconcile:false,reconciliation:{status:'exhausted',attempts:3,nextAt:null}}]};
-async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitReady=true}={}){
-  const requests=[];let revision=7,paused=true,enabled=true;let release;
+async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitReady=true,initialEnabled=true,repliesEnabled=true,recoveryBlockedUntil=null}={}){
+  const requests=[];let revision=7,paused=true,enabled=initialEnabled,pilotRevision=3;let release;
   await page.addInitScript(()=>{let visibility='visible';Object.defineProperty(document,'visibilityState',{get:()=>visibility});window.setTestVisibility=value=>{visibility=value;document.dispatchEvent(new Event('visibilitychange'));};});
   await page.route('**/api/control-sarin/**',async route=>{
     const req=route.request(),url=new URL(req.url());if(url.pathname.includes('/auth/'))return route.fallback();
@@ -64,7 +64,7 @@ async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitRe
     if(path.startsWith('conversations'))return route.fulfill({json:path==='conversations'?{items:[],nextCursor:null}:detail});
     if(path==='whatsapp/peers' && req.method()==='GET'){
       if(failPoll && requests.filter(r=>r.url.pathname.endsWith('/whatsapp/peers')).length>2)return route.fulfill({status:503,json:{error:{code:'unavailable'}}});
-      return route.fulfill({json:{pilot:{enabled,revision:3,updatedAt:now},items:[{...peer,revision,paused}]}});
+      return route.fulfill({json:{pilot:{enabled,revision:pilotRevision,updatedAt:now,repliesEnabled,recoveryBlockedUntil},items:[{...peer,revision,paused}]}});
     }
     if(path===`whatsapp/peers/${peerKey}` && req.method()==='GET'){
       if(delayDetail)await new Promise(resolve=>{release=resolve;});
@@ -74,7 +74,7 @@ async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitRe
       if(conflict){revision=8;paused=false;return route.fulfill({status:409,json:{error:{code:'stale_revision'}}});}
       revision++;paused=req.postDataJSON().action==='pause';return route.fulfill({json:{ok:true}});
     }
-    if(path==='whatsapp/pilot' && req.method()==='POST'){enabled=req.postDataJSON().enabled;return route.fulfill({json:{ok:true}});}
+    if(path==='whatsapp/pilot' && req.method()==='POST'){enabled=req.postDataJSON().enabled;pilotRevision++;return route.fulfill({json:{ok:true}});}
     if(path==='whatsapp/outbox/output-1/reconcile' && req.method()==='POST')return route.fulfill({status:202,json:{status:'pending',attempts:0,nextAt:now+60000}});
     throw Error(`Ruta inesperada: ${req.method()} ${path}`);
   });
@@ -197,4 +197,16 @@ test('409 con recarga fallida no afirma actualización ni habilita otra mutació
   await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-status').textContent.includes('otra operación'));
   assert.doesNotMatch(await page.locator('#wa-status').innerText(),/Actualizamos/);assert.match(await page.locator('#wa-status').innerText(),/estado actual/);
   assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).isDisabled(),true);assert.equal(waRequests(requests).filter(r=>r.method==='POST').length,1);
+});
+
+test('Activar piloto usa revisión y no afirma disponibilidad; cierres de restauración permanecen visibles',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page,{initialEnabled:false,recoveryBlockedUntil:now+86400000});
+  await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.getByRole('button',{name:'Activar piloto',exact:true}).click();await page.getByRole('button',{name:'Apagar piloto',exact:true}).waitFor();
+  assert.deepEqual(waRequests(requests).filter(r=>r.method==='POST').map(r=>r.body),[{enabled:true,revision:3}]);assert.match(await page.locator('#wa-pilot').innerText(),/Envíos bloqueados tras restaurar datos/);assert.match(await page.locator('#wa-pilot').innerText(),/no garantiza/);
+  assert.equal(await page.getByRole('button',{name:/restablecer|devolver cupos|abrir cierre/i}).count(),0);
+});
+
+test('Activar piloto permanece deshabilitado sin permiso del entorno; no emite POST',async t=>{
+  const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page,{initialEnabled:false,repliesEnabled:false});await page.getByRole('button',{name:'WhatsApp',exact:true}).click();
+  await page.getByRole('button',{name:'Activar piloto',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Activar piloto',exact:true}).isDisabled(),true);assert.match(await page.locator('#wa-pilot').innerText(),/Respuestas deshabilitadas/);assert.equal(waRequests(requests).filter(r=>r.method==='POST').length,0);
 });

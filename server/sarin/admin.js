@@ -3,6 +3,7 @@ import { authenticateSarinAdmin, handleSarinAdminAuth, AdminError, adminError, a
 import { readBoundedJson } from './policy.js';
 import { handleSarinSession, PRIVATE_SESSION_COOKIE } from './sessions.js';
 import { handleSarin } from './handler.js';
+import { handleWhatsAppAdmin } from './whatsapp/admin.js';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SERVICES = ['website', 'store', 'application', 'chatbot'];
@@ -80,7 +81,7 @@ function privateChatResponse(response) {
  * Solo options internas; la petición nunca puede inyectar store/reloj.
  * @param {Request} request
  * @param {Record<string, any>} env
- * @param {{now?:()=>number, store?:any, fetch?:typeof fetch, authFetch?:typeof fetch, quota?:any}} [options]
+ * @param {{now?:()=>number, store?:any, whatsappStore?:any, fetch?:typeof fetch, authFetch?:typeof fetch, quota?:any}} [options]
  */
 export async function handleSarinAdmin(request, env, options = {}) {
   try {
@@ -107,6 +108,15 @@ export async function handleSarinAdmin(request, env, options = {}) {
       return privateChatResponse(response);
     }
     if (!['GET', 'POST'].includes(request.method)) throw new AdminError(405, 'method_not_allowed');
+    if (/^\/api\/control-sarin\/whatsapp(?:\/|$)/.test(url.pathname)) {
+      const now=(options.now || Date.now)();
+      if(request.method==='POST'){
+        if(request.headers.get('Origin')!==url.origin)throw new AdminError(403,'origin_rejected');
+        if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('Content-Type') || '') || request.headers.has('Content-Encoding'))throw new AdminError(400,'invalid_request');
+        await verifyCsrf(request.headers.get('X-Sarin-CSRF'),env.SARIN_ADMIN_CSRF_SECRET,admin,now);
+      }
+      return handleWhatsAppAdmin(request,env,{admin,actor:await actorId(admin),now,store:options.whatsappStore});
+    }
     const match = /^\/api\/control-sarin\/(bootstrap|conversations)(?:\/([^/]+))?\/?$/.exec(url.pathname);
     if (!match || (match[1] === 'bootstrap' && match[2]) || (match[2] && !UUID.test(match[2]))) throw new AdminError(404, 'not_found');
     if (request.method === 'POST' && (match[1] !== 'conversations' || !match[2])) throw new AdminError(405, 'method_not_allowed');

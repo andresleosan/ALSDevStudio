@@ -8,6 +8,8 @@
     "SARIN_ADMIN_ENABLED": "true",
     "SARIN_PRIVATE_TEST_ENABLED": "true",
     "SARIN_WHATSAPP_INGRESS_ENABLED": "true",
+    "SARIN_WHATSAPP_REPLIES_ENABLED": "false",
+    "SARIN_WHATSAPP_SEND_ENABLED": "false",
     "SARIN_FIREBASE_PROJECT_ID": "alsdevstudio",
     "SARIN_FIREBASE_API_KEY": "AIzaSyBLHteQ8Nh9Iz-fMiC2MYbxh8AfNk2ztu0",
     "SARIN_ADMIN_UID": "uWeBDCOzKrTWAl6tOjMhNuDVP8X2",
@@ -24,6 +26,9 @@
       "migrations_dir": "migrations/sarin"
     }
   ],
+  "queues": {
+    "producers": [{ "binding": "SARIN_WHATSAPP_QUEUE", "queue": "als-sarin-whatsapp" }]
+  },
   "env": {
     "preview": {
       "vars": {
@@ -32,12 +37,15 @@
         "SARIN_ADMIN_ENABLED": "false",
         "SARIN_PRIVATE_TEST_ENABLED": "false",
         "SARIN_WHATSAPP_INGRESS_ENABLED": "false",
+        "SARIN_WHATSAPP_REPLIES_ENABLED": "false",
+        "SARIN_WHATSAPP_SEND_ENABLED": "false",
         "SARIN_INPUT_PRICE_MICROS": "300000",
         "SARIN_OUTPUT_PRICE_MICROS": "1200000",
         "SARIN_DAILY_BUDGET_MICROS": "1000000",
         "SARIN_MONTHLY_BUDGET_MICROS": "10000000"
       },
-      "d1_databases": []
+      "d1_databases": [],
+      "queues": { "producers": [] }
     }
   }
 }
