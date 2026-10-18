@@ -1,6 +1,7 @@
 // @ts-check
 import { readYCloudWebhook, YCloudWebhookError } from './ycloud-webhook.js';
-import { createWhatsAppIngressStore, WhatsAppIngressError } from './ingress-store.js';
+import { WhatsAppWorkError } from './work-store.js';
+import { createWhatsAppIngressStore, getWhatsAppReplyStore, WhatsAppIngressError } from './ingress-store.js';
 
 const MAX_AGE = 8 * 60 * 60 * 1000;
 const MAX_FUTURE = 5 * 60 * 1000;
@@ -62,7 +63,7 @@ async function committed(operation, timeoutMs, signal) {
  * Dependencias sustituibles sólo desde código interno de pruebas.
  * @param {Request} request
  * @param {Record<string,any>} env
- * @param {{now?:()=>number,store?:Pick<ReturnType<typeof createWhatsAppIngressStore>,'capture'>,commitTimeoutMs?:number}} [options]
+ * @param {{now?:()=>number,store?:Pick<ReturnType<typeof createWhatsAppIngressStore>,'capture'>,commitTimeoutMs?:number,notifyWork?:(hint:{jobId:string,epoch:string})=>unknown}} [options]
  */
 export async function handleWhatsAppIngress(request, env, options = {}) {
   try {
@@ -72,22 +73,42 @@ export async function handleWhatsAppIngress(request, env, options = {}) {
     const timeout = options.commitTimeoutMs ?? 2000;
     if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 2000) throw unavailable();
     const event = await readYCloudWebhook(request, { secret: config.secret, now: () => at });
-    // Sin outbox local no se puede acreditar que un estado pertenece al piloto.
-    if (event.kind === 'ignored' || event.kind === 'status') return response({ ok: true });
+    if (event.kind === 'ignored') return response({ ok: true });
+    const repliesEnabled=env.SARIN_WHATSAPP_REPLIES_ENABLED==='true';
+    /** La funcion de Pages adjunta la publicacion a waitUntil; el cron rescata fallos.
+     * @param {ReturnType<import('./work-store.js').createWhatsAppWorkStore>|null} replies */
+    async function notify(replies) {
+      if(!replies||!options.notifyWork)return;
+      const hints=await replies.listDispatchable({limit:10});
+      for(const hint of hints){try{void Promise.resolve(options.notifyWork(hint)).catch(()=>{});}catch{/* El commit ya es durable. */}}
+    }
+    if(event.kind==='status') {
+      if(!repliesEnabled||event.createdAt<config.since||at-event.createdAt>MAX_AGE||event.createdAt-at>MAX_FUTURE)return response({ok:true});
+      await committed(async()=>{
+        const replies=await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled});
+        if(!replies)return;
+        await replies.applyStatus({eventId:event.eventId,providerId:event.messageId,status:/** @type {import('./work-contracts.js').DeliveryObservation['status']} */(event.status),at:event.createdAt,
+          ...(event.externalId===undefined?{}:{externalId:event.externalId}),...(event.wamid===undefined?{}:{wamid:event.wamid}),
+          ...(event.from===undefined?{}:{from:event.from}),...(event.to===undefined?{}:{to:event.to}),...(event.wabaId===undefined?{}:{wabaId:event.wabaId})});
+        await notify(replies);
+      },timeout,request.signal);
+      return response({ok:true});
+    }
     const business = event.kind === 'inbound' ? event.to : event.from;
     const peer = event.kind === 'inbound' ? event.from : event.to;
     if (business !== config.business || event.wabaId !== config.wabaId || !config.peers.has(peer)
       || [event.createdAt, event.sentAt].some(value => value < config.since || at - value > MAX_AGE || value - at > MAX_FUTURE)) {
       return response({ ok: true });
     }
-    const store = options.store || createWhatsAppIngressStore({ db: env.SARIN_DB, now });
+    const store = options.store || createWhatsAppIngressStore({ db: env.SARIN_DB, now, repliesEnabled });
     const saved = await committed(() => store.capture(event), timeout, request.signal);
     if (!saved || !['captured', 'duplicate'].includes(saved.status)) throw unavailable();
+    if(repliesEnabled&&options.notifyWork)await notify(await getWhatsAppReplyStore({db:env.SARIN_DB,now,repliesEnabled}));
     return response({ ok: true });
   } catch (error) {
     // Nunca propagar mensajes arbitrarios de D1 ni cuerpos/cabeceras del proveedor.
     if (error instanceof WhatsAppIngressError && error.code === 'stale_event') return response({ ok: true });
-    if (error instanceof YCloudWebhookError || error instanceof WhatsAppIngressError) {
+    if (error instanceof YCloudWebhookError || error instanceof WhatsAppIngressError || error instanceof WhatsAppWorkError) {
       return response({ error: { code: error.code } }, error.status);
     }
     return response({ error: { code: 'ingress_unavailable' } }, 503);

@@ -157,7 +157,7 @@ function instant(value) {
 
 /**
  * @typedef {{kind:'ignored'}} IgnoredEvent
- * @typedef {{kind:'status',eventId:string,createdAt:number,messageId:string,status:string,wamid?:string,externalId?:string}} StatusEvent
+ * @typedef {{kind:'status',eventId:string,createdAt:number,messageId:string,status:string,wamid?:string,externalId?:string,from?:string,to?:string,wabaId?:string}} StatusEvent
  * @typedef {{kind:'inbound'|'echo',eventId:string,createdAt:number,messageId:string,wamid:string,wabaId:string,from:string,to:string,sentAt:number,mediaType:string,text?:string}} MessageEvent
  * @typedef {IgnoredEvent|StatusEvent|MessageEvent} YCloudEvent
  */
@@ -171,8 +171,13 @@ function normalize(event) {
     const message = event.whatsappMessage;
     if (!record(message) || !identifier(message.id) || !STATUSES.has(message.status)
       || (Object.hasOwn(message, 'wamid') && !identifier(message.wamid, 512))
-      || (Object.hasOwn(message, 'externalId') && !reference(message.externalId))) return fail('invalid_event');
-    return { kind: 'status', ...base, messageId: message.id, status: message.status,
+      || (Object.hasOwn(message, 'externalId') && !reference(message.externalId))
+      || ['from','to'].some(key=>Object.hasOwn(message,key)&&(typeof message[key]!=='string'||!/^\+[1-9]\d{1,14}$/.test(message[key])))
+      || (Object.hasOwn(message,'wabaId')&&(typeof message.wabaId!=='string'||! /^[1-9]\d{0,31}$/.test(message.wabaId)))) return fail('invalid_event');
+    return { kind: 'status', ...base,
+      ...(Object.hasOwn(message,'from')?{from:message.from}:{}),
+      ...(Object.hasOwn(message,'to')?{to:message.to}:{}),
+      ...(Object.hasOwn(message,'wabaId')?{wabaId:message.wabaId}:{}), messageId: message.id, status: message.status,
       ...(Object.hasOwn(message, 'wamid') ? { wamid: message.wamid } : {}),
       ...(Object.hasOwn(message, 'externalId') ? { externalId: message.externalId } : {}) };
   }

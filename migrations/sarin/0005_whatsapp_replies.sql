@@ -13,12 +13,13 @@ CREATE TABLE sarin_wa_contexts (
   paused INTEGER NOT NULL DEFAULT 1 CHECK(paused IN(0,1)), revision INTEGER NOT NULL DEFAULT 0,
   activation_at INTEGER NOT NULL DEFAULT 0, last_inbound_at INTEGER NOT NULL DEFAULT 0,
   consent_version TEXT, consent_hash TEXT, consent_notice_id TEXT, acceptance_event_id TEXT,
-  accepted_at INTEGER, consent_expires_at INTEGER, pending_acceptance_event_id TEXT,
+  accepted_at INTEGER, consent_expires_at INTEGER, pending_acceptance_event_id TEXT, pending_accepted_at INTEGER,
   CHECK(consent_expires_at IS NULL OR consent_expires_at <= accepted_at+86400000)
 );
 CREATE TABLE sarin_wa_jobs (
   job_id TEXT PRIMARY KEY, event_id TEXT NOT NULL UNIQUE, peer_key TEXT NOT NULL,
   epoch TEXT NOT NULL, context_id TEXT NOT NULL, peer_revision INTEGER NOT NULL,
+  input_kind TEXT NOT NULL DEFAULT 'text' CHECK(input_kind IN('text','accept')),
   state TEXT NOT NULL DEFAULT 'queued' CHECK(state IN('queued','claimed','inference_started','ready','completed','cancelled','expired','failed','inference_uncertain')),
   token TEXT, lease_until INTEGER, inference_started_at INTEGER, reservation_id TEXT,
   reserved_bytes INTEGER NOT NULL DEFAULT 0 CHECK(reserved_bytes BETWEEN 0 AND 4800),
@@ -57,6 +58,7 @@ CREATE TRIGGER sarin_wa_job_transition BEFORE UPDATE ON sarin_wa_jobs BEGIN
 END;
 CREATE TRIGGER sarin_wa_outbox_transition BEFORE UPDATE ON sarin_wa_outbox BEGIN
   SELECT CASE WHEN OLD.started_at IS NOT NULL AND (NEW.started_at IS NOT OLD.started_at OR NEW.state='ready')
+    OR (OLD.wamid IS NOT NULL AND NEW.wamid IS NOT OLD.wamid)
     OR (OLD.provider_id IS NOT NULL AND NEW.provider_id IS NOT OLD.provider_id)
     OR (OLD.delivered_at IS NOT NULL AND NEW.delivered_at IS NOT OLD.delivered_at)
     OR (OLD.state<>NEW.state AND NOT (
@@ -74,7 +76,8 @@ CREATE TABLE sarin_wa_send_quota (
 CREATE INDEX sarin_wa_send_month ON sarin_wa_send_quota(month_key);
 CREATE TABLE sarin_wa_delivery_observations (
   event_id TEXT PRIMARY KEY, outbox_id TEXT NOT NULL, provider_id TEXT,
-  status TEXT NOT NULL CHECK(status IN('sent','delivered','read','failed')),
+  applied INTEGER NOT NULL DEFAULT 0, conflict INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK(status IN('accepted','sent','delivered','read','failed')),
   observed_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
 );
 CREATE TABLE sarin_wa_audit (
@@ -93,17 +96,36 @@ CREATE TRIGGER sarin_wa_work_capture AFTER INSERT ON sarin_wa_inbox BEGIN
   INSERT INTO sarin_wa_contexts(peer_key,context_id,last_inbound_at)
     VALUES(NEW.peer_key,lower(hex(randomblob(16))),CASE WHEN NEW.kind='inbound' THEN NEW.sent_at ELSE 0 END)
     ON CONFLICT(peer_key) DO UPDATE SET last_inbound_at=MAX(last_inbound_at,excluded.last_inbound_at);
-  -- Protección base; Task 2 añade camino de control independiente de capacidad.
-  UPDATE sarin_wa_contexts SET paused=1,revision=revision+1,
-    accepted_at=NULL,consent_expires_at=NULL
-    WHERE peer_key=NEW.peer_key AND NEW.sent_at>activation_at
-      AND (NEW.kind='echo' OR NEW.media_type<>'text' OR upper(trim(NEW.text)) IN('HUMANO','PARAR','STOP','NO ACEPTO'));
   INSERT INTO sarin_wa_work_guard(code) SELECT 'capacity' WHERE
     (SELECT COUNT(*) FROM sarin_wa_jobs)>=10000 AND EXISTS(
       SELECT 1 FROM sarin_wa_pilot p,sarin_wa_contexts c WHERE p.enabled=1 AND c.peer_key=NEW.peer_key AND c.paused=0);
-  INSERT INTO sarin_wa_jobs(job_id,event_id,peer_key,epoch,context_id,peer_revision,created_at,expires_at)
-    SELECT lower(hex(randomblob(16))),NEW.event_id,NEW.peer_key,p.epoch,c.context_id,c.revision,NEW.received_at,NEW.expires_at
+  INSERT INTO sarin_wa_jobs(job_id,event_id,peer_key,epoch,context_id,peer_revision,input_kind,created_at,expires_at)
+    SELECT lower(hex(randomblob(16))),NEW.event_id,NEW.peer_key,p.epoch,c.context_id,c.revision,COALESCE((SELECT CASE WHEN classification='accept' THEN 'accept' ELSE 'text' END FROM sarin_wa_control_events WHERE event_id=NEW.event_id),'text'),NEW.received_at,NEW.expires_at
     FROM sarin_wa_pilot p,sarin_wa_contexts c WHERE p.enabled=1 AND c.peer_key=NEW.peer_key AND c.paused=0
       AND NEW.kind='inbound' AND NEW.media_type='text' AND NEW.sent_at>MAX(p.activation_at,c.activation_at)
-      AND NEW.created_at>MAX(p.activation_at,c.activation_at);
+      AND NEW.created_at>MAX(p.activation_at,c.activation_at)
+      AND EXISTS(SELECT 1 FROM sarin_wa_control_events v WHERE v.event_id=NEW.event_id AND v.context_id=c.context_id AND v.applied=1 AND v.classification IN('text','accept'));
+END;
+
+-- Recibos minimos independientes del contenido, sin cuerpos ni telefonos.
+CREATE TABLE sarin_wa_control_events (
+  event_id TEXT PRIMARY KEY, message_key TEXT NOT NULL UNIQUE, event_hash TEXT NOT NULL,
+  message_hash TEXT NOT NULL, peer_key TEXT NOT NULL, context_id TEXT NOT NULL,
+  applied INTEGER NOT NULL DEFAULT 0, classification TEXT NOT NULL, sent_at INTEGER NOT NULL, observed_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX sarin_wa_control_expiry ON sarin_wa_control_events(expires_at);
+CREATE TRIGGER sarin_wa_context_invalidate AFTER UPDATE OF revision,context_id ON sarin_wa_contexts
+WHEN OLD.revision<>NEW.revision OR OLD.context_id<>NEW.context_id BEGIN
+  UPDATE sarin_wa_send_quota SET reserved=reserved-(SELECT COUNT(*) FROM sarin_wa_jobs j
+    WHERE j.peer_key=NEW.peer_key AND j.quota_state='reserved' AND j.quota_day=day_key)
+    WHERE day_key IN(SELECT quota_day FROM sarin_wa_jobs WHERE peer_key=NEW.peer_key AND quota_state='reserved');
+  UPDATE sarin_wa_outbox SET state='cancelled' WHERE peer_key=NEW.peer_key AND state='ready';
+  UPDATE sarin_wa_jobs SET
+    state=CASE WHEN state='inference_started' THEN 'inference_uncertain'
+      WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id AND o.started_at IS NOT NULL) THEN 'completed' ELSE 'cancelled' END,
+    quota_state=CASE WHEN quota_state='reserved' THEN 'released' ELSE quota_state END,
+    reserved_bytes=CASE WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id) THEN reserved_bytes ELSE 0 END
+    WHERE peer_key=NEW.peer_key AND state IN('queued','claimed','inference_started','ready');
+  UPDATE sarin_wa_jobs SET quota_state='released',reserved_bytes=CASE WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.job_id=sarin_wa_jobs.job_id) THEN reserved_bytes ELSE 0 END WHERE peer_key=NEW.peer_key AND quota_state='reserved';
 END;

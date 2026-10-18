@@ -211,3 +211,45 @@ test('recuperación impide revivir eventos anteriores aunque el proveedor los fi
   assert.deepEqual(await response.json(), { ok: true });
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM sarin_wa_inbox').get().n, 0);
 });
+
+test('reply_flag_off_suspends_epoch_and_never_backfills_on_reenable',async t=>{
+ const f=await sqliteFixture({whatsapp:true,replies:true});t.after(f.close);
+ const {createWhatsAppWorkStore}=await import('../../server/sarin/whatsapp/work-store.js');
+ const store=createWhatsAppWorkStore({db:f.db,now:()=>at-2000});
+ const config={...env,SARIN_DB:f.db,SARIN_WHATSAPP_REPLIES_ENABLED:'true'};
+ assert.equal((await handle(request(),config)).status,200);
+ const peerKey=f.sqlite.prepare('SELECT peer_key FROM sarin_wa_inbox').get().peer_key;
+ const mode=await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
+ const next=event();next.id='event_off';next.whatsappInboundMessage.id='msg_off';next.whatsappInboundMessage.wamid='wamid.off';
+ assert.equal((await handle(request(next),{...config,SARIN_WHATSAPP_REPLIES_ENABLED:'false'})).status,200);
+ const p=f.sqlite.prepare('SELECT * FROM sarin_wa_pilot').get();assert.equal(p.enabled,0);assert.notEqual(p.epoch,mode.epoch);
+ assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_jobs').get().n,0);
+ assert.equal((await handle(request(next),config)).status,200);assert.equal(f.sqlite.prepare('SELECT enabled FROM sarin_wa_pilot').get().enabled,0);
+});
+test('reply_schema_missing_keeps_capture_without_queue',async t=>{
+ const f=await sqliteFixture({whatsapp:true});t.after(f.close);
+ assert.equal((await handle(request(),{...env,SARIN_DB:f.db,SARIN_WHATSAPP_REPLIES_ENABLED:'true'})).status,200);
+ assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM sarin_wa_inbox').get().n,1);
+});
+test('notifyWork_only_after_commit_with_opaque_queue_contract',async t=>{
+ const f=await sqliteFixture({whatsapp:true,replies:true});t.after(f.close);
+ const {createWhatsAppWorkStore}=await import('../../server/sarin/whatsapp/work-store.js');
+ const store=createWhatsAppWorkStore({db:f.db,now:()=>at-2000}),config={...env,SARIN_DB:f.db,SARIN_WHATSAPP_REPLIES_ENABLED:'true'};
+ await handle(request(),config);const peerKey=f.sqlite.prepare('SELECT peer_key FROM sarin_wa_inbox').get().peer_key;
+ await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
+ const next=event();next.id='event_new';next.whatsappInboundMessage.id='msg_new';next.whatsappInboundMessage.wamid='wamid.new';
+ const hints=[];const response=await handle(request(next),config,{notifyWork(hint){assert.ok(f.sqlite.prepare('SELECT job_id FROM sarin_wa_jobs WHERE job_id=?').get(hint.jobId));hints.push(hint);return Promise.reject(new Error('synthetic queue failure'));}});
+ assert.equal(response.status,200);assert.equal(hints.length,1);assert.deepEqual(Object.keys(hints[0]).sort(),['epoch','jobId']);
+});
+test('linked_status_updates_delivery_without_human_pause',async t=>{
+ const f=await sqliteFixture({whatsapp:true,replies:true});t.after(f.close);
+ const {createWhatsAppWorkStore}=await import('../../server/sarin/whatsapp/work-store.js');
+ const store=createWhatsAppWorkStore({db:f.db,now:()=>at-2000}),config={...env,SARIN_DB:f.db,SARIN_WHATSAPP_REPLIES_ENABLED:'true'};
+ await handle(request(),config);const peerKey=f.sqlite.prepare('SELECT peer_key FROM sarin_wa_inbox').get().peer_key;
+ await store.setPilotMode({enabled:true,expectedRevision:0,actor:'test'});await store.resumePeer({peerKey,expectedRevision:0,actor:'test'});
+ const next=event();next.id='event_status';next.whatsappInboundMessage.id='msg_status';next.whatsappInboundMessage.wamid='wamid.status';await handle(request(next),config);
+ const j=f.sqlite.prepare('SELECT * FROM sarin_wa_jobs').get(),token=crypto.randomUUID();await store.claimGeneration({jobId:j.job_id,epoch:j.epoch,token});
+ const out=await store.createFixedReply({jobId:j.job_id,token,purpose:'notice',text:'Aviso ficticio',version:'v1',hash:'a'.repeat(64)});await store.beginSend({...out,token});await store.finishSend({...out,token,result:{status:'accepted',providerId:'provider_id'}});
+ const status={id:'delivery',type:'whatsapp.message.updated',apiVersion:'v2',createTime:new Date(at).toISOString(),whatsappMessage:{id:'provider_id',status:'read',from:business,to:peer,wabaId:'123456789'}};
+ assert.equal((await handle(request(status),config)).status,200);assert.equal(f.sqlite.prepare('SELECT state FROM sarin_wa_outbox').get().state,'read');assert.equal(f.sqlite.prepare('SELECT paused FROM sarin_wa_contexts').get().paused,0);
+});

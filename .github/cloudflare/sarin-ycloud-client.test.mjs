@@ -222,3 +222,9 @@ test('timeout incluye cuerpo pendiente y cancela su lector', { timeout: 2000 }, 
   assert.equal(cancelled, true);
   assert.equal(s.calls.length, 1);
 });
+
+test('preserves_valid_wamid_without_upgrading_acceptance',async()=>{
+ const s=setup(async()=>json({id:'yc_out_0001',status:'accepted',wamid:'wamid.synthetic+/='}));
+ assert.deepEqual(await s.client.sendText(message),{providerId:'yc_out_0001',status:'accepted',wamid:'wamid.synthetic+/='});
+ for(const wamid of ['',null,'bad\n'])await assert.rejects(setup(async()=>json({id:'yc_out_0001',status:'accepted',wamid})).client.sendText(message),errorIs('invalid_response','uncertain'));
+});

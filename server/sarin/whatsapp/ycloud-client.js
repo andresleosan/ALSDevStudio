@@ -143,6 +143,7 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
       const result = /** @type {Record<string, unknown>} */ (await readResponse(response, controller.signal));
       if (!result || typeof result !== 'object' || Array.isArray(result)
           || !validId(result.id) || typeof result.status !== 'string' || !STATES.has(result.status)
+          || ('wamid' in result && (typeof result.wamid!=='string'||!/^[\x21-\x7e]{1,512}$/.test(result.wamid)))
           || (expected.id !== undefined && result.id !== expected.id)
           || ('from' in result && result.from !== businessPhone)
           || ('to' in result && (!validPhone(result.to) || (expected.to !== undefined && result.to !== expected.to)))
@@ -150,7 +151,7 @@ export function createYCloudClient({ apiKey, businessPhone, sendEnabled = false,
             || (expected.externalId !== undefined && result.externalId !== expected.externalId)))) {
         throw new YCloudClientError('invalid_response', 'uncertain');
       }
-      return { providerId: /** @type {string} */ (result.id), status: result.status };
+      return { providerId: /** @type {string} */ (result.id), status: result.status, ...('wamid' in result?{wamid:/** @type {string} */(result.wamid)}:{}) };
     }
 
     try {

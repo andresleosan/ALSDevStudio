@@ -1,27 +1,13 @@
 // @ts-check
+import { createWhatsAppWorkStore } from './work-store.js';
+import { closed, integer, WhatsAppIngressError, normalizeWhatsAppMessage as normalize, digestWhatsApp as digest } from './ingress-identity.js';
+export { WhatsAppIngressError } from './ingress-identity.js';
 const DAY = 86400000;
-const MAX_TIME = 8640000000000000 - 2 * DAY;
 const encoder = new TextEncoder();
 /** @typedef {{maxInboxRows:number,maxReceipts:number,maxBytes:number,maxPeers:number,perMinute:number,perDay:number,globalPerMinute:number,globalPerDay:number}} Limits */
 /** @type {Readonly<Limits>} */
 const DEFAULTS = Object.freeze({ maxInboxRows: 10000, maxReceipts: 20000, maxBytes: 8 * 1024 * 1024,
   maxPeers: 10, perMinute: 10, perDay: 50, globalPerMinute: 60, globalPerDay: 1000 });
-const FIELDS = ['kind','eventId','createdAt','messageId','wamid','wabaId','from','to','sentAt','mediaType','text'];
-/** @param {unknown} value @returns {value is Record<string,any>} */
-const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-/** @param {unknown} value @param {string[]} keys @returns {value is Record<string,any>} */
-const closed = (value, keys) => object(value) && Object.keys(value).every(key => keys.includes(key));
-/** @param {unknown} value @param {number} [max] @param {number} [min] @returns {value is number} */
-const integer = (value, max = MAX_TIME, min = 0) => typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max;
-/** @param {unknown} value @param {number} [max] @returns {value is string} */
-const id = (value, max = 256) => typeof value === 'string' && value.length > 0 && value.length <= max && /^[\x21-\x7e]+$/.test(value);
-/** @param {unknown} value @returns {value is string} */
-const phone = value => typeof value === 'string' && /^\+[1-9]\d{1,14}$/.test(value);
-
-export class WhatsAppIngressError extends Error {
-  /** @param {number} status @param {string} code */
-  constructor(status, code) { super(code); this.name = 'WhatsAppIngressError'; this.status = status; this.code = code; }
-}
 /** @param {unknown} error */
 function safeError(error) {
   if (error instanceof WhatsAppIngressError) return error;
@@ -33,29 +19,6 @@ function safeError(error) {
   }
   return new WhatsAppIngressError(503, 'ingress_unavailable');
 }
-/** Sólo copia campos normalizados; nunca conserva el objeto ni payload original.
- * @param {unknown} event @param {number} at */
-function normalize(event, at) {
-  if (!closed(event, FIELDS) || !['inbound','echo'].includes(event.kind) || !id(event.eventId)
-      || !id(event.messageId) || !id(event.wamid, 512) || typeof event.wabaId !== 'string' || !/^[1-9]\d{0,31}$/.test(event.wabaId)
-      || !phone(event.from) || !phone(event.to) || !integer(event.createdAt) || !integer(event.sentAt)
-      || event.createdAt > at + 300000 || event.sentAt > at + 300000
-      || typeof event.mediaType !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(event.mediaType)
-      || (event.mediaType === 'text' && (typeof event.text !== 'string' || !event.text.trim()
-        || event.text.length > 1200 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(event.text)))
-      || (event.mediaType !== 'text' && event.text !== undefined)) {
-    throw new WhatsAppIngressError(400, 'invalid_event');
-  }
-  return { kind: event.kind, eventId: event.eventId, createdAt: event.createdAt, messageId: event.messageId,
-    wamid: event.wamid, wabaId: event.wabaId, from: event.from, to: event.to, sentAt: event.sentAt,
-    mediaType: event.mediaType, text: event.mediaType === 'text' ? event.text : null };
-}
-/** @param {string} domain @param {unknown[]} values */
-async function digest(domain, values) {
-  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(JSON.stringify([domain, ...values]))));
-  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
 /**
  * @typedef {{bind:(...values:any[])=>Statement}} Statement
  * @typedef {{success:boolean,results:any[],meta?:{changes?:number}}} Result
@@ -80,8 +43,19 @@ export function getWhatsAppRecoveryStatements({ db, at }) {
       paused_all = 1, replay_floor_at = MAX(replay_floor_at,?), last_purge_at = ?, purge_remaining = 0 WHERE id = 1`).bind(at + 300000, at)];
 }
 
-/** @param {{db:Database,now?:()=>number,limits?:Partial<Limits>}} options */
-export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits = {} }) {
+export { normalize as normalizeWhatsAppMessage, digest as digestWhatsApp };
+/** Ausencia de 0005 es compatible; errores de consulta nunca se ignoran.
+ * @param {{db:Database,now?:()=>number,repliesEnabled?:boolean}} options */
+export async function getWhatsAppReplyStore({db,now=Date.now,repliesEnabled}) {
+  const results=await db.batch([db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sarin_wa_pilot'")]);
+  if(results.length!==1||results[0].success!==true||!Array.isArray(results[0].results))throw new WhatsAppIngressError(503,'ingress_unavailable');
+  if(!results[0].results.length)return null;
+  const store=createWhatsAppWorkStore({db,now});
+  if(repliesEnabled===false)await store.suspendReplies();
+  return store;
+}
+/** @param {{db:Database,now?:()=>number,limits?:Partial<Limits>,repliesEnabled?:boolean}} options */
+export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits = {}, repliesEnabled }) {
   const config = { ...DEFAULTS, ...limits };
   const keys = /** @type {(keyof Limits)[]} */ (Object.keys(DEFAULTS));
   if (!db || typeof db.prepare !== 'function' || typeof db.batch !== 'function' || typeof now !== 'function'
@@ -104,6 +78,9 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
   return {
     capture: guarded(/** @param {unknown} event @returns {Promise<{status:'captured'|'duplicate',eventId:string}>} */ async event => {
       const at = clock(); const normalized = normalize(event, at);
+      const replies=await getWhatsAppReplyStore({db,now,repliesEnabled});
+      // Commit separado: una captura rechazada no revierte la pausa.
+      if(replies)await replies.observeControl({event});
       const business = normalized.kind === 'inbound' ? normalized.to : normalized.from;
       const peer = normalized.kind === 'inbound' ? normalized.from : normalized.to;
       const facts = [normalized.kind,normalized.messageId,normalized.wamid,normalized.wabaId,
@@ -135,6 +112,7 @@ export function createWhatsAppIngressStore({ db, now = () => Date.now(), limits 
       ]);
       const row = result[1].results[0];
       if (!row || row.event_id !== normalized.eventId || typeof row.admission_token !== 'string') throw new WhatsAppIngressError(503, 'ingress_unavailable');
+      if(replies)await replies.reconcileConsent({peerKey});
       return { status: row.canonical_event_id === null && row.admission_token === token ? 'captured' : 'duplicate',
         eventId: row.canonical_event_id ?? row.event_id };
     }),

@@ -390,3 +390,9 @@ test('evento desconocido sólo produce ignored sin datos personales', async () =
   const value = incoming(); value.type = 'future.private_event'; value.privateData = 'DO_NOT_RETURN';
   assert.deepEqual(await read(signed(value)), { kind: 'ignored' });
 });
+
+test('status_optional_identities_are_preserved_and_validated',async()=>{
+ const payload={id:'status_identity',type:'whatsapp.message.updated',apiVersion:'v2',createTime:new Date(NOW).toISOString(),whatsappMessage:{id:'provider_id',status:'delivered',from:'+573000000002',to:'+573000000001',wabaId:'12345',externalId:'synthetic-reference',wamid:'wamid.synthetic+/='}};
+ const got=await read(signed(payload));assert.equal(got.from,'+573000000002');assert.equal(got.to,'+573000000001');assert.equal(got.wabaId,'12345');
+ for(const change of [{from:null},{to:'bad'},{wabaId:'0'}])await rejected(signed({...payload,whatsappMessage:{...payload.whatsappMessage,...change}}),400,'invalid_event');
+});
