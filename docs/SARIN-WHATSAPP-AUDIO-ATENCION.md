@@ -1,6 +1,6 @@
 # Sarin · notas de voz y aviso a Andrés
 
-**Publicado el 18 de octubre de 2026: aviso HUMANO probado y recibido en WhatsApp; primera nota de voz real fallida antes de Whisper, en diagnóstico; plantilla fuera de la ventana de 24 horas pendiente de aprobación de Meta.** El titular solicitó avisar a su WhatsApp cuando un contacto elija HUMANO y procesar los audios entrantes. Esta ampliación corresponde únicamente a **ALS Dev Studio, +57 305 277 8047**. El destinatario del aviso queda fijado como secreto al número que autorizó Andrés, terminado en **2135**; no se acepta desde mensajes, colas ni solicitudes del navegador.
+**Publicado el 18 de octubre de 2026: aviso HUMANO probado y recibido en WhatsApp; corrección de compatibilidad de voz publicada, pendiente de una nueva nota real tras el primer fallo; plantilla fuera de la ventana de 24 horas pendiente de aprobación de Meta.** El titular solicitó avisar a su WhatsApp cuando un contacto elija HUMANO y procesar los audios entrantes. Esta ampliación corresponde únicamente a **ALS Dev Studio, +57 305 277 8047**. El destinatario del aviso queda fijado como secreto al número que autorizó Andrés, terminado en **2135**; no se acepta desde mensajes, colas ni solicitudes del navegador.
 
 La recepción real del aviso público anterior v2 fue confirmada por el titular mediante «Recibí el aviso nuevo». Esa confirmación no prueba aceptación de v3, transcripción ni entrega de una alerta. El antecedente y sus despliegues se conservan en [Atención pública](SARIN-WHATSAPP-PUBLICO.md).
 
@@ -81,9 +81,9 @@ Reporte HTML local: `qa/reports/sarin-whatsapp-audio-handoff-20261018.html`, con
 | Componente | Identificador verificado |
 | --- | --- |
 | Pages de producción | `425fff39-86af-457f-a46d-7e241ce3c08c` |
-| Commit de fuente publicado | `8823c554a7c670a9804ef821a880cc054cca2989` |
+| Commit de fuente de Pages | `8823c554a7c670a9804ef821a880cc054cca2989` |
 | Revisión de recursos | `23c0a7863504d47c` |
-| Worker de respuestas | `3fabd841-6b74-4b10-8e80-a2a75c02c315` |
+| Worker de respuestas, corrección de voz | `aab3db5e-a675-495c-a0d7-9796a2a97c7b` |
 | Worker de retención | `e94aee08-e98e-4b39-9194-5961b19ccc04` |
 
 Las migraciones **0006 y 0007 están aplicadas en producción**. La lectura remota confirmó esquema **7**, coincidencia completa con el manifiesto, `quick_check=ok` y cero errores de claves foráneas. Es una comprobación remota `quick_check`, distinta del `integrity_check` completo realizado sobre la copia local. El destinatario está configurado como secreto, el binding AI está presente en el consumidor y `HANDOFF_ENABLED`, `REPLIES_ENABLED` y `SEND_ENABLED` están activos. La retención conserva el cron horario `0 * * * *`; las previews permanecen cerradas y sin credenciales productivas. Evidencia: `test-results/sarin-whatsapp-audio-handoff-20261018/remote-deployed.json`.
@@ -111,6 +111,8 @@ La regresión del diagnóstico pasó **32/32** pruebas. La revisión independien
 La corrida final seriada pasó **104/104**, cero fallos, en 2.463 ms; registro `audio-fix-regression-final.log`. Incluye audio, diagnóstico, procesador, consumidor, aviso HUMANO y consentimiento público. El checkJs focal de los tres módulos productivos pasó. Una corrida anterior terminó 99/100 y una repetición aislada también falló por temporizadores de prueba de 1.000/10 ms durante una demora del equipo. Se corrigieron únicamente las pruebas: plazo nominal de 30 segundos y reloj simulado que avanza después de entrar en la etapa esperada; se mantiene la comprobación de abortos, vencimientos y resultados tardíos. El plazo productivo no cambió.
 
 Los bundles de Pages antes y después del cambio del lector son idénticos (`82cf8f6febe69a739e15ab398737449367b9c9ed49c86dfa2e2be058fb7dc84b`). La corrección requiere actualizar únicamente el consumidor de WhatsApp; no hay cambios de esquema ni de interfaz. El plan de reversión es volver al consumidor v3 `3fabd841-6b74-4b10-8e80-a2a75c02c315`, que conserva consentimiento v3, tablas y cuotas, aunque vuelve a rechazar esa variante de audio. No se revierte la base de datos.
+
+**Corrección publicada:** fuente `3cd852c`, versión del consumidor `aab3db5e-a675-495c-a0d7-9796a2a97c7b`. La lectura remota de las **08:22:17 UTC (03:22:17 de Colombia)** confirmó esa versión al 100 %, AI presente, envíos y avisos activos, esquema 7 íntegro, aceptación vigente y contexto sin pausa. Los contadores permanecieron en cero transcripciones y nueve envíos, sin trabajos pendientes: el despliegue no volvió a ejecutar el audio fallido. Evidencia: `remote-audio-fix-deployed-1.json`. Se solicitó una nota nueva; su respuesta real aún no está confirmada.
 
 **Pendientes funcionales:** resolver y volver a comprobar con una nota nueva el recorrido real de voz; obtener la aprobación de la plantilla y configurarla en el consumidor. Actualmente el aviso de texto a Andrés sólo puede enviarse dentro de su propia ventana de 24 horas con el número empresarial. Fuera de ella queda `waiting_template`, sin afirmar que se envió. La prueba sintética de Whisper y las comprobaciones de publicación no acreditan el recorrido completo de voz; una respuesta 200/202 de YCloud tampoco acredita entrega.
 
