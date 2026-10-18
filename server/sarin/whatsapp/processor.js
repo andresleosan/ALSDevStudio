@@ -1,6 +1,7 @@
 // @ts-check
 import { runCommercialTurn } from '../run-commercial-turn.js';
 import { createQuota } from '../quota.js';
+import {SarinError,VALIDATION_REASONS} from '../policy.js';
 import { createWhatsAppWorkStore, WhatsAppWorkError } from './work-store.js';
 import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
 import { processingConfiguration, recipientAllowed, validWorkHint } from './processing-config.js';
@@ -12,6 +13,16 @@ const AUDIO_FAILURE_REASONS=new Set(['invalid_config','invalid_descriptor','unsu
 /** Diagnóstico cerrado: ningún valor del proveedor se convierte en texto de log.
  * @param {unknown} reason */
 const safeAudioFailure=reason=>typeof reason==='string'&&AUDIO_FAILURE_REASONS.has(reason)?reason:'unknown';
+const INFERENCE_STAGES=['preparation','audio','commercial_input','classification','generation','persistence','send'];
+const INFERENCE_CODES=['invalid_output','deadline','provider_rejected','provider_unavailable'];
+/** Proyección cerrada reutilizada en el límite del log; nunca copia un error.
+ * @param {unknown} value */
+export function safeWhatsAppInferenceFailure(value){
+ if(!value||typeof value!=='object')return null;
+ const v=/** @type {Record<string,unknown>} */(value);
+ if(typeof v.stage!=='string'||!INFERENCE_STAGES.includes(v.stage)||typeof v.code!=='string'||!INFERENCE_CODES.includes(v.code))return null;
+ return {stage:v.stage,code:v.code,...(typeof v.diagnostic==='string'&&VALIDATION_REASONS.includes(v.diagnostic)?{diagnostic:v.diagnostic}:{})};
+}
 /** @typedef {import('./processing-config.js').ProcessingEnv} ProcessingEnv */
 /** @typedef {{store?:ReturnType<typeof createWhatsAppWorkStore>,fetch?:typeof fetch,now?:()=>number,transcribeAudio?:typeof transcribeWhatsAppAudio}} Options */
 /** Identidad de cuota separada de web, sin teléfono ni sesión inventada.
@@ -31,14 +42,16 @@ export async function processWhatsAppWork(hint,env,options={}) {
  const configured=processingConfiguration(env,now());if(!configured)return {status:'disabled'};
  const config=configured;
  const controller=new AbortController(),startedAt=now(),token=crypto.randomUUID(),own={...hint,token};
- let externalStarted=false;
+ let externalStarted=false,stage='preparation';
  const check=()=>{if(controller.signal.aborted||now()-startedAt>=60000){controller.abort();throw new Error('deadline');}};
  /** @type {ReturnType<typeof setTimeout>|undefined} */let timer;
- /** @type {Promise<{status:string}>} */
- const deadline=new Promise(resolve=>{timer=setTimeout(()=>{controller.abort();resolve({status:externalStarted?'uncertain':'retry'});},60000);});
+ /** @type {Promise<{status:string,inferenceFailure?:{stage:string,code:string}}>} */
+ const deadline=new Promise(resolve=>{timer=setTimeout(()=>{controller.abort();resolve({status:externalStarted?'uncertain':'retry',
+  ...(externalStarted?{inferenceFailure:{stage,code:'deadline'}}:{})});},60000);});
  const client=createYCloudClient({apiKey:config.apiKey,businessPhone:config.business,sendEnabled:true,fetcher:options.fetch});
  /** @param {string} outboxId @param {import('./work-contracts.js').Recipient} recipient */
  async function send(outboxId,recipient) {
+  stage='send';
   check();const permit=await store.beginSend({outboxId,token,recipient});externalStarted=true;check();
   if(!recipientAllowed(config,permit)||permit.wabaId!==recipient.wabaId||permit.from!==recipient.from||permit.to!==recipient.to){
    await store.finishSend({outboxId,token,result:{status:'uncertain'}});return {status:'denied'};
@@ -76,6 +89,7 @@ export async function processWhatsAppWork(hint,env,options={}) {
     const quotaIdentity=await identity(work.peerKey,config.identitySecret,now());check();
     await store.markInferenceStarted(own);externalStarted=true;check();
     if(work.source==='audio'){
+      stage='audio';
       const descriptor=await store.getAudioDescriptor(own);check();
       const result=descriptor?await (options.transcribeAudio??transcribeWhatsAppAudio)({descriptor,apiKey:config.apiKey,ai:env.AI,fetchImpl:options.fetch,
         signal:controller.signal,beforeInference:async()=>{check();try{return await store.beginAudioInference(own);}catch{return false;}}}):/** @type {import('./audio-client.js').AudioResult} */({ok:false,reason:'invalid_descriptor'});
@@ -86,17 +100,26 @@ export async function processWhatsAppWork(hint,env,options={}) {
       }
       work.input=result.text;
     }
+    stage='commercial_input';
     const result=await runCommercialTurn({message:work.input,history:work.history,signal:controller.signal},{config,apiKey:config.aiKey,fetch:options.fetch,
-     createQuota:()=>createQuota({db:config.db,identity:quotaIdentity,now,limits:{perMinute:10,perDay:50,dailyMicros:config.dailyMicros,monthlyMicros:config.monthlyMicros}}),
+     createQuota:()=>{const quota=createQuota({db:config.db,identity:quotaIdentity,now,limits:{perMinute:10,perDay:50,dailyMicros:config.dailyMicros,monthlyMicros:config.monthlyMicros}});
+      // Sólo observa la etapa: conserva la misma solicitud, cuota y liquidación.
+      return {...quota,reserve:request=>{stage=request.stage;return quota.reserve(request);}};},
      attachReservation:async reservationId=>{check();await store.attachReservation({...own,reservationId});check();}});
-    check();out=await store.completeGeneration({...own,reply:result.output.reply,outcome:result.outcome});
+    check();stage='persistence';out=await store.completeGeneration({...own,reply:result.output.reply,outcome:result.outcome});
    }else {
     const noticeHash=await hash(WHATSAPP_NOTICE);check();
     out=await store.createFixedReply({...own,purpose:work.decision==='notice'?'notice':'accepted',text:work.decision==='notice'?WHATSAPP_NOTICE:WHATSAPP_ACCEPTED,version:WHATSAPP_NOTICE_VERSION,hash:noticeHash});
    }
    return await send(out.outboxId,recipient);
   }catch(error){
-   if(externalStarted){await store.failInference({...own,started:true,code:controller.signal.aborted?'deadline':'provider_unavailable'}).catch(()=>{});return {status:'uncertain'};}
+   if(externalStarted){
+    const code=controller.signal.aborted||(error instanceof SarinError&&error.code==='timeout')?'deadline':
+     error instanceof SarinError&&error.code==='invalid_output'?'invalid_output':
+      error instanceof SarinError&&error.code==='provider_rejected'?'provider_rejected':'provider_unavailable';
+    const inferenceFailure=safeWhatsAppInferenceFailure({stage,code,diagnostic:error instanceof SarinError&&code==='invalid_output'?error.diagnostic:undefined});
+    await store.failInference({...own,started:true,code}).catch(()=>{});return {status:'uncertain',inferenceFailure};
+   }
    if(error instanceof WhatsAppWorkError&&error.status!==503)return {status:'denied'};
    return {status:'retry'};
   }

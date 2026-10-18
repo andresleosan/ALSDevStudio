@@ -1,5 +1,5 @@
 // @ts-check
-import { processWhatsAppWork, dispatchWhatsAppWork } from '../../server/sarin/whatsapp/processor.js';
+import { processWhatsAppWork, dispatchWhatsAppWork, safeWhatsAppInferenceFailure } from '../../server/sarin/whatsapp/processor.js';
 import { reconcileWhatsAppWork } from '../../server/sarin/whatsapp/reconciliation.js';
 import {processWhatsAppHandoff} from '../../server/sarin/whatsapp/handoff-processor.js';
 import {syncWhatsAppBilling} from '../../server/sarin/whatsapp/billing-sync.js';
@@ -14,6 +14,8 @@ export function createWhatsAppWorker(options={}) {return {
   const message=batch.messages[0];if(!message)return;
   try{const result=await processWhatsAppWork(message.body,env,options);
    if('audioFailure' in result){try{console.warn(JSON.stringify({event:'sarin_whatsapp_audio_failed',reason:result.audioFailure}));}catch{/* El diagnóstico no altera el envío ni el ACK. */}}
+   if('inferenceFailure' in result){try{const failure=safeWhatsAppInferenceFailure(result.inferenceFailure);
+    if(failure)console.warn(JSON.stringify({event:'sarin_whatsapp_inference_failed',...failure}));}catch{/* Ningún fallo del log provoca otro intento. */}}
    if(result.status==='retry'&&message.attempts<=3)message.retry({delaySeconds:60});else message.ack();}
   catch{if(message.attempts<=3)message.retry({delaySeconds:60});else message.ack();}
  },
