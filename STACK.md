@@ -1,8 +1,8 @@
 # Stack — ALS DevStudio
 
-### Respuestas WhatsApp · 2026-10-18 · servicio publicado, prueba real pendiente
+### Respuestas WhatsApp · 2026-10-18 · servicio y piloto real verificados
 
-Paso 1 corregido y verificado (825 pruebas y QA de navegador); paso 2 publicado con autorización del titular. Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`, retención `527ed214-1cf0-45aa-b94f-77aaa80e2c5f`, migración 0005 y Queue `als-sarin-whatsapp`. Seis secretos del consumidor, YCloud y DeepSeek comprobados por GET oficial. Flags de servicio activas sólo en producción; el piloto y el único contacto siguen sujetos a activación en Staff y aceptación nueva. Preview aislado, chat web conservado. No se acredita aún una respuesta real ni la pausa posterior a ella. [Registro y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).
+Paso 1 corregido y verificado (825 pruebas y QA de navegador); paso 2 publicado con autorización del titular. Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`, retención `527ed214-1cf0-45aa-b94f-77aaa80e2c5f`, migración 0005 y Queue `als-sarin-whatsapp`. Seis secretos del consumidor, YCloud y DeepSeek comprobados por GET oficial. Paso 3 real completado: aviso entregado, aceptación acreditada, respuesta de DeepSeek leída y pausa automática tras contestación desde la app empresarial. Tres salidas, sin trabajos pendientes; único contacto pausado al cierre. Preview aislado y chat web conservado; no se habilitó atención pública. [Registro, límites y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).
 
 ### YCloud Free para Sarin comercial · 2026-10-17 · receptor piloto publicado
 

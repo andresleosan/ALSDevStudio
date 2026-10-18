@@ -1,10 +1,10 @@
 # Tareas — ALS DevStudio
 
-## SARIN-WA-RESPUESTAS · 2026-10-18 · servicio publicado
+## SARIN-WA-RESPUESTAS · 2026-10-18 · publicada y verificada con un contacto
 
 - [x] Respaldar cambios pendientes, corregir contrato Staff/store y probarlo con SQLite real, navegador de escritorio/móvil y teclado. 825 pruebas aprobadas; sin P1/P2 ni errores de tipado nuevos.
 - [x] Conservar cambios e integrar imágenes remotas sobre main; configurar y publicar migración 0005, retención, Queue, consumidor con seis secretos y panel. Verificar YCloud/DeepSeek por GET y preservar secretos web/aislamiento preview. [Evidencia y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).
-- [ ] Completar prueba real con el único contacto autorizado: activar en Staff, aviso entregado, aceptación, respuesta de IA entregada y pausa automática al contestar desde el teléfono empresarial. Servicio preparado; no declarar esta prueba como completada hasta observar el recorrido.
+- [x] Completar prueba real con el único contacto autorizado: activación en Staff, aviso entregado, aceptación, respuesta de DeepSeek entregada/leída y pausa automática al contestar desde la app del teléfono empresarial. Tres salidas y trabajos completados, sin pendientes/conflictos; tres eventos Queue y seis cron observados correctos. El contacto queda pausado para atención humana. Registro y límites de evidencia en `docs/SARIN-WHATSAPP-RESPUESTAS.md`.
 
 ## SARIN-YCLOUD · WhatsApp del bot comercial de ALS · 2026-10-17 · receptor piloto publicado
 
@@ -19,7 +19,7 @@
 - [x] Confirmar primera entrada real del mensaje ficticio enviado por el titular: D1 recibió una captura `inbound/captured/text` a `2026-10-18T04:58:45Z`, coincidencia exacta comprobada como booleano, entrega reportada de 2.254 ms, TTL contenido/recibo 24/48 horas y contacto pausado (revisión 0, sin eco humano). Sin respuesta automática ni contenido copiado a logs.
 - [x] Confirmar eco real escrito por el titular desde la app empresarial: captura `echo/captured/text` a `2026-10-18T04:59:44Z`, entrega reportada de 2.478 ms, texto nulo y TTL 24 horas. Contacto pausado con revisión 1 y señal humana; total 2 capturas/2 recibos y pausa global activa. Entrada y eco reales de Coexistencia comprobados. Evidencia sólo de metadatos en `test-results/ycloud-live-reception-metadata.json`, sin identificadores, teléfonos ni cuerpos.
 - [x] Comprobar cron real de la versión nueva de retención a `2026-10-18T05:00:34Z`: `outcome=ok`, sin excepciones, estado `ok`, un lote y cero pendientes. Dos sesiones web vencidas purgadas; cero filas WA vencidas. D1 confirma hora de purga, cero pendientes y 2 capturas/2 recibos conservados. Evidencia `test-results/ycloud-retention-live.jsonl`. Hito piloto verificado; borrado remoto WA a 24/48 horas aún no observado porque los datos siguen vigentes (cubierto localmente).
-- [ ] Para respuestas reales: consentimiento WhatsApp, outbox y reconciliación de envíos inciertos, conexión al núcleo, pausa/reactivación humana, Staff y piloto autorizado. Capturar mensajes no equivale a un bot operativo.
+- [x] Fase de respuestas completada el 18 de octubre: consentimiento WhatsApp, outbox y conciliación, núcleo DeepSeek, Staff, pausa/reactivación y prueba real con el único contacto autorizado. Ver `SARIN-WA-RESPUESTAS` y `docs/SARIN-WHATSAPP-RESPUESTAS.md`; alcance aún privado.
 
 
 ## TILT-PROYECTOS · Inclinación en las 20 tarjetas · 2026-10-17

@@ -20,7 +20,26 @@ Las flags de servicio se habilitan sólo en producción. El piloto permanece apa
 
 Versiones con servicio habilitado: consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`; Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, fuente `ab08ba3`. Verificación de configuración posterior: flags correctas, secretos web conservados y preview aislado. Los tres JSON temporales de secretos fueron retirados tras cargar y verificar las credenciales; `.dev.vars` original permanece intacto.
 
-Recorrido pendiente de acreditar remotamente: mensaje ficticio nuevo, aviso **entregado**, `ACEPTO`, consulta ficticia, respuesta de Sarin **entregada**, contestación desde el teléfono empresarial y pausa automática. No considerar un HTTP 200 del proveedor como prueba de entrega. Registrar resultado y versiones de activación tras completar el recorrido.
+## Prueba real completada
+
+El titular realizó la prueba desde el único contacto autorizado y confirmó recepción en cada paso. D1, estados de YCloud y Staff acreditan este recorrido (horas UTC):
+
+| Hito | Evidencia |
+| --- | --- |
+| Registro inicial | Entrada nueva recibida; contexto inicialmente pausado, sin respuesta. |
+| Activación en Staff | Piloto habilitado y contacto reactivado; no se procesaron entradas antiguas. |
+| Aviso | Entregado a `06:47:39.746Z` y posteriormente leído. No hubo inferencia. |
+| Aceptación | Acreditada a `06:48:50.800Z`, después de la entrega del aviso. Confirmación entregada a `06:48:59.003Z` y leída. |
+| Consulta ficticia | Primera inferencia a `06:50:11.580Z`; respuesta comercial entregada a `06:50:17.613Z` y leída. Sarin recomendó catálogo y pedidos por WhatsApp. |
+| Atención humana | El titular contestó desde la app empresarial a `06:51:41Z`; el eco fue observado a `06:51:43.242Z` y el contexto quedó pausado automáticamente. No se usó el botón de pausa. |
+
+Estado final: piloto privado habilitado, único contacto **pausado**, consentimiento vigente, tres trabajos completados y tres salidas leídas; cero pendientes, conflictos o conciliaciones solicitadas. Cuotas: tres intentos consumidos de 20/día y 100/mes, sin reservas pendientes. No se hizo otro envío para comprobar una respuesta posterior a la pausa.
+
+La telemetría observada registra tres invocaciones de Queue y seis de cron del consumidor, todas `ok`, sin excepciones. Esto no acredita el tiempo de CPU facturable. La nueva versión del cron de retención aún no se observó ejecutar remotamente; su lógica se verificó localmente y conserva el cron horario. Tampoco se observó un eco propio del envío API durante esta prueba: la protección contra confundirlo con intervención humana está cubierta por pruebas locales.
+
+Evidencias privadas de metadatos: `pilot-status-notice-delivered.json`, `pilot-status-acceptance-confirmed.json`, `pilot-status-reply-delivered.json`, `pilot-status-human-pause.json` y revisión independiente `pilot-final-verification.json` bajo `.wrangler/wa-replies-release-20261018/`; telemetría y captura final `staff-live-human-paused.png` en `test-results/whatsapp-audit-20261018/`. Sin teléfonos completos ni cuerpos en los informes de metadatos. Observador y servidor de QA detenidos; panel autenticado abierto para el titular.
+
+Para devolver ese contacto a Sarin, usar **Reactivar Sarin** en Staff y pedir un mensaje nuevo. El piloto sigue limitado a un participante; esta prueba no habilita atención pública.
 
 Topes actuales: 20 intentos de envío/día y 100/mes, incluidos avisos; presupuesto IA compartido 1 USD/día y 10 USD/mes. No se contrataron planes, recargas ni ampliaron destinatarios. Estos controles de aplicación no sustituyen la facturación del proveedor.
 
