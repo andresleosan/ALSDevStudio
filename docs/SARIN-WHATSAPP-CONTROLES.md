@@ -20,4 +20,4 @@ Validación final: **876/876 regresiones Node y 21/21 pruebas de build correctas
 
 Runtime workerd de retención y recuperación correcto, con GET de precios único y persistencia del recibo durante mantenimiento; fuente SHA-256 `6b86e1dfb4127ac45d0e9a61d417cd9dfeb502b53a923706e1acfe024bc9918f`. Evidencias en `test-results/sarin-whatsapp-buttons-only-20261018/runtime-buttons-only-retention.json` y `runtime-buttons-only-recovery.json`. Artefacto de 224 archivos preparado con revisión `df8d32900e429044`.
 
-Estado: implementación, regresiones, CUA y runtime completados. Publicación y comprobación posterior de los nuevos controles por el titular aún pendientes.
+Estado: publicado en producción con la fuente `a7fa9ff4b5e49f82503ab085838546fe887bccde` el 18 de octubre de 2026 a las 09:42 UTC. Comprobación de los nuevos botones en el teléfono solicitada al titular; no se da por confirmada hasta recibir su respuesta.
