@@ -11,7 +11,9 @@ export function createWhatsAppWorker(options={}) {return {
   // Un lote mal configurado tampoco puede multiplicar trabajo en una invocación.
   for(const message of batch.messages.slice(1))message.retry({delaySeconds:60});
   const message=batch.messages[0];if(!message)return;
-  try{const result=await processWhatsAppWork(message.body,env,options);if(result.status==='retry'&&message.attempts<=3)message.retry({delaySeconds:60});else message.ack();}
+  try{const result=await processWhatsAppWork(message.body,env,options);
+   if('audioFailure' in result){try{console.warn(JSON.stringify({event:'sarin_whatsapp_audio_failed',reason:result.audioFailure}));}catch{/* El diagnóstico no altera el envío ni el ACK. */}}
+   if(result.status==='retry'&&message.attempts<=3)message.retry({delaySeconds:60});else message.ack();}
   catch{if(message.attempts<=3)message.retry({delaySeconds:60});else message.ack();}
  },
  /** @param {unknown} controller @param {ProcessingEnv} env */

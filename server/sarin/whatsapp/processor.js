@@ -6,6 +6,11 @@ import { createYCloudClient, YCloudClientError } from './ycloud-client.js';
 import { processingConfiguration, recipientAllowed, validWorkHint } from './processing-config.js';
 import { WHATSAPP_NOTICE, WHATSAPP_NOTICE_VERSION, WHATSAPP_ACCEPTED } from './consent.js';
 import {transcribeWhatsAppAudio} from './audio-client.js';
+const AUDIO_FAILURE_REASONS=new Set(['invalid_config','invalid_descriptor','unsupported_format','cancelled','timeout','download_failed',
+ 'invalid_audio','audio_too_large','audio_too_long','integrity_mismatch','permission_denied','inference_uncertain','invalid_transcription']);
+/** Diagnóstico cerrado: ningún valor del proveedor se convierte en texto de log.
+ * @param {unknown} reason */
+const safeAudioFailure=reason=>typeof reason==='string'&&AUDIO_FAILURE_REASONS.has(reason)?reason:'unknown';
 /** @typedef {import('./processing-config.js').ProcessingEnv} ProcessingEnv */
 /** @typedef {{store?:ReturnType<typeof createWhatsAppWorkStore>,fetch?:typeof fetch,now?:()=>number,transcribeAudio?:typeof transcribeWhatsAppAudio}} Options */
 /** Identidad de cuota separada de web, sin teléfono ni sesión inventada.
@@ -69,9 +74,9 @@ export async function processWhatsAppWork(hint,env,options={}) {
       const result=descriptor?await (options.transcribeAudio??transcribeWhatsAppAudio)({descriptor,apiKey:config.apiKey,ai:env.AI,fetchImpl:options.fetch,
         signal:controller.signal,beforeInference:async()=>{check();try{return await store.beginAudioInference(own);}catch{return false;}}}):/** @type {import('./audio-client.js').AudioResult} */({ok:false,reason:'invalid_descriptor'});
       check();await store.finishAudio({...own,result});check();
-      if(!result.ok){
+      if(result.ok===false){
         out=await store.completeGeneration({...own,reply:'No pude transcribir ese audio. Envíame tu consulta por texto o una nota de voz de WhatsApp de hasta 2 minutos. También puedes escribir HUMANO para solicitar atención de Andrés.',outcome:'fallback'});
-        return await send(out.outboxId,recipient);
+        return {...await send(out.outboxId,recipient),audioFailure:safeAudioFailure(result.reason)};
       }
       work.input=result.text;
     }

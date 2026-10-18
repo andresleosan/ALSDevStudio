@@ -82,7 +82,7 @@ function oggDuration(bytes,check) {
     check();
     if (ended || offset+27>bytes.length || !begins(bytes.subarray(offset),'OggS') || bytes[offset+4]!==0) fail('invalid_audio');
     const flags=bytes[offset+5], count=bytes[offset+26], body=offset+27+count;
-    if (flags>7 || !count || body>bytes.length || !!(flags&1)!==(packetLength>0)
+    if (flags>7 || body>bytes.length || !!(flags&1)!==(packetLength>0)
       || (sequence===0 ? flags!==2 : !!(flags&2)) || view.getUint32(offset+18,true)!==sequence) fail('invalid_audio');
     const pageSerial=view.getUint32(offset+14,true);
     if (sequence===0) serial=pageSerial;
@@ -93,6 +93,13 @@ function oggDuration(bytes,check) {
     const rawGranule=view.getBigUint64(offset+6,true), unset=rawGranule===0xffffffffffffffffn;
     if(!unset && rawGranule>BigInt(Number.MAX_SAFE_INTEGER))fail('invalid_audio');
     const granule=unset?-1:Number(rawGranule), priorPackets=packetCount;
+    // RFC 3533 permite EOS sin contenido. WhatsApp usa granule -1: la
+    // duración sigue siendo la de los paquetes anteriores ya verificados.
+    if(count===0) {
+      if(flags!==4 || !unset || packetLength || packetCount<3
+        || previousGranule<=preSkip || end!==bytes.length)fail('invalid_audio');
+      ended=true;offset=end;sequence++;continue;
+    }
     let at=body;
     for(let i=0;i<count;i++) {
       const size=bytes[offset+27+i];parts.push(bytes.subarray(at,at+size));packetLength+=size;at+=size;

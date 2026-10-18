@@ -20,17 +20,18 @@ function page(packets,sequence,{flags=0,granule=0,serial=10}={}) {
   out.set(laces,27);let offset=27+laces.length;for(const packet of packets){out.set(packet,offset);offset+=packet.length;}
   out.writeUInt32LE(checksum(out),22);return out;
 }
-function voice(seconds=1,{channels=1,preSkip=0,granuleSamples,serial=10}={}) {
+function voice(seconds=1,{channels=1,preSkip=0,granuleSamples,serial=10,emptyEos=false}={}) {
   const head=Buffer.alloc(19);head.write('OpusHead');head[8]=1;head[9]=channels;head.writeUInt16LE(preSkip,10);head.writeUInt32LE(48000,12);
   const tags=Buffer.alloc(16);tags.write('OpusTags');
   const packets=Array.from({length:Math.ceil(seconds*50)},()=>Buffer.from([0xf8,0xff,0xfe]));
   const pages=[page([head],0,{flags:2,serial}),page([tags],1,{serial})];let done=0;
-  while(packets.length){const batch=packets.splice(0,50);done+=batch.length*960;pages.push(page(batch,pages.length,{serial,flags:packets.length?0:4,granule:packets.length?done:(granuleSamples??done)}));}
+  while(packets.length){const batch=packets.splice(0,50);done+=batch.length*960;pages.push(page(batch,pages.length,{serial,flags:packets.length||emptyEos?0:4,granule:packets.length?done:(granuleSamples??done)}));}
+  if(emptyEos)pages.push(page([],pages.length,{serial,flags:4,granule:0xffffffffffffffffn}));
   return Buffer.concat(pages);
 }
 const sha=bytes=>createHash('sha256').update(bytes).digest('base64');
 function descriptor(bytes,patch={}) {return {id:'712063723747110',link:'https://api.ycloud.com/v2/whatsapp/media/download/712063723747110?sig=test&payload=test',mimeType:'audio/ogg; codecs=opus',sha256:sha(bytes),...patch};}
-function harness({bytes=voice(),descriptorPatch={},response,aiResult={text:'Necesito una tienda virtual.'},beforeInference,fetchImpl,timeoutMs=1000}={}) {
+function harness({bytes=voice(),descriptorPatch={},response,aiResult={text:'Necesito una tienda virtual.'},beforeInference,fetchImpl,timeoutMs=30000}={}) {
   const calls={fetch:[],ai:[],permission:0};
   const options={descriptor:descriptor(bytes,descriptorPatch),apiKey:'test-secret',timeoutMs,
     fetchImpl:fetchImpl??(async(...args)=>{calls.fetch.push(args);return response??new Response(bytes,{headers:{'Content-Type':'audio/ogg'}});}),
@@ -38,6 +39,9 @@ function harness({bytes=voice(),descriptorPatch={},response,aiResult={text:'Nece
     beforeInference:beforeInference??(async()=>{calls.permission++;return true;})};
   return {calls,options};
 }
+function deferred() {let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve};}
+const nextTurn=()=>new Promise(resolve=>setImmediate(resolve));
+const waitForStage=(entered,pending)=>Promise.race([entered,pending.then(()=>assert.fail('La operación terminó antes de entrar en la etapa esperada.'))]);
 
 test('descriptor cerrado normaliza MIME y preserva URL autenticada',()=>{
   const d=descriptor(voice(),{mimeType:'audio/ogg; codecs="opus"'});const normalized=validateWhatsAppAudioDescriptor(d);
@@ -72,6 +76,32 @@ test('granule falsificado, cadena extra, CRC roto y archivo truncado se rechazan
   const damaged=voice();damaged[damaged.length-1]^=1;
   for(const bytes of [voice(121,{granuleSamples:48000}),Buffer.concat([voice(),voice(1,{serial:11})]),damaged,voice().subarray(0,-1),voice(1,{channels:3})]){const h=harness({bytes});const r=await transcribeWhatsAppAudio(h.options);assert.equal(r.ok,false);assert.equal(h.calls.ai.length,0);}
 });
+test('EOS vacío de WhatsApp usa el último granule verificado y conserva pre-skip',async()=>{
+  // Variante documentada: https://github.com/JamesHeinrich/getID3/issues/450
+  const bytes=voice(1,{preSkip:312,emptyEos:true}),h=harness({bytes});
+  assert.equal(bytes.at(-1),0);assert.equal(bytes.readBigUInt64LE(bytes.length-21),0xffffffffffffffffn);
+  assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:true,text:'Necesito una tienda virtual.',durationSeconds:(48000-312)/48000});
+  assert.equal(h.calls.permission,1);assert.equal(h.calls.ai.length,1);
+});
+test('EOS vacío rechaza truncado, offset, CRC, secuencia, pista o paquete incompleto',async()=>{
+  const empty=0xffffffffffffffffn,valid=voice(1,{emptyEos:true}),prefix=valid.subarray(0,-27);
+  const damaged=Buffer.from(valid);damaged[damaged.length-5]^=1;
+  const partial=Buffer.alloc(28+255);partial.write('OggS');partial.writeBigUInt64LE(empty,6);partial.writeUInt32LE(10,14);partial.writeUInt32LE(3,18);partial[26]=1;partial[27]=255;partial.fill(1,28);partial.writeUInt32LE(checksum(partial),22);
+  const cases=[['truncated EOS',valid.subarray(0,-1)],['missing EOS',prefix],['CRC',damaged],
+    ['offset',voice(1,{granuleSamples:48001,emptyEos:true})],['short granule',voice(1,{granuleSamples:47999,emptyEos:true})],
+    ['sequence',Buffer.concat([prefix,page([],4,{flags:4,granule:empty})])],
+    ['other track',Buffer.concat([prefix,page([],3,{flags:4,granule:empty,serial:11})])],
+    ['finite EOS granule',Buffer.concat([prefix,page([],3,{flags:4,granule:48000})])],
+    ['not EOS',Buffer.concat([prefix,page([],3,{granule:empty})])],
+    ['unfinished packet',Buffer.concat([prefix,partial,page([],4,{flags:4,granule:empty})])],
+    ['trailing bytes',Buffer.concat([valid,Buffer.from([0])])]];
+  for(const [label,bytes] of cases){const h=harness({bytes});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'invalid_audio'},label);assert.equal(h.calls.permission,0,label);assert.equal(h.calls.ai.length,0,label);}
+});
+test('EOS vacío conserva el límite de 120 s y no oculta duración con otro granule',async()=>{
+  const accepted=harness({bytes:voice(120,{emptyEos:true})});
+  assert.equal((await transcribeWhatsAppAudio(accepted.options)).ok,true);assert.equal(accepted.calls.ai.length,1);
+  for(const bytes of [voice(120.02,{emptyEos:true}),voice(121,{emptyEos:true,granuleSamples:48000})]){const h=harness({bytes});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'audio_too_long'});assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);}
+});
 test('SHA distinto y MIME ajeno se rechazan sin permiso ni inferencia',async()=>{
   for(const change of [{descriptorPatch:{sha256:sha(Buffer.from('different'))}},{response:new Response(voice(),{headers:{'Content-Type':'text/html'}})},{descriptorPatch:{mimeType:'audio/mpeg'}}]){const h=harness(change);assert.equal((await transcribeWhatsAppAudio(h.options)).ok,false);assert.equal(h.calls.permission,0);assert.equal(h.calls.ai.length,0);}
 });
@@ -85,22 +115,39 @@ test('tope de 2MB se aplica a bytes reales aunque Content-Length mienta',async()
 test('aborto previo no descarga y aborto en permiso no transcribe',async()=>{
   for(const during of [false,true]){const h=harness();const controller=new AbortController();h.options.signal=controller.signal;if(!during)controller.abort();else h.options.beforeInference=async()=>{controller.abort();return true;};assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'cancelled'});assert.equal(h.calls.ai.length,0);if(!during)assert.equal(h.calls.fetch.length,0);}
 });
-test('deadline también corta fetch o stream que ignoran cancelación',async()=>{
-  for(const mode of ['fetch','stream']){const h=harness({timeoutMs:10,...(mode==='fetch'?{fetchImpl:()=>new Promise(()=>{})}:{response:new Response(new ReadableStream({pull(){return new Promise(()=>{});}}),{headers:{'Content-Type':'audio/ogg'}})})});assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'timeout'});assert.equal(h.calls.ai.length,0);}
+test('deadline también corta fetch o stream que ignoran cancelación',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:0});
+  for(const mode of ['fetch','stream']){
+    const entered=deferred();
+    const stalled=()=>{entered.resolve();return new Promise(()=>{});};
+    const h=harness({timeoutMs:10,...(mode==='fetch'?{fetchImpl:stalled}:{response:new Response(new ReadableStream({pull:stalled},{highWaterMark:0}),{headers:{'Content-Type':'audio/ogg'}})})});
+    const pending=transcribeWhatsAppAudio(h.options);await waitForStage(entered.promise,pending);t.mock.timers.tick(10);
+    assert.deepEqual(await pending,{ok:false,reason:'timeout'});assert.equal(h.calls.ai.length,0);
+  }
 });
-test('deadline de inferencia devuelve incierto y no reintenta',async()=>{
-  const h=harness({timeoutMs:10});let calls=0;h.options.ai.run=()=>{calls++;return new Promise(()=>{});};assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'inference_uncertain'});assert.equal(calls,1);
+test('deadline de inferencia devuelve incierto y no reintenta',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:0});
+  const h=harness({timeoutMs:10}),entered=deferred(),late=deferred();let calls=0;
+  h.options.ai.run=()=>{calls++;entered.resolve();return late.promise;};
+  const pending=transcribeWhatsAppAudio(h.options);await waitForStage(entered.promise,pending);t.mock.timers.tick(10);
+  assert.deepEqual(await pending,{ok:false,reason:'inference_uncertain'});
+  late.resolve({text:'Resultado sintético tardío.'});await nextTurn();assert.equal(calls,1);
 });
-test('permiso que resuelve después del timeout no inicia una inferencia tardía',async()=>{
-  let release;const h=harness({timeoutMs:10,beforeInference:()=>new Promise(resolve=>{release=resolve;})});
-  assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'timeout'});
-  release(true);await new Promise(resolve=>setTimeout(resolve,5));assert.equal(h.calls.ai.length,0);
+test('permiso que resuelve después del timeout no inicia una inferencia tardía',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:0});
+  const entered=deferred(),permission=deferred();
+  const h=harness({timeoutMs:10,beforeInference:()=>{entered.resolve();return permission.promise;}});
+  const pending=transcribeWhatsAppAudio(h.options);await waitForStage(entered.promise,pending);t.mock.timers.tick(10);
+  assert.deepEqual(await pending,{ok:false,reason:'timeout'});
+  permission.resolve(true);await nextTurn();assert.equal(h.calls.ai.length,0);
 });
-test('aborto después de comenzar AI queda incierto aunque el proveedor termine tarde',async()=>{
-  const h=harness();const controller=new AbortController();h.options.signal=controller.signal;let release;let calls=0;
-  h.options.ai.run=()=>{calls++;controller.abort();return new Promise(resolve=>{release=resolve;});};
-  assert.deepEqual(await transcribeWhatsAppAudio(h.options),{ok:false,reason:'inference_uncertain'});
-  release({text:'contenido tardío privado'});await new Promise(resolve=>setTimeout(resolve,5));assert.equal(calls,1);
+test('aborto después de comenzar AI queda incierto aunque el proveedor termine tarde',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:0});
+  const h=harness(),entered=deferred(),late=deferred();const controller=new AbortController();h.options.signal=controller.signal;let calls=0;
+  h.options.ai.run=()=>{calls++;entered.resolve();return late.promise;};
+  const pending=transcribeWhatsAppAudio(h.options);await waitForStage(entered.promise,pending);controller.abort();
+  assert.deepEqual(await pending,{ok:false,reason:'inference_uncertain'});
+  late.resolve({text:'Resultado sintético tardío.'});await nextTurn();assert.equal(calls,1);
 });
 test('pre-skip y estéreo conservan duración por canal',async()=>{
   const h=harness({bytes:voice(1,{channels:2,preSkip:312})});
