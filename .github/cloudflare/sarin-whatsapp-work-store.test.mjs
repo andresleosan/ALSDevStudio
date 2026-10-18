@@ -244,3 +244,32 @@ test('old_delivery_failure_cannot_pause_a_new_context',async t=>{
   await f.store.applyStatus({eventId:'old_failure',externalId:p.externalId,status:'failed',at:f.now()});
   assert.equal((await f.store.getPeer({peerKey:f.peerKey})).paused,0);
 });
+test('content_expiry_before_lease_closes_started_send_conservatively',async t=>{
+  const f=await setup(t),j=await f.capture();
+  f.setTime(j.expires_at-30000);
+  const n=await notice(f,j);await f.store.beginSend(n);
+  assert.ok(row(f,'sarin_wa_jobs').lease_until>j.expires_at);
+  f.setTime(j.expires_at+1);
+  assert.deepEqual(await f.store.expireLeases({limit:10}),{processed:1});
+  assert.equal(row(f,'sarin_wa_outbox').state,'send_uncertain');
+  assert.equal((await f.store.getPeer({peerKey:f.peerKey})).paused,1);
+  const closed=row(f,'sarin_wa_jobs');
+  assert.equal(closed.state,'completed');assert.equal(closed.token,null);assert.equal(closed.lease_until,null);
+  assert.equal(row(f,'sarin_wa_send_quota').consumed,1);
+  await denied(f.store.beginSend(n));
+  f.setTime(f.now()+120000);
+  assert.deepEqual(await f.store.expireLeases({limit:10}),{processed:0});
+  assert.equal(row(f,'sarin_wa_outbox').state,'send_uncertain');
+  assert.deepEqual(await f.store.listDispatchable({limit:10}),[]);
+});
+test('content_expiry_before_lease_preserves_confirmed_delivery',async t=>{
+  const f=await setup(t),j=await f.capture();f.setTime(j.expires_at-30000);
+  const n=await notice(f,j),p=await f.store.beginSend(n);
+  await f.store.applyStatus({eventId:'ttl_delivery',externalId:p.externalId,status:'delivered',at:f.now()});
+  const deliveredAt=row(f,'sarin_wa_outbox').delivered_at;
+  f.setTime(j.expires_at+1);await f.store.expireLeases({limit:10});
+  assert.equal(row(f,'sarin_wa_outbox').state,'delivered');
+  assert.equal(row(f,'sarin_wa_outbox').delivered_at,deliveredAt);
+  assert.equal(row(f,'sarin_wa_jobs').state,'completed');
+  assert.equal((await f.store.getPeer({peerKey:f.peerKey})).paused,0);
+});

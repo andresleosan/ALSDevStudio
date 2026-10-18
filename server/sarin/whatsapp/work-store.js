@@ -40,9 +40,10 @@ const UNBLOCKED = `NOT EXISTS(SELECT 1 FROM sarin_wa_outbox o WHERE o.peer_key=j
 /** @param {{db:Database,now?:()=>number,limits?:Partial<typeof DEFAULTS>}} options */
 export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
   const config={...DEFAULTS,...limits};
+  const keys=/** @type {(keyof WorkLimits)[]} */(Object.keys(DEFAULTS));
   requireThat(db && typeof db.prepare==='function' && typeof db.batch==='function' && typeof now==='function'
     && Object.keys(limits).every(k=>k in DEFAULTS)
-    && Object.entries(config).every(([k,v])=>integer(v)&&v>0&&v<=DEFAULTS[k]),'work_config_invalid',503);
+    && keys.every(k=>integer(config[k])&&config[k]>0&&config[k]<=DEFAULTS[k]),'work_config_invalid',503);
   const clock=()=>{const at=now();requireThat(integer(at),'work_config_invalid',503);return at;};
   /** @param {string} sql @param {...any} values */
   const s=(sql,...values)=>db.prepare(sql).bind(...values);
@@ -200,7 +201,10 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
         s("UPDATE sarin_wa_outbox SET state='sending',started_at=? WHERE outbox_id=?",at,x.outboxId),
         s(`SELECT o.*,i.waba_id,i.business_phone,i.peer_phone FROM sarin_wa_outbox o JOIN sarin_wa_jobs j ON j.job_id=o.job_id
           JOIN sarin_wa_inbox i ON i.event_id=j.event_id WHERE o.outbox_id=?`,x.outboxId)]);
-      const r=result.at(-1).results[0];
+      const finalResult=result.at(-1);
+      if(!finalResult)throw new WhatsAppWorkError(503,'work_unavailable');
+      const r=finalResult.results[0];
+      requireThat(r,'work_unavailable',503);
       return /** @type {SendPermit} */({outboxId:r.outbox_id,externalId:r.external_id,text:r.text,wabaId:r.waba_id,from:r.business_phone,to:r.peer_phone,expiresAt:r.expires_at});
     }),
     finishSend:guarded(async(x)=>{
@@ -258,7 +262,7 @@ export function createWhatsAppWorkStore({db,now=()=>Date.now(),limits={}}) {
       const jobs=await read(`SELECT job_id FROM sarin_wa_jobs WHERE (lease_until<=? AND state IN('claimed','inference_started','ready'))
         OR (expires_at<=? AND state IN('queued','claimed','inference_started','ready')) ORDER BY created_at,job_id LIMIT ?`,at,at,limit);
       for(const j of jobs)await batch([
-        s(`UPDATE sarin_wa_outbox SET state='send_uncertain' WHERE job_id=? AND state='sending' AND EXISTS(SELECT 1 FROM sarin_wa_jobs WHERE job_id=? AND lease_until<=?)`,j.job_id,j.job_id,at),
+        s(`UPDATE sarin_wa_outbox SET state='send_uncertain' WHERE job_id=? AND state='sending' AND EXISTS(SELECT 1 FROM sarin_wa_jobs WHERE job_id=? AND (lease_until<=? OR expires_at<=?))`,j.job_id,j.job_id,at,at),
         s(`UPDATE sarin_wa_jobs SET state=CASE WHEN EXISTS(SELECT 1 FROM sarin_wa_outbox WHERE job_id=? AND started_at IS NOT NULL) THEN 'completed'
           WHEN state='inference_started' THEN 'inference_uncertain' WHEN expires_at<=? THEN 'expired' WHEN state='claimed' THEN 'queued' ELSE state END,
           token=NULL,lease_until=NULL WHERE job_id=? AND (lease_until<=? OR expires_at<=?)`,j.job_id,at,j.job_id,at,at),
