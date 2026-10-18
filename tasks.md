@@ -1,5 +1,9 @@
 # Tareas — ALS DevStudio
 
+## SARIN-WA-PANEL-UX · 2026-10-18
+
+- [x] Corregir el control oculto y adaptar patrones Mobbin (Klaviyo/Meetup): barra de contacto fuera del historial, cabecera compacta, mensajes diferenciados y detalles desplegables. 43 pruebas Node, tipado focal y QA CUA de escritorio/móvil; revisión independiente sin P1/P2. [Referencias, validación y reversión](docs/SARIN-WHATSAPP-PANEL-UX.md).
+
 ## SARIN-WA-RESPUESTAS · 2026-10-18 · publicada y verificada con un contacto
 
 - [x] Respaldar cambios pendientes, corregir contrato Staff/store y probarlo con SQLite real, navegador de escritorio/móvil y teclado. 825 pruebas aprobadas; sin P1/P2 ni errores de tipado nuevos.

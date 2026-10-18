@@ -83,6 +83,7 @@ async function mock(page,{conflict=false,delayDetail=false,failPoll=false,waitRe
 }
 const waRequests=requests=>requests.filter(r=>r.url.pathname.includes('/whatsapp/'));
 const open=async page=>{await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.locator('[data-wa-peer]').click();await page.locator('#wa-detail-title').waitFor();};
+const longHistory=()=>Array.from({length:24},(_,index)=>({id:`history-${index}`,kind:'message',role:index%2?'assistant':'user',content:`Mensaje ficticio ${index+1}: catálogo de camisetas y pedidos de prueba por WhatsApp.`,at:now+index*1000,expiresAt:now+3600000}));
 
 test('html_in_message_is_text y uncertain_has_no_resend_action; lista enmascarada, eco sin cuerpo y consultas acotadas',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page);
@@ -90,7 +91,9 @@ test('html_in_message_is_text y uncertain_has_no_resend_action; lista enmascarad
   assert.match(await page.locator('#wa-list').innerText(),/•••/);assert.equal(await page.locator('#wa-detail img').count(),0);
   assert.match(await page.locator('#wa-detail').innerText(),/<img src=x/);assert.match(await page.locator('#wa-detail').innerText(),/Respuesta desde el celular/);
   assert.doesNotMatch(await page.locator('#wa-detail').innerText(),/CUERPO PRIVADO|Reenviar/);
+  await page.locator('.wa-contact-info > summary').click();
   assert.match(await page.locator('#wa-detail').innerText(),/Aceptación pendiente/);
+  await page.locator('.wa-delivery > summary').click();
   assert.equal(await page.getByRole('button',{name:'Consultar estado',exact:true}).count(),1);
   await page.getByRole('button',{name:'Consultar estado',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-status').textContent.includes('Consulta pendiente'));
   const request=requests.find(r=>r.url.pathname.endsWith('/reconcile'));assert.deepEqual(request.body,{});assert.equal(request.headers['x-sarin-csrf'],'synthetic-csrf-token');
@@ -107,6 +110,7 @@ test('stale_revision_returns_409 refresca y no repite; resume usa revisión y ex
 test('acciones envían únicamente revisión/acción o piloto; resume_requires_fresh_message visible',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page);await open(page);
   await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-status').textContent.includes('mensaje nuevo'));
+  await page.locator('.wa-contact-info > summary').click();
   assert.match(await page.locator('#wa-detail').innerText(),/mensaje nuevo/);
   await page.getByRole('button',{name:'Pausar Sarin',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-status').textContent.includes('Sarin pausado'));
   await page.getByRole('button',{name:'Apagar piloto',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#wa-pilot').textContent.includes('Piloto apagado'));
@@ -141,6 +145,12 @@ test('escritorio, móvil, reflujo y teclado mantienen foco y controles visibles 
     await page.screenshot({path:path.join(root,`test-results/sarin-admin/whatsapp-overview-${viewport.width}.png`),fullPage:true});
     await page.waitForFunction(()=>!document.querySelector('[data-wa-focus="peer"]').disabled);
     await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).focus();assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).evaluate(el=>el===document.activeElement),true,`foco a ${viewport.width}px`);
+    await page.keyboard.press('Tab');
+    if(await page.locator('#wa-thread').evaluate(el=>el===document.activeElement))await page.keyboard.press('Tab');
+    assert.equal(await page.locator('.wa-contact-info > summary').evaluate(el=>el===document.activeElement),true);
+    await page.keyboard.press('Enter');assert.equal(await page.locator('.wa-contact-info').evaluate(el=>el.open),true);
+    await page.keyboard.press('Tab');assert.equal(await page.locator('.wa-delivery > summary').evaluate(el=>el===document.activeElement),true);
+    await page.keyboard.press('Enter');assert.equal(await page.locator('.wa-delivery').evaluate(el=>el.open),true);
     await page.keyboard.press('Tab');assert.equal(await page.getByRole('button',{name:'Consultar estado',exact:true}).evaluate(el=>el===document.activeElement),true);
     for(const button of await page.locator('#wa-panel button:visible').all())assert.ok((await button.boundingBox()).height>=44);
     if([1440,320].includes(viewport.width)){
@@ -166,7 +176,7 @@ test('mutación interrumpida no se reenvía y una respuesta tardía no repuebla 
 test('aceptado y enviado no prometen entrega; consulta pendiente o agotada no permite reiniciarla',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());await mock(page);
   await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,consent:{status:'pending_delivery'},outputs:[{id:'output-a',status:'accepted',updatedAt:now,canReconcile:true,reconciliation:{status:'pending',attempts:1,nextAt:now+60000}},{id:'output-b',status:'sent',updatedAt:now,canReconcile:true,reconciliation:{status:'exhausted',attempts:3,nextAt:null}},{id:'output-c',status:'inference_uncertain',updatedAt:now,canReconcile:false,reconciliation:{status:'idle',attempts:0,nextAt:null}}]}}}));
-  await open(page);assert.match(await page.locator('#wa-detail').innerText(),/entrega pendiente/);assert.match(await page.locator('#wa-detail').innerText(),/entrega sin confirmar/);assert.match(await page.locator('#wa-detail').innerText(),/Esperando confirmar la entrega del aviso/);
+  await open(page);await page.locator('.wa-contact-info > summary').click();await page.locator('.wa-delivery > summary').click();assert.match(await page.locator('#wa-detail').innerText(),/entrega pendiente/);assert.match(await page.locator('#wa-detail').innerText(),/entrega sin confirmar/);assert.match(await page.locator('#wa-detail').innerText(),/Esperando confirmar la entrega del aviso/);
   assert.equal(await page.getByRole('button',{name:'Consultar estado',exact:true}).count(),0);assert.doesNotMatch(await page.locator('#wa-detail').innerText(),/Reenviar/);
 });
 
@@ -175,20 +185,68 @@ test('anonymous_cannot_read_whatsapp: sin bootstrap autorizado no hay solicitude
   assert.equal(waRequests(requests).length,0);assert.equal(await page.locator('#wa-panel').isVisible(),false);
 });
 
-test('polling no solapa lecturas lentas ni mueve foco del control; el detalle permite scroll por teclado',async t=>{
-  const {page,context}=await pageFor({viewport:{width:1440,height:900}});t.after(()=>context.close());await page.clock.install();const {requests}=await mock(page);await open(page);
+test('polling no solapa lecturas lentas ni mueve foco del control; el historial permite scroll por teclado',async t=>{
+  const {page,context}=await pageFor({viewport:{width:1440,height:900}});t.after(()=>context.close());await page.clock.install();const {requests}=await mock(page);
+  await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,events:longHistory()}}}));await open(page);
   await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).focus();await page.clock.runFor(5000);await page.waitForTimeout(100);
   assert.equal(await page.getByRole('button',{name:'Reactivar Sarin',exact:true}).evaluate(el=>el===document.activeElement),true);
-  assert.equal(await page.locator('#wa-detail').getAttribute('tabindex'),'0');await page.locator('#wa-detail').focus();await page.keyboard.press('End');await page.clock.runFor(300);await page.waitForFunction(()=>document.querySelector('#wa-detail').scrollTop>0);
+  assert.equal(await page.locator('#wa-thread').getAttribute('tabindex'),'0');await page.locator('#wa-thread').focus();await page.keyboard.press('End');await page.clock.runFor(300);await page.waitForFunction(()=>document.querySelector('#wa-thread').scrollTop>0);
   let release,slowReads=0;await page.route('**/api/control-sarin/whatsapp/peers',async route=>{slowReads++;await new Promise(resolve=>{release=resolve;});return route.fulfill({json:{pilot:{enabled:true,revision:3,updatedAt:now},items:[peer]}}).catch(()=>{});});
   await page.clock.runFor(5000);await page.waitForTimeout(50);const before=waRequests(requests).length;await page.clock.runFor(10000);assert.equal(waRequests(requests).length,before);assert.equal(slowReads,1);release?.();
+});
+
+test('a 1450×765 Reactivar Sarin permanece completamente visible al final del historial y polling conserva lectura y foco',async t=>{
+  const {page,context}=await pageFor({viewport:{width:1450,height:765},reducedMotion:'reduce'});t.after(()=>context.close());await page.clock.install();const {requests}=await mock(page);
+  let detailReads=0;
+  await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,events:longHistory(),updatedAt:now+(++detailReads)*1000}}}));
+  await open(page);await page.waitForFunction(()=>document.querySelector('#wa-panel').getAttribute('aria-busy')==='false');
+  const action=page.getByRole('button',{name:'Reactivar Sarin',exact:true}),thread=page.locator('#wa-thread');
+  assert.equal(await action.evaluate(node=>Boolean(node.closest('.wa-contact-toolbar'))&&!node.closest('#wa-thread')),true,'la acción pertenece a la cabecera, fuera del historial');
+  assert.equal(await page.locator('#wa-detail').getAttribute('tabindex'),null);
+  assert.equal(await thread.getAttribute('tabindex'),'0');await thread.focus();await page.keyboard.press('End');await page.clock.runFor(300);
+  await page.waitForFunction(()=>{const node=document.querySelector('#wa-thread');return node.scrollTop>0&&Math.abs(node.scrollHeight-node.clientHeight-node.scrollTop)<=2;});
+  const assertActionVisible=async()=>{
+    assert.equal(await action.isDisabled(),false);
+    assert.equal(await action.evaluate(node=>{
+      const rect=node.getBoundingClientRect();
+      if(rect.width<=0||rect.height<44||rect.top<0||rect.left<0||rect.bottom>innerHeight||rect.right>innerWidth)return false;
+      for(let ancestor=node.parentElement;ancestor;ancestor=ancestor.parentElement){
+        const style=getComputedStyle(ancestor),bounds=ancestor.getBoundingClientRect();
+        if(/auto|scroll|hidden|clip/.test(style.overflowY)&&(rect.top<bounds.top||rect.bottom>bounds.bottom))return false;
+        if(/auto|scroll|hidden|clip/.test(style.overflowX)&&(rect.left<bounds.left||rect.right>bounds.right))return false;
+      }
+      return node.contains(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2));
+    }),true,'Reactivar Sarin debe verse entero sin enfocar el botón ni desplazar la página');
+  };
+  await assertActionVisible();assert.equal(await page.locator('#wa-detail').evaluate(node=>node.scrollTop),0);
+  const position=await thread.evaluate(node=>node.scrollTop),beforeReads=detailReads;
+  const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/control-sarin/whatsapp/peers/${peerKey}`);
+  await page.clock.runFor(5000);await refreshed;await page.waitForFunction(()=>document.querySelector('#wa-panel').getAttribute('aria-busy')==='false');
+  assert.ok(detailReads>beforeReads,'el sondeo debe haber leído un detalle actualizado');
+  assert.equal(await thread.evaluate(node=>node===document.activeElement),true,'el sondeo conserva el foco del historial');
+  assert.ok(Math.abs(await thread.evaluate(node=>node.scrollTop)-position)<=1,'el sondeo conserva la posición de lectura');
+  await assertActionVisible();assert.equal(waRequests(requests).filter(request=>request.method==='POST').length,0);
 });
 
 test('aceptación vence en pantalla aunque no haya otra respuesta del servidor',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());await page.clock.install();await mock(page);
   const expiresAt=await page.evaluate(()=>Date.now()+3000);
   await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,consent:{status:'accepted',expiresAt}}}}));
-  await open(page);assert.match(await page.locator('#wa-detail').innerText(),/Aceptación vigente/);await page.clock.runFor(3001);assert.doesNotMatch(await page.locator('#wa-detail').innerText(),/Aceptación vigente/);assert.match(await page.locator('#wa-detail').innerText(),/Aceptación vencida/);
+  await open(page);await page.locator('.wa-contact-info > summary').click();assert.match(await page.locator('#wa-detail').innerText(),/Aceptación vigente/);await page.clock.runFor(3001);assert.doesNotMatch(await page.locator('#wa-detail').innerText(),/Aceptación vigente/);assert.match(await page.locator('#wa-detail').innerText(),/Aceptación vencida/);
+});
+
+test('polling conserva foco y apertura de los controles de detalles accesibles por teclado',async t=>{
+  const {page,context}=await pageFor({viewport:{width:1450,height:765},reducedMotion:'reduce'});t.after(()=>context.close());await page.clock.install();await mock(page);
+  let detailReads=0;
+  await page.route(`**/api/control-sarin/whatsapp/peers/${peerKey}`,route=>route.fulfill({json:{peer:{...waDetail,events:longHistory(),updatedAt:now+(++detailReads)*1000}}}));await open(page);
+  for(const selector of ['.wa-contact-info','.wa-delivery']){
+    const summary=page.locator(`${selector} > summary`);await summary.focus();await page.keyboard.press('Enter');
+    assert.equal(await page.locator(selector).evaluate(node=>node.open),true);
+    const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/control-sarin/whatsapp/peers/${peerKey}`);
+    await page.clock.runFor(5000);await refreshed;await page.waitForFunction(()=>document.querySelector('#wa-panel').getAttribute('aria-busy')==='false');
+    assert.equal(await summary.evaluate(node=>node===document.activeElement),true,`${selector} conserva el foco tras actualizarse los datos`);
+    assert.equal(await page.locator(selector).evaluate(node=>node.open),true,`${selector} permanece desplegado`);
+  }
 });
 
 test('409 con recarga fallida no afirma actualización ni habilita otra mutación con estado viejo',async t=>{
@@ -202,7 +260,8 @@ test('409 con recarga fallida no afirma actualización ni habilita otra mutació
 test('Activar piloto usa revisión y no afirma disponibilidad; cierres de restauración permanecen visibles',async t=>{
   const {page,context}=await pageFor();t.after(()=>context.close());const {requests}=await mock(page,{initialEnabled:false,recoveryBlockedUntil:now+86400000});
   await page.getByRole('button',{name:'WhatsApp',exact:true}).click();await page.getByRole('button',{name:'Activar piloto',exact:true}).click();await page.getByRole('button',{name:'Apagar piloto',exact:true}).waitFor();
-  assert.deepEqual(waRequests(requests).filter(r=>r.method==='POST').map(r=>r.body),[{enabled:true,revision:3}]);assert.match(await page.locator('#wa-pilot').innerText(),/Envíos bloqueados tras restaurar datos/);assert.match(await page.locator('#wa-pilot').innerText(),/no garantiza/);
+  await page.locator('.wa-pilot-info > summary').click();
+  assert.deepEqual(waRequests(requests).filter(r=>r.method==='POST').map(r=>r.body),[{enabled:true,revision:3}]);assert.match(await page.locator('#wa-pilot').innerText(),/Envíos bloqueados tras restaurar datos/);assert.match(await page.locator('.wa-pilot-info').innerText(),/no garantiza/);
   assert.equal(await page.getByRole('button',{name:/restablecer|devolver cupos|abrir cierre/i}).count(),0);
 });
 

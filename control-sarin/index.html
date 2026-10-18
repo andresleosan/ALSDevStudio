@@ -57,12 +57,15 @@
       </div>
       </div>
       <section id="wa-panel" class="admin-channel-panel" aria-labelledby="wa-title" aria-busy="false" hidden>
-        <div class="wa-heading"><div><h2 id="wa-title">WhatsApp · Piloto privado</h2><p class="admin-note">Sólo números autorizados y datos ficticios. Contenido disponible hasta 24 horas; recibos mínimos hasta 48 horas. <a href="/privacidad.html#whatsapp-piloto">Aviso del piloto</a></p></div><div id="wa-pilot"></div></div>
-        <p class="admin-note wa-warning">Un mensaje cuyo envío ya comenzó puede llegar después de pausar o apagar el piloto.</p>
+        <div class="wa-heading">
+          <div class="wa-channel-title"><span class="wa-channel-icon" aria-hidden="true">WA</span><div><h2 id="wa-title">WhatsApp</h2><p class="admin-note">Piloto privado · ALS DevStudio</p></div></div>
+          <details class="wa-pilot-info"><summary>Condiciones del piloto</summary><div><p>Sólo números autorizados y datos ficticios. Contenido disponible hasta 24 horas; recibos mínimos hasta 48 horas. <a href="/privacidad.html#whatsapp-piloto">Aviso del piloto</a></p><p>La activación no garantiza una respuesta: depende de la disponibilidad del servicio, la aceptación y un mensaje nuevo.</p><p class="wa-warning">Un mensaje cuyo envío ya comenzó puede llegar después de pausar o apagar el piloto.</p></div></details>
+          <div id="wa-pilot"></div>
+        </div>
         <p id="wa-status" role="status" aria-live="polite"></p>
         <div class="wa-columns">
-          <section class="wa-contacts" aria-labelledby="wa-list-title"><div class="admin-section-heading"><h2 id="wa-list-title">Contactos del piloto</h2></div><div id="wa-list"></div></section>
-          <section id="wa-detail" aria-label="Detalle de WhatsApp"><p class="admin-note">Elige un contacto para revisar sus mensajes y estado de entrega.</p></section>
+          <section class="wa-contacts" aria-labelledby="wa-list-title"><div class="admin-section-heading"><h2 id="wa-list-title">Contactos</h2><span class="wa-private-label">Piloto</span></div><div id="wa-list"></div></section>
+          <section id="wa-detail" aria-label="Detalle de WhatsApp"><div class="wa-empty"><span class="wa-empty-icon" aria-hidden="true">S</span><h3>Tu bandeja de WhatsApp</h3><p>Elige un contacto para leer la conversación y controlar cuándo responde Sarin.</p></div></section>
         </div>
       </section>
     </div>
