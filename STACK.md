@@ -1,5 +1,9 @@
 # Stack — ALS DevStudio
 
+### Respuestas WhatsApp · 2026-10-18 · servicio publicado, prueba real pendiente
+
+Paso 1 corregido y verificado (825 pruebas y QA de navegador); paso 2 publicado con autorización del titular. Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`, retención `527ed214-1cf0-45aa-b94f-77aaa80e2c5f`, migración 0005 y Queue `als-sarin-whatsapp`. Seis secretos del consumidor, YCloud y DeepSeek comprobados por GET oficial. Flags de servicio activas sólo en producción; el piloto y el único contacto siguen sujetos a activación en Staff y aceptación nueva. Preview aislado, chat web conservado. No se acredita aún una respuesta real ni la pausa posterior a ella. [Registro y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).
+
 ### YCloud Free para Sarin comercial · 2026-10-17 · receptor piloto publicado
 
 El titular eligió Coexistencia con YCloud Free para el WhatsApp Business móvil de ALS y autorizó expresamente publicación, migración, webhook y secreto. La cuenta está `Connected`; verificación empresarial pendiente. Recepción durable D1 publicada, con capturas separadas de sesiones web, deduplicación, pausa, caducidad y recuperación. YCloud tiene el endpoint `6ad4515b0af8375d27636917` activo con entrada/eco; producción habilitada y preview apagado. Cinco secretos del canal guardados en Cloudflare conservando los anteriores, sin API key de envío. Esta versión no genera ni envía respuestas. [Estado, límites, costos y fuentes](docs/SARIN-WHATSAPP-EVALUACION.md), [contrato del piloto](docs/superpowers/specs/2026-10-17-sarin-whatsapp-ingress-design.md).

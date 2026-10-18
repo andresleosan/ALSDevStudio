@@ -18,6 +18,8 @@ Fecha: 18 de octubre de 2026. Alcance autorizado: ALS DevStudio, **+573052778047
 
 Las flags de servicio se habilitan sólo en producción. El piloto permanece apagado hasta activarlo en Staff; el contacto debe reactivarse y escribir un mensaje nuevo. Preview y configuración base del consumidor siguen apagados. Las capturas antiguas no se convierten en trabajo.
 
+Versiones con servicio habilitado: consumidor `130124c2-6d00-47e8-8ac1-d51ebdbda470`; Pages `62a8afcd-a557-4bf6-8645-2cf8eb50474f`, fuente `ab08ba3`. Verificación de configuración posterior: flags correctas, secretos web conservados y preview aislado. Los tres JSON temporales de secretos fueron retirados tras cargar y verificar las credenciales; `.dev.vars` original permanece intacto.
+
 Recorrido pendiente de acreditar remotamente: mensaje ficticio nuevo, aviso **entregado**, `ACEPTO`, consulta ficticia, respuesta de Sarin **entregada**, contestación desde el teléfono empresarial y pausa automática. No considerar un HTTP 200 del proveedor como prueba de entrega. Registrar resultado y versiones de activación tras completar el recorrido.
 
 Topes actuales: 20 intentos de envío/día y 100/mes, incluidos avisos; presupuesto IA compartido 1 USD/día y 10 USD/mes. No se contrataron planes, recargas ni ampliaron destinatarios. Estos controles de aplicación no sustituyen la facturación del proveedor.

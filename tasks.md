@@ -1,5 +1,11 @@
 # Tareas — ALS DevStudio
 
+## SARIN-WA-RESPUESTAS · 2026-10-18 · servicio publicado
+
+- [x] Respaldar cambios pendientes, corregir contrato Staff/store y probarlo con SQLite real, navegador de escritorio/móvil y teclado. 825 pruebas aprobadas; sin P1/P2 ni errores de tipado nuevos.
+- [x] Conservar cambios e integrar imágenes remotas sobre main; configurar y publicar migración 0005, retención, Queue, consumidor con seis secretos y panel. Verificar YCloud/DeepSeek por GET y preservar secretos web/aislamiento preview. [Evidencia y reversión](docs/SARIN-WHATSAPP-RESPUESTAS.md).
+- [ ] Completar prueba real con el único contacto autorizado: activar en Staff, aviso entregado, aceptación, respuesta de IA entregada y pausa automática al contestar desde el teléfono empresarial. Servicio preparado; no declarar esta prueba como completada hasta observar el recorrido.
+
 ## SARIN-YCLOUD · WhatsApp del bot comercial de ALS · 2026-10-17 · receptor piloto publicado
 
 - [x] Confirmar alcance: bot de la web de ALS, número actual atendido desde la app móvil, Coexistencia y proveedor YCloud Free elegido por el titular. Evaluación y costos en `docs/SARIN-WHATSAPP-EVALUACION.md`; SaaS de citas fuera de alcance.
