@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink, truncate, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, symlink, truncate, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -11,6 +11,8 @@ const implementation = await import('./build.mjs').catch(error => {
   if (error.code === 'ERR_MODULE_NOT_FOUND') return null;
   throw error;
 });
+// realpath evita que el alias 8.3 de TEMP en Windows parezca un enlace simbolico.
+const temporaryParent = await realpath(tmpdir());
 const temporaryRoots = [];
 const scripts = ['analytics.js', 'main.js', 'picture-fallback.js', 'privacy.js',
   ...['contact', 'cursor', 'depth', 'dom', 'env', 'global-map', 'hero-carousel',
@@ -24,7 +26,7 @@ const brand = ['logo-als.png', 'mascot-flight.png', 'mascot-laptop.png', 'mascot
 
 after(async () => {
   for (const root of temporaryRoots) {
-    assert.ok(path.isAbsolute(root) && path.dirname(root) === path.resolve(tmpdir()));
+    assert.ok(path.isAbsolute(root) && path.dirname(root) === temporaryParent);
     assert.ok(path.basename(root).startsWith('als-cloudflare-test-'));
     await rm(root, { recursive: true, force: true });
   }
@@ -37,7 +39,7 @@ async function put(root, file, content = 'fixture') {
 }
 
 async function fixture() {
-  const root = await mkdtemp(path.join(path.resolve(tmpdir()), 'als-cloudflare-test-'));
+  const root = await mkdtemp(path.join(temporaryParent, 'als-cloudflare-test-'));
   temporaryRoots.push(root);
   for (const name of ['index', 'privacidad', 'terminos', 'cookies', '404']) {
     await put(root, `${name}.html`, '<!DOCTYPE html><a href="index.html">Inicio</a><link href="styles/main.css" rel="stylesheet">');

@@ -22,7 +22,8 @@ concurrency:
 
 jobs:
   regenerar:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 soporta Ubuntu 24.04; ubuntu-latest ya entrega 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
